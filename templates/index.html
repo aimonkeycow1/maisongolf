@@ -4,40 +4,49 @@
 <header class="hero">
   <div class="hero-bg"></div>
   <div class="hero-body">
-    <h1>⛳ 滘西洲高爾夫球場 · 南場</h1>
-    <p>群組共用戰績 · 白梯 Par {{ par_total }}</p>
+    <span class="hero-eyebrow">South Course · White Tee</span>
+    <h1>滘西洲高爾夫球場 · 南場</h1>
+    <p>群組共用戰績紀錄 · Par {{ par_total }} · 5906 碼</p>
   </div>
+  <div class="hero-accent"></div>
 </header>
 
 <div class="hint-box">
-  💡 <b>給球友：</b>把此頁網址傳到 WhatsApp 群（4G 也能開），即可查看歷史戰績。
-  <b>新比賽</b>請點上方 <a href="{{ url_for('score_entry') }}">✏️ 錄分</a>（管理員需填 SYNC_SECRET），或本機 <code>golf_score.py</code> 後用 <code>sync_rounds.py</code> 同步。
+  <b>給球友</b> — 把此頁網址傳到 WhatsApp 群（4G 也能開），即可隨時查看歷史戰績。
+  新比賽請點 <a href="{{ url_for('score_entry') }}">錄分</a>，或本機 <code>golf_score.py</code> 後同步上雲。
 </div>
 
 <div class="legend">
-  <span><i class="dot birdie"></i> 綠 = 鳥擊以上</span>
-  <span><i class="dot par"></i> 灰 = Par</span>
-  <span><i class="dot bogey"></i> 黃 = 柏忌</span>
-  <span><i class="dot bad"></i> 紅 = 雙柏忌+</span>
+  <span><i class="dot birdie"></i> 鳥擊以上</span>
+  <span><i class="dot par"></i> Par</span>
+  <span><i class="dot bogey"></i> 柏忌</span>
+  <span><i class="dot bad"></i> 雙柏忌+</span>
 </div>
 
 <section class="card">
-  <h2>📋 歷史場次（共 {{ rounds_rev|length }} 場）</h2>
+  <div class="card-header">
+    <h2>歷史場次</h2>
+    <span class="badge">{{ rounds_rev|length }} 場</span>
+  </div>
   {% if rounds_rev %}
     {% for r in rounds_rev %}
     {% set best = r.players|sort(attribute='total')|first %}
     <a class="round-list-item" href="{{ url_for('round_detail', round_id=r.id) }}">
-      <strong>{{ r.date }} {{ r.time }}</strong>
-      {% if r.note %} · {{ r.note }}{% endif %}
+      <span class="round-arrow">→</span>
+      <strong>{{ r.date }} · {{ r.time }}</strong>
+      {% if r.note %}<span style="opacity:0.7"> — {{ r.note }}</span>{% endif %}
       <div class="round-meta">
-        🏆 {{ best.name }} {{ best.total }} 桿
-        · {{ r.players|length }} 位球員
-        · 點此查看完整記分卡 →
+        <span class="champion">🏆 {{ best.name }} · {{ best.total }} 桿</span>
+        <span>·</span>
+        <span>{{ r.players|length }} 位球員</span>
       </div>
     </a>
     {% endfor %}
   {% else %}
-    <p class="empty">尚無紀錄。請先在本機執行「多人同組記分」存檔。</p>
+    <div class="empty">
+      <div class="empty-icon">⛳</div>
+      <p>尚無紀錄，點上方「錄分」開始第一場。</p>
+    </div>
   {% endif %}
 </section>
 {% endblock %}

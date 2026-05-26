@@ -4,25 +4,28 @@
 <header class="hero">
   <div class="hero-bg"></div>
   <div class="hero-body">
-    <h1>⛳ {{ round.course }}</h1>
-    <p>{{ round.date }} {{ round.time }}
-      {% if round.note %} · {{ round.note }}{% endif %}
-    </p>
+    <span class="hero-eyebrow">Scorecard</span>
+    <h1>{{ round.course }}</h1>
+    <p>{{ round.date }} · {{ round.time }}{% if round.note %} · {{ round.note }}{% endif %}</p>
   </div>
+  <div class="hero-accent"></div>
 </header>
 
-<p><a href="{{ url_for('index') }}">← 返回歷史列表</a></p>
+<a href="{{ url_for('index') }}" class="back-link">← 返回歷史列表</a>
 
 <div class="card">
-  <h2>🏆 本場排名</h2>
+  <div class="card-header">
+    <h2>本場排名</h2>
+    <span class="badge">{{ ranked|length }} 位球員</span>
+  </div>
   <div class="podium">
     {% for p in ranked %}
     <div class="podium-card {% if loop.index == 1 %}rank1{% endif %}">
       <div class="podium-medal">{% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}</div>
       <div class="podium-name">{{ p.name }}</div>
       <div class="podium-score">{{ p.total }}</div>
-      <div>比標準桿 {% if p.to_par > 0 %}+{{ p.to_par }}{% elif p.to_par == 0 %}E{% else %}{{ p.to_par }}{% endif %}</div>
-      <div style="font-size:0.8rem;opacity:0.85;margin-top:6px">前九 {{ p.front9 }} / 後九 {{ p.back9 }}</div>
+      <div class="podium-to-par">{% if p.to_par > 0 %}+{{ p.to_par }}{% elif p.to_par == 0 %}E{% else %}{{ p.to_par }}{% endif %}</div>
+      <div class="podium-detail">前九 {{ p.front9 }} · 後九 {{ p.back9 }}</div>
     </div>
     {% endfor %}
   </div>
@@ -30,29 +33,35 @@
 
 {% for p in ranked %}
 <div class="card">
-  <h2>{{ p.name }} · 逐洞成績</h2>
-  <p style="margin-bottom:10px;opacity:0.85">
-    鳥擊+ {{ p.birdies }} · Par {{ p.pars }} · 柏忌 {{ p.bogeys }} · 雙柏忌+ {{ p.double_plus }}
-  </p>
-  <p style="font-size:0.85rem;color:#a5d6a7;margin-bottom:8px">🌅 前九洞</p>
+  <div class="card-header">
+    <h2>{{ p.name }}</h2>
+    <span class="podium-to-par">{{ p.total }} 桿</span>
+  </div>
+  <div class="player-stats">
+    <span class="stat-pill">鳥擊+ <b>{{ p.birdies }}</b></span>
+    <span class="stat-pill">Par <b>{{ p.pars }}</b></span>
+    <span class="stat-pill">柏忌 <b>{{ p.bogeys }}</b></span>
+    <span class="stat-pill">雙柏忌+ <b>{{ p.double_plus }}</b></span>
+  </div>
+  <p class="section-label">前九洞</p>
   <div class="holes-grid">
     {% for h in p.hole_results if h.hole <= 9 %}
     <div class="hole {% if h.diff <= -1 %}birdie{% elif h.diff == 0 %}par{% elif h.diff == 1 %}bogey{% else %}bad{% endif %}">
-      <div>第{{ h.hole }}洞</div>
+      <div>第 {{ h.hole }} 洞</div>
       <div class="num">{{ h.score }}</div>
-      <div>Par{{ h.par }}</div>
-      <div>{% if h.diff > 0 %}+{{ h.diff }}{% else %}{{ h.diff }}{% endif %}</div>
+      <div>Par {{ h.par }}</div>
+      <div>{% if h.diff > 0 %}+{{ h.diff }}{% elif h.diff == 0 %}E{% else %}{{ h.diff }}{% endif %}</div>
     </div>
     {% endfor %}
   </div>
-  <p style="font-size:0.85rem;color:#a5d6a7;margin:12px 0 8px">🌇 後九洞</p>
+  <p class="section-label">後九洞</p>
   <div class="holes-grid">
     {% for h in p.hole_results if h.hole > 9 %}
     <div class="hole {% if h.diff <= -1 %}birdie{% elif h.diff == 0 %}par{% elif h.diff == 1 %}bogey{% else %}bad{% endif %}">
-      <div>第{{ h.hole }}洞</div>
+      <div>第 {{ h.hole }} 洞</div>
       <div class="num">{{ h.score }}</div>
-      <div>Par{{ h.par }}</div>
-      <div>{% if h.diff > 0 %}+{{ h.diff }}{% else %}{{ h.diff }}{% endif %}</div>
+      <div>Par {{ h.par }}</div>
+      <div>{% if h.diff > 0 %}+{{ h.diff }}{% elif h.diff == 0 %}E{% else %}{{ h.diff }}{% endif %}</div>
     </div>
     {% endfor %}
   </div>
