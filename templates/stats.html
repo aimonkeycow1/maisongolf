@@ -1,73 +1,90 @@
 {% extends "base.html" %}
 {% block title %}球員統計 · 滘西洲南場{% endblock %}
 {% block content %}
-<header class="hero hero-compact">
-  <div class="hero-bg"></div>
-  <div class="hero-body">
-    <span class="hero-eyebrow">Analytics</span>
-    <h1>球員歷史統計</h1>
-    <p>依所有已存檔場次計算 · 平均桿數與難洞分析</p>
-  </div>
-  <div class="hero-accent"></div>
-</header>
 
-<section class="card">
-  <div class="card-header">
-    <h2>球員排行榜</h2>
-    <span class="badge">平均總桿</span>
+<section class="relative mb-8 overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10">
+  <div class="hero-bg-image absolute inset-0"></div>
+  <div class="absolute inset-0 bg-gradient-to-r from-fairway-dark/95 to-fairway-dark/60"></div>
+  <div class="relative px-6 py-10 sm:px-10 sm:py-12">
+    <p class="mb-2 text-xs font-semibold uppercase tracking-widest text-gold-light">Analytics</p>
+    <h1 class="text-2xl font-bold text-white sm:text-3xl">球員歷史統計</h1>
+    <p class="mt-2 text-green-100/80">依所有已存檔場次計算</p>
+  </div>
+</section>
+
+<section class="mb-8 overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-green-900/10">
+  <div class="bg-fairway-dark px-6 py-4 sm:px-8">
+    <h2 class="text-lg font-bold text-white">球員排行榜</h2>
+    <p class="text-sm text-green-200/70">平均總桿</p>
   </div>
   {% if player_rows %}
-  <div class="table-wrap">
-    <table>
-      <thead>
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[520px] text-left text-sm">
+      <thead class="bg-green-50 text-xs font-semibold uppercase tracking-wider text-fairway-dark">
         <tr>
-          <th>球員</th><th>場次</th><th>冠軍</th><th>平均桿</th><th>最佳</th><th>平均+/-</th>
+          <th class="px-4 py-3 sm:px-6">球員</th>
+          <th class="px-4 py-3">場次</th>
+          <th class="px-4 py-3">冠軍</th>
+          <th class="px-4 py-3">平均桿</th>
+          <th class="px-4 py-3">最佳</th>
+          <th class="px-4 py-3 sm:pr-6">平均+/-</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody class="divide-y divide-green-100 text-green-900">
         {% for row in player_rows %}
-        <tr>
-          <td>
-            <span class="rank-num {% if loop.index <= 3 %}top{% endif %}">{{ loop.index }}</span>
-            <strong style="margin-left:8px">{{ row.name }}</strong>
+        <tr class="transition hover:bg-green-50/80">
+          <td class="px-4 py-4 font-semibold sm:px-6">
+            <span class="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold
+                         {% if loop.index <= 3 %}bg-gold/20 text-gold{% else %}bg-green-100 text-fairway-dark{% endif %}">
+              {{ loop.index }}
+            </span>
+            {{ row.name }}
           </td>
-          <td>{{ row.rounds }}</td>
-          <td>{{ row.wins }}</td>
-          <td>{{ row.avg_total }}</td>
-          <td>{{ row.best_total }}</td>
-          <td>{{ row.avg_to_par }}</td>
+          <td class="px-4 py-4 tabular-nums">{{ row.rounds }}</td>
+          <td class="px-4 py-4 tabular-nums">{{ row.wins }}</td>
+          <td class="px-4 py-4 tabular-nums font-medium">{{ row.avg_total }}</td>
+          <td class="px-4 py-4 tabular-nums">{{ row.best_total }}</td>
+          <td class="px-4 py-4 tabular-nums sm:pr-6">{{ row.avg_to_par }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
   {% else %}
-  <div class="empty">
-    <div class="empty-icon">📊</div>
-    <p>尚無資料，完成第一場比賽後即可顯示。</p>
-  </div>
+  <p class="py-16 text-center text-green-600/70">尚無資料</p>
   {% endif %}
 </section>
 
-<section class="card">
-  <div class="card-header">
-    <h2>最難打的洞</h2>
-    <span class="badge">TOP 5</span>
+<section class="overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-green-900/10">
+  <div class="bg-fairway-dark px-6 py-4 sm:px-8">
+    <h2 class="text-lg font-bold text-white">最難打的洞</h2>
+    <p class="text-sm text-green-200/70">TOP 5</p>
   </div>
   {% if hard_holes %}
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr><th>排名</th><th>洞</th><th>Par</th><th>碼數</th><th>平均+/-</th></tr>
-      </thead>
-      <tbody>
-        {% for h in hard_holes %}
+  <div class="overflow-x-auto">
+    <table class="w-full min-w-[400px] text-left text-sm">
+      <thead class="bg-green-50 text-xs font-semibold uppercase tracking-wider text-fairway-dark">
         <tr>
-          <td><span class="rank-num {% if loop.index == 1 %}top{% endif %}">{{ loop.index }}</span></td>
-          <td><strong>第 {{ h.hole }} 洞</strong></td>
-          <td>{{ h.par }}</td>
-          <td>{{ h.yard }}</td>
-          <td>+{{ h.avg_diff }}</td>
+          <th class="px-4 py-3 sm:px-6">排名</th>
+          <th class="px-4 py-3">洞</th>
+          <th class="px-4 py-3">Par</th>
+          <th class="px-4 py-3">碼數</th>
+          <th class="px-4 py-3 sm:pr-6">平均+/-</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-green-100 text-green-900">
+        {% for h in hard_holes %}
+        <tr class="hover:bg-green-50/80">
+          <td class="px-4 py-4 sm:px-6">
+            <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold
+                         {% if loop.index == 1 %}bg-red-100 text-red-700{% else %}bg-green-100 text-fairway-dark{% endif %}">
+              {{ loop.index }}
+            </span>
+          </td>
+          <td class="px-4 py-4 font-semibold">第 {{ h.hole }} 洞</td>
+          <td class="px-4 py-4 tabular-nums">{{ h.par }}</td>
+          <td class="px-4 py-4 tabular-nums">{{ h.yard }}</td>
+          <td class="px-4 py-4 font-medium text-red-600 sm:pr-6">+{{ h.avg_diff }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -75,4 +92,5 @@
   </div>
   {% endif %}
 </section>
+
 {% endblock %}

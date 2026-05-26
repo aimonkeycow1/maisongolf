@@ -1,34 +1,73 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-Hant" class="h-full scroll-smooth">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#050f0c">
+  <meta name="theme-color" content="#166534">
   <meta name="description" content="滘西洲高爾夫球場南場 · 群組記分與歷史戰績">
   <title>{% block title %}滘西洲南場記分{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            fairway: {
+              dark: "#166534",
+              DEFAULT: "#15803d",
+              light: "#22c55e",
+            },
+            gold: {
+              DEFAULT: "#ca8a04",
+              light: "#eab308",
+            },
+          },
+          fontFamily: {
+            sans: ['"Noto Sans TC"', "system-ui", "sans-serif"],
+          },
+        },
+      },
+    };
+  </script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
-  <div class="wrap">
-    <header class="site-header">
-      <a href="{{ url_for('index') }}" class="brand">
-        <div class="brand-mark">⛳</div>
-        <div class="brand-text">
-          <div class="brand-name">Maison Golf</div>
-          <div class="brand-sub">Kau Sai Chau · South</div>
-        </div>
+<body class="min-h-full flex flex-col bg-gradient-to-b from-fairway-dark via-[#0f2918] to-[#071810] font-sans text-green-50 antialiased">
+
+  <header class="sticky top-0 z-50 border-b border-white/10 bg-fairway-dark/95 backdrop-blur-md">
+    <div class="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+      <a href="{{ url_for('index') }}" class="group flex items-center gap-3 no-underline">
+        <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-fairway text-lg shadow-lg ring-1 ring-white/20 transition group-hover:bg-fairway-light">⛳</span>
+        <span>
+          <span class="block text-lg font-bold tracking-tight text-white">Maison Golf</span>
+          <span class="block text-xs font-medium uppercase tracking-widest text-gold-light">Kau Sai Chau · South</span>
+        </span>
       </a>
-      <nav class="nav">
-        <a href="{{ url_for('index') }}" {% if page == 'home' %}class="active"{% endif %}>首頁</a>
-        <a href="{{ url_for('score_entry') }}" {% if page == 'score' %}class="active"{% endif %}>錄分</a>
-        <a href="{{ url_for('stats') }}" {% if page == 'stats' %}class="active"{% endif %}>統計</a>
+      <nav class="flex flex-wrap gap-2">
+        {% from '_macros.html' import nav_link %}
+        {{ nav_link(url_for('index'), '首頁', page == 'home') }}
+        {{ nav_link(url_for('score_entry'), '錄分', page == 'score') }}
+        {{ nav_link(url_for('stats'), '統計', page == 'stats') }}
       </nav>
-    </header>
+    </div>
+  </header>
+
+  <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
     {% block content %}{% endblock %}
-    <footer class="footer">
-      <p>滘西洲高爾夫球場 · 南場 · 白梯 Par 69</p>
-      <p><a href="{{ url_for('score_entry') }}">網頁錄分</a> · <code>python3 golf_score.py</code></p>
-    </footer>
-  </div>
+  </main>
+
+  <footer class="mt-auto border-t border-white/10 bg-fairway-dark/80">
+    <div class="mx-auto max-w-5xl px-4 py-8 text-center text-sm text-green-200/70 sm:px-6 lg:px-8">
+      <p class="font-medium text-green-100/90">滘西洲高爾夫球場 · 南場 · 白梯 Par 69</p>
+      <p class="mt-2">
+        <a href="{{ url_for('score_entry') }}" class="text-gold-light hover:text-white transition-colors">網頁錄分</a>
+        <span class="mx-2 opacity-40">·</span>
+        <span class="text-green-200/50">python3 golf_score.py</span>
+      </p>
+    </div>
+  </footer>
+
 </body>
 </html>

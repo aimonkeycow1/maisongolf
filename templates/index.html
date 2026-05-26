@@ -1,52 +1,76 @@
 {% extends "base.html" %}
 {% block title %}歷史戰績 · 滘西洲南場{% endblock %}
 {% block content %}
-<header class="hero">
-  <div class="hero-bg"></div>
-  <div class="hero-body">
-    <span class="hero-eyebrow">South Course · White Tee</span>
-    <h1>滘西洲高爾夫球場 · 南場</h1>
-    <p>群組共用戰績紀錄 · Par {{ par_total }} · 5906 碼</p>
-  </div>
-  <div class="hero-accent"></div>
-</header>
 
-<div class="hint-box">
-  <b>給球友</b> — 把此頁網址傳到 WhatsApp 群（4G 也能開），即可隨時查看歷史戰績。
-  新比賽請點 <a href="{{ url_for('score_entry') }}">錄分</a>，或本機 <code>golf_score.py</code> 後同步上雲。
+{# Hero #}
+<section class="relative mb-8 overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10">
+  <div class="hero-bg-image absolute inset-0 scale-105"></div>
+  <div class="absolute inset-0 bg-gradient-to-r from-fairway-dark/95 via-fairway-dark/70 to-fairway-dark/50"></div>
+  <div class="absolute inset-0 bg-gradient-to-t from-fairway-dark via-transparent to-transparent"></div>
+  <div class="relative px-6 py-12 sm:px-10 sm:py-16">
+    <p class="mb-2 inline-block rounded-full border border-gold-light/40 bg-gold/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-gold-light">
+      South Course · White Tee
+    </p>
+    <h1 class="text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
+      滘西洲高爾夫球場 · 南場
+    </h1>
+    <p class="mt-3 max-w-xl text-base text-green-100/80 sm:text-lg">
+      群組共用戰績 · Par {{ par_total }} · 5906 碼
+    </p>
+  </div>
+</section>
+
+{# 提示 #}
+<div class="mb-6 rounded-xl border border-gold/30 bg-gold/10 px-5 py-4 text-sm leading-relaxed text-green-100/90">
+  <span class="font-semibold text-gold-light">給球友</span> — 把此頁網址傳到 WhatsApp 群即可查看戰績。
+  新比賽請 <a href="{{ url_for('score_entry') }}" class="font-medium text-white underline decoration-gold-light/60 underline-offset-2 hover:text-gold-light">錄分</a>。
 </div>
 
-<div class="legend">
-  <span><i class="dot birdie"></i> 鳥擊以上</span>
-  <span><i class="dot par"></i> Par</span>
-  <span><i class="dot bogey"></i> 柏忌</span>
-  <span><i class="dot bad"></i> 雙柏忌+</span>
+{# 圖例 #}
+<div class="mb-8 flex flex-wrap gap-3 rounded-xl bg-white/5 px-4 py-3 ring-1 ring-white/10 text-xs sm:text-sm">
+  <span class="flex items-center gap-2"><span class="h-3 w-3 rounded bg-blue-600"></span>Eagle</span>
+  <span class="flex items-center gap-2"><span class="h-3 w-3 rounded bg-green-700"></span>Birdie</span>
+  <span class="flex items-center gap-2"><span class="h-3 w-3 rounded border border-green-200 bg-white"></span>Par</span>
+  <span class="flex items-center gap-2"><span class="h-3 w-3 rounded bg-orange-500"></span>Bogey</span>
+  <span class="flex items-center gap-2"><span class="h-3 w-3 rounded bg-red-600"></span>Double+</span>
 </div>
 
-<section class="card">
-  <div class="card-header">
-    <h2>歷史場次</h2>
-    <span class="badge">{{ rounds_rev|length }} 場</span>
+{# 場次列表 #}
+<section class="rounded-2xl bg-white/5 p-6 shadow-xl ring-1 ring-white/10 backdrop-blur-sm sm:p-8">
+  <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-bold text-white sm:text-2xl">歷史場次</h2>
+    <span class="rounded-full bg-fairway px-3 py-1 text-sm font-semibold text-white">{{ rounds_rev|length }} 場</span>
   </div>
+
   {% if rounds_rev %}
-    {% for r in rounds_rev %}
-    {% set best = r.players|sort(attribute='total')|first %}
-    <a class="round-list-item" href="{{ url_for('round_detail', round_id=r.id) }}">
-      <span class="round-arrow">→</span>
-      <strong>{{ r.date }} · {{ r.time }}</strong>
-      {% if r.note %}<span style="opacity:0.7"> — {{ r.note }}</span>{% endif %}
-      <div class="round-meta">
-        <span class="champion">🏆 {{ best.name }} · {{ best.total }} 桿</span>
-        <span>·</span>
-        <span>{{ r.players|length }} 位球員</span>
-      </div>
-    </a>
-    {% endfor %}
+    <div class="space-y-3">
+      {% for r in rounds_rev %}
+      {% set best = r.players|sort(attribute='total')|first %}
+      <a href="{{ url_for('round_detail', round_id=r.id) }}"
+         class="group block rounded-xl border border-white/5 bg-black/20 p-5 transition hover:border-fairway-light/40 hover:bg-fairway/10 hover:shadow-lg no-underline">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="font-semibold text-white group-hover:text-green-50">
+              {{ r.date }} · {{ r.time }}
+              {% if r.note %}<span class="font-normal text-green-200/60">— {{ r.note }}</span>{% endif %}
+            </p>
+            <p class="mt-2 text-sm text-green-200/70">
+              <span class="font-medium text-gold-light">🏆 {{ best.name }}</span>
+              · {{ best.total }} 桿
+              · {{ r.players|length }} 位球員
+            </p>
+          </div>
+          <span class="shrink-0 text-fairway-light opacity-50 transition group-hover:translate-x-1 group-hover:opacity-100">→</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
   {% else %}
-    <div class="empty">
-      <div class="empty-icon">⛳</div>
+    <div class="py-16 text-center text-green-200/60">
+      <p class="text-4xl mb-3">⛳</p>
       <p>尚無紀錄，點上方「錄分」開始第一場。</p>
     </div>
   {% endif %}
 </section>
+
 {% endblock %}
