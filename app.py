@@ -11,6 +11,7 @@ from flask import Flask, render_template, abort, request, jsonify
 
 from course_data import PAR_TOTAL, COURSE_NAME
 from courses import list_courses_for_web, courses_catalog_full, list_course_regions
+from course_images import ensure_course_images
 from round_storage import load_rounds, save_rounds, add_round, BASE_DIR
 from web_helpers import get_round_by_id, get_player_stats_table, get_hardest_holes
 from web_score import validate_score_submission
@@ -32,6 +33,7 @@ def ensure_hero_image():
 
 
 ensure_hero_image()
+ensure_course_images()
 
 
 @app.route("/admin/sync", methods=["POST"])

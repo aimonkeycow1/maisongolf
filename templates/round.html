@@ -4,8 +4,9 @@
 {% block content %}
 
 {# Hero #}
+{% set round_hero = '/static/img/' ~ (round.course_id ~ '.jpg' if round.course_id else 'hero.jpg') %}
 <section class="relative mb-6 overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10">
-  <div class="hero-bg-image absolute inset-0"></div>
+  <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('{{ round_hero }}')"></div>
   <div class="absolute inset-0 bg-gradient-to-r from-fairway-dark/95 via-fairway-dark/75 to-transparent"></div>
   <div class="absolute inset-0 bg-gradient-to-t from-fairway-dark via-transparent to-transparent"></div>
   <div class="relative px-6 py-10 sm:px-10 sm:py-14">

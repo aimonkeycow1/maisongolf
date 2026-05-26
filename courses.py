@@ -7,7 +7,8 @@
 DEFAULT_COURSE_ID = "ksc-south"
 DEFAULT_TEE_ID = "white"
 
-_HERO = "/static/img/hero.jpg"
+_IMG = "/static/img"
+_HERO = f"{_IMG}/hero.jpg"
 
 # —— 東場 Par 72 · 白梯 6025 碼 ——
 _KSC_EAST_PARS = [5, 4, 3, 4, 3, 5, 4, 3, 4, 5, 4, 4, 3, 4, 3, 5, 4, 5]
@@ -69,7 +70,7 @@ COURSES = {
         "description": "Nelson & Haworth 設計，山丘臨海、景觀最美的一場。白梯 Par 72、6025 碼，需乘球車。",
         "location": "香港 · 西貢滘西洲",
         "region": "香港",
-        "hero_image": _HERO,
+        "hero_image": f"{_IMG}/ksc-east.jpg",
         "tees": {
             "white": {
                 "id": "white",
@@ -88,7 +89,7 @@ COURSES = {
         "description": "Gary Player 設計，三場中最親和。白梯 Par 69、5906 碼，可步行或乘車。",
         "location": "香港 · 西貢滘西洲",
         "region": "香港",
-        "hero_image": _HERO,
+        "hero_image": f"{_IMG}/ksc-south.jpg",
         "tees": {
             "white": {
                 "id": "white",
@@ -115,7 +116,7 @@ COURSES = {
         "description": "Gary Player 設計，競賽級球道。白梯 Par 72、6357 碼，僅限步行。",
         "location": "香港 · 西貢滘西洲",
         "region": "香港",
-        "hero_image": _HERO,
+        "hero_image": f"{_IMG}/ksc-north.jpg",
         "tees": {
             "white": {
                 "id": "white",
@@ -134,7 +135,7 @@ COURSES = {
         "description": "Jumbo Ozaki & Kentaro Sato 設計，石灰岩山景與森林環繞。白梯 Par 72、6343 碼，吉隆坡近郊名場。",
         "location": "馬來西亞 · 雪蘭莪 Rawang",
         "region": "馬來西亞",
-        "hero_image": _HERO,
+        "hero_image": f"{_IMG}/my-templer.jpg",
         "tees": {
             "white": {
                 "id": "white",
@@ -161,7 +162,7 @@ COURSES = {
         "description": "Ronald Fream 設計，海拔約 3100 呎，雲霧與雨林球道。白梯 Par 71、5884 碼，清涼高地體驗。",
         "location": "馬來西亞 · 彭亨雲頂",
         "region": "馬來西亞",
-        "hero_image": _HERO,
+        "hero_image": f"{_IMG}/my-genting.jpg",
         "tees": {
             "white": {
                 "id": "white",
