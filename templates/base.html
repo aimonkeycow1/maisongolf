@@ -8,7 +8,7 @@
   <title>{% block title %}滘西洲南場記分{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -27,6 +27,7 @@
           },
           fontFamily: {
             sans: ['"Noto Sans TC"', "system-ui", "sans-serif"],
+            brand: ['"Playfair Display"', "Georgia", "serif"],
           },
         },
       },
@@ -42,9 +43,15 @@
     <div class="mx-auto max-w-5xl px-4 py-3 sm:px-6 lg:px-8">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <a href="{{ url_for('index') }}"
-           class="group flex items-center no-underline shrink-0 rounded-2xl p-0.5 outline-none transition focus-visible:ring-2 focus-visible:ring-gold-light/60 focus-visible:ring-offset-2 focus-visible:ring-offset-fairway-dark group-hover:scale-[1.02]"
+           class="group flex items-center gap-3 no-underline shrink-0 rounded-2xl py-0.5 pr-1 outline-none transition focus-visible:ring-2 focus-visible:ring-gold-light/60 focus-visible:ring-offset-2 focus-visible:ring-offset-fairway-dark sm:gap-3.5"
            aria-label="Maison Golf 首頁">
           {% include '_brand_logo.html' %}
+          <span class="flex flex-col justify-center">
+            <span class="font-brand text-[1.05rem] font-semibold leading-tight tracking-[0.06em] text-white transition group-hover:text-gold-light sm:text-xl">
+              Maison Golf
+            </span>
+            <span class="mt-0.5 h-px w-8 bg-gradient-to-r from-gold-light/80 to-transparent opacity-80 transition group-hover:w-10 sm:w-10"></span>
+          </span>
         </a>
 
         {# 主導覽 Tab #}
