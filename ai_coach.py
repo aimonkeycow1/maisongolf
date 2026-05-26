@@ -1,8 +1,6 @@
 """
-AI 教練總結：Grok (xAI) API + 本機規則模擬回退
-環境變數：
-  XAI_API_KEY 或 GROK_API_KEY — xAI API 金鑰
-  GROK_MODEL — 模型名稱（預設 grok-3-mini）
+AI 教練總結：深度數據分析 + Grok (xAI) API
+環境變數：XAI_API_KEY / GROK_API_KEY、GROK_MODEL（預設 grok-3-mini）
 """
 
 import json
@@ -17,53 +15,271 @@ XAI_CHAT_URL = "https://api.x.ai/v1/chat/completions"
 DEFAULT_MODEL = os.environ.get("GROK_MODEL", "grok-3-mini")
 
 
+def _to_par_label(n):
+    if n is None:
+        return "—"
+    if n == 0:
+        return "E"
+    return f"+{n}" if n > 0 else str(n)
+
+
 def _normalize_analysis(data):
-    """確保回傳結構一致"""
     return {
-        "highlights": list(data.get("highlights") or [])[:5],
-        "improvements": list(data.get("improvements") or [])[:5],
-        "tips": list(data.get("tips") or [])[:5],
+        "highlights": [str(x).strip() for x in (data.get("highlights") or []) if str(x).strip()][:5],
+        "improvements": [str(x).strip() for x in (data.get("improvements") or []) if str(x).strip()][:5],
+        "tips": [str(x).strip() for x in (data.get("tips") or []) if str(x).strip()][:5],
         "summary": (data.get("summary") or "").strip(),
     }
 
 
+def _ensure_holes(target, round_data):
+    holes = target.get("hole_results") or []
+    if holes:
+        return holes
+    scores = target.get("scores") or []
+    pars = round_data.get("pars") or [4] * 18
+    return [
+        {
+            "hole": i + 1,
+            "score": s,
+            "par": pars[i] if i < len(pars) else 4,
+            "diff": s - (pars[i] if i < len(pars) else 4),
+            "name": "",
+        }
+        for i, s in enumerate(scores)
+    ]
+
+
+def _diff_name(diff):
+    if diff <= -2:
+        return "Eagle 或更好"
+    if diff == -1:
+        return "Birdie"
+    if diff == 0:
+        return "Par"
+    if diff == 1:
+        return "Bogey"
+    if diff == 2:
+        return "Double Bogey"
+    return f"+{diff}（三柏忌以上）"
+
+
+def _infer_blowup_mechanism(hole):
+    """依洞型與桿數差推斷最可能的失分機制（教練語境）"""
+    par = hole["par"]
+    diff = hole["diff"]
+    score = hole["score"]
+
+    if diff <= 0:
+        return None
+
+    if par == 3:
+        if diff >= 2:
+            return (
+                f"Par 3 打了 {score} 桿（+{diff}），通常代表開球未能把球放在進攻位置，"
+                "後續切/推連續失誤，屬於「一桿沒到位、後面補不回來」的連鎖反應。"
+            )
+        return (
+            f"Par 3 打了 {score} 桿（+{diff}），多半是開球距離/方向不理想，"
+            "果嶺周圍第一桿沒有把球送到可一推進洞的位置。"
+        )
+
+    if par == 4:
+        if diff >= 3:
+            return (
+                f"Par 4 第 {hole['hole']} 洞打出 {score} 桿（+{diff}），屬於典型爆洞："
+                "開球若進入困難球位，第二桿仍強行攻果嶺，第三、第四桿容易變成救球+兩推，"
+                "心理上是「想追回來」反而擴大損失。"
+            )
+        if diff == 2:
+            return (
+                f"Par 4 第 {hole['hole']} 洞 +{diff}，常見於：開球偏離球道後，"
+                "第二桿沒有先「回到球道中央」，導致第三桿仍從困難位置進攻，最後兩推也難救。"
+            )
+        return (
+            f"Par 4 第 {hole['hole']} 洞 +{diff}，多數是「兩推或鐵桿進攻不夠靠近」——"
+            "不是大失誤，但攻果嶺一桿留太遠，讓推桿壓力變大。"
+        )
+
+    if par == 5:
+        if diff >= 2:
+            return (
+                f"Par 5 第 {hole['hole']} 洞 +{diff}，問題通常在第二桿（木桿/長鐵）"
+                "無法把球送到舒適的攻果嶺距離，或第三桿選桿過於激進造成罰桿/下水。"
+            )
+        return (
+            f"Par 5 第 {hole['hole']} 洞 +{diff}，通常是第三桿進攻品質不足"
+            "（距離、方向、選桿），或果嶺周圍切/推多耗一桿。"
+        )
+
+    return f"第 {hole['hole']} 洞 +{diff}，需回放該洞策略與選桿。"
+
+
+def _analyze_scoring_profile(holes):
+    """深度統計：依洞型、九洞、連續性、推斷弱項"""
+    if not holes:
+        return {}
+
+    by_par = {3: [], 4: [], 5: []}
+    for h in holes:
+        p = h.get("par", 4)
+        if p in by_par:
+            by_par[p].append(h)
+
+    def _cat_summary(cat_holes, label):
+        if not cat_holes:
+            return None
+        diffs = [h["diff"] for h in cat_holes]
+        scores = [h["score"] for h in cat_holes]
+        total_par = sum(h["par"] for h in cat_holes)
+        total_score = sum(scores)
+        over = total_score - total_par
+        hole_nums = [h["hole"] for h in cat_holes]
+        bogey_only = sum(1 for d in diffs if d == 1)
+        double_plus = sum(1 for d in diffs if d >= 2)
+        birdie_plus = sum(1 for d in diffs if d <= -1)
+        return {
+            "label": label,
+            "count": len(cat_holes),
+            "holes": hole_nums,
+            "avg_diff": round(sum(diffs) / len(diffs), 2),
+            "strokes_over": over,
+            "bogey_only": bogey_only,
+            "double_plus": double_plus,
+            "birdie_plus": birdie_plus,
+            "worst": max(cat_holes, key=lambda x: x["diff"]),
+            "best": min(cat_holes, key=lambda x: x["diff"]),
+        }
+
+    par3 = _cat_summary(by_par[3], "Par 3 三桿洞")
+    par4 = _cat_summary(by_par[4], "Par 4 四桿洞")
+    par5 = _cat_summary(by_par[5], "Par 5 五桿洞")
+
+    front = [h for h in holes if h["hole"] <= 9]
+    back = [h for h in holes if h["hole"] > 9]
+    front_diff = sum(h["diff"] for h in front)
+    back_diff = sum(h["diff"] for h in back)
+
+    blowups = sorted([h for h in holes if h["diff"] >= 2], key=lambda x: -x["diff"])
+    excellent = [h for h in holes if h["diff"] <= -1]
+    clean_pars = [h for h in holes if h["diff"] == 0]
+    soft_bogeys = [h for h in holes if h["diff"] == 1]
+
+    # 連續失分 / 連續穩定
+    streaks_bad = []
+    streaks_good = []
+    cur_bad, cur_good = [], []
+    for h in sorted(holes, key=lambda x: x["hole"]):
+        if h["diff"] >= 1:
+            cur_bad.append(h)
+            if len(cur_good) >= 3:
+                streaks_good.append(list(cur_good))
+            cur_good = []
+        else:
+            cur_good.append(h)
+            if len(cur_bad) >= 2:
+                streaks_bad.append(list(cur_bad))
+            cur_bad = []
+    if len(cur_bad) >= 2:
+        streaks_bad.append(cur_bad)
+    if len(cur_good) >= 3:
+        streaks_good.append(cur_good)
+
+    # 推斷最弱環節（依「相對該洞型標準桿」的總超桿數）
+    category_loss = []
+    for cat in (par3, par4, par5):
+        if cat and cat["strokes_over"] > 0:
+            category_loss.append((cat["strokes_over"], cat["avg_diff"], cat))
+    category_loss.sort(reverse=True)
+
+    # 鐵桿/木桿/短桿/推桿 代理指標（無逐桿類型時用洞型+桿數差推斷）
+    weakness_guess = []
+    if par4 and par4["strokes_over"] >= (par3 or {}).get("strokes_over", 0) and par4["strokes_over"] > 2:
+        weakness_guess.append(
+            f"四桿洞共超標 {par4['strokes_over']} 桿（洞號 {par4['holes']}），"
+            f"其中 {par4['bogey_only']} 洞是「小一號柏忌」、{par4['double_plus']} 洞爆洞——"
+            "鐵桿進攻與果嶺周圍控制是主要失分來源。"
+        )
+    if par3 and par3["avg_diff"] >= 1.0:
+        weakness_guess.append(
+            f"三桿洞平均 +{par3['avg_diff']:.1f}（洞 {par3['holes']}），"
+            "顯示開球上果嶺率或短桿精準度不足，常把 Par 3 打成「兩推還不夠」的局面。"
+        )
+    if par5 and par5["strokes_over"] > 2:
+        weakness_guess.append(
+            f"五桿洞超標 {par5['strokes_over']} 桿，長桿（木桿/長鐵）距離與第三桿攻果嶺決策需優先檢討。"
+        )
+    if len(soft_bogeys) >= 6 and not blowups:
+        weakness_guess.append(
+            f"全場 {len(soft_bogeys)} 洞是「僅 +1」的柏忌，代表沒有天天爆洞，"
+            "但推桿或攻果嶺一桿經常差「最後 6 米」——屬於可快速進步的區間。"
+        )
+
+    # 九洞節奏
+    nine_insight = None
+    if front_diff < back_diff - 2:
+        nine_insight = (
+            f"前九僅 +{front_diff}、後九 +{back_diff}，後九多丟 {back_diff - front_diff} 桿；"
+            "常見原因是體力下降、節奏加快，或對後九難洞準備不足。"
+        )
+    elif back_diff < front_diff - 2:
+        nine_insight = (
+            f"前九 +{front_diff}、後九 +{back_diff}，開局較緊但後九找回節奏，"
+            "顯示調整能力與心理恢復力不錯。"
+        )
+
+    return {
+        "par3": par3,
+        "par4": par4,
+        "par5": par5,
+        "front_diff": front_diff,
+        "back_diff": back_diff,
+        "nine_insight": nine_insight,
+        "blowups": blowups,
+        "excellent": excellent,
+        "clean_pars": clean_pars,
+        "soft_bogeys": soft_bogeys,
+        "streaks_bad": streaks_bad,
+        "streaks_good": streaks_good,
+        "category_loss": category_loss,
+        "weakness_guess": weakness_guess,
+    }
+
+
+def _format_hole_line(h):
+    return (
+        f"第{h['hole']:>2}洞 Par{h['par']} 實際{h['score']}桿 "
+        f"({_diff_name(h['diff'])}, {_to_par_label(h['diff'])})"
+    )
+
+
 def build_round_context(round_data, player_name=None):
-    """整理單場球員資料供 AI 或模擬分析使用"""
     players = round_data.get("players") or []
     if not players:
         return None
 
     rp = _round_par_total(round_data)
     ranked = sorted(players, key=lambda p: p["total"])
+    target = (
+        next((p for p in players if p["name"] == player_name), None)
+        if player_name
+        else ranked[0]
+    )
+    if not target:
+        return None
 
-    if player_name:
-        target = next((p for p in players if p["name"] == player_name), None)
-        if not target:
-            return None
-    else:
-        target = ranked[0]
+    holes = _ensure_holes(target, round_data)
+    profile = _analyze_scoring_profile(holes)
 
-    holes = target.get("hole_results") or []
-    if not holes and target.get("scores"):
-        pars = round_data.get("pars") or [4] * 18
-        holes = [
-            {
-                "hole": i + 1,
-                "score": s,
-                "par": pars[i] if i < len(pars) else 4,
-                "diff": s - (pars[i] if i < len(pars) else 4),
-            }
-            for i, s in enumerate(target["scores"])
-        ]
-
-    hole_lines = []
+    yardages = round_data.get("yardages") or []
+    hole_detail = []
     for h in holes:
-        d = h.get("diff", 0)
-        sign = f"+{d}" if d > 0 else str(d)
-        hole_lines.append(f"第{h['hole']}洞 Par{h['par']} 打{h['score']} ({sign})")
-
-    worst = sorted(holes, key=lambda h: h.get("diff", 0), reverse=True)[:3]
-    best = sorted(holes, key=lambda h: h.get("diff", 0))[:3]
+        idx = h["hole"] - 1
+        yd = yardages[idx] if idx < len(yardages) else None
+        row = dict(h)
+        if yd:
+            row["yardage"] = yd
+        hole_detail.append(row)
 
     return {
         "round_id": round_data.get("id", ""),
@@ -86,9 +302,8 @@ def build_round_context(round_data, player_name=None):
         "double_plus": target.get("double_plus", 0),
         "rank": ranked.index(target) + 1,
         "field_size": len(players),
-        "hole_lines": hole_lines,
-        "worst_holes": worst,
-        "best_holes": best,
+        "holes": hole_detail,
+        "profile": profile,
         "all_players": [
             {"name": p["name"], "total": p["total"], "to_par": _player_to_par(p, rp)}
             for p in ranked
@@ -96,86 +311,254 @@ def build_round_context(round_data, player_name=None):
     }
 
 
-def _to_par_label(n):
-    if n == 0:
-        return "E"
-    return f"+{n}" if n > 0 else str(n)
+def build_coach_data_brief(ctx):
+    """產生給 Grok / 規則引擎用的結構化賽後數據簡報"""
+    p = ctx["profile"]
+    holes = ctx["holes"]
+    lines = []
+
+    lines.append("=== 基本資訊 ===")
+    lines.append(f"球員：{ctx['player_name']}｜球場：{ctx['course']}｜{ctx['tee']}")
+    lines.append(f"總桿 {ctx['total']}（{_to_par_label(ctx['to_par'])}）｜前九 {ctx['front9']}({_to_par_label(ctx['front_to_par'])}) 後九 {ctx['back9']}({_to_par_label(ctx['back_to_par'])})")
+    lines.append(
+        f"成績分布：Birdie+ {ctx['birdies']}｜Par {ctx['pars']}｜Bogey {ctx['bogeys']}｜Double+ {ctx['double_plus']}"
+    )
+    lines.append(f"同組排名：第 {ctx['rank']}/{ctx['field_size']} 名")
+
+    lines.append("\n=== 逐洞明細 ===")
+    for h in holes:
+        extra = f"｜{h['yardage']}碼" if h.get("yardage") else ""
+        lines.append(_format_hole_line(h) + extra)
+
+    lines.append("\n=== 洞型統計（數據結論，分析時必須引用） ===")
+    for key in ("par3", "par4", "par5"):
+        cat = p.get(key)
+        if not cat:
+            continue
+        lines.append(
+            f"{cat['label']}：{cat['count']} 洞、合計超標 {cat['strokes_over']} 桿、"
+            f"平均 +{cat['avg_diff']:.2f}｜爆洞 {cat['double_plus']}｜僅+1柏忌 {cat['bogey_only']}｜"
+            f"洞號 {cat['holes']}"
+        )
+
+    if p.get("nine_insight"):
+        lines.append(f"\n九洞節奏：{p['nine_insight']}")
+
+    if p.get("weakness_guess"):
+        lines.append("\n=== 數據推斷的技術弱項（請在分析中呼應或修正） ===")
+        for w in p["weakness_guess"]:
+            lines.append(f"- {w}")
+
+    if p.get("blowups"):
+        lines.append("\n=== 爆洞清單（diff≥+2，必須逐洞點名） ===")
+        for h in p["blowups"]:
+            mech = _infer_blowup_mechanism(h)
+            lines.append(f"- {_format_hole_line(h)}")
+            if mech:
+                lines.append(f"  機制：{mech}")
+
+    if p.get("excellent"):
+        lines.append("\n=== 優異洞（Birdie 或更好） ===")
+        for h in p["excellent"]:
+            lines.append(f"- {_format_hole_line(h)}")
+
+    if p.get("clean_pars"):
+        lines.append(f"\n=== Par 洞共 {len(p['clean_pars'])} 個 ===")
+        lines.append("洞號：" + ", ".join(str(h["hole"]) for h in p["clean_pars"]))
+
+    if p.get("streaks_bad"):
+        lines.append("\n=== 連續失分區間 ===")
+        for streak in p["streaks_bad"]:
+            nums = ", ".join(f"第{h['hole']}洞(+{h['diff']})" for h in streak)
+            lines.append(f"- {nums}")
+
+    if p.get("streaks_good"):
+        lines.append("\n=== 連續穩定區間 ===")
+        for streak in p["streaks_good"]:
+            nums = ", ".join(f"第{h['hole']}洞({_to_par_label(h['diff'])})" for h in streak)
+            lines.append(f"- {nums}")
+
+    return "\n".join(lines)
 
 
-def mock_coach_analysis(ctx):
-    """無 API 金鑰時的專業規則模擬教練總結"""
+def deep_coach_analysis(ctx):
+    """依深度統計產生具體教練分析（本機，保證可執行且針對性強）"""
+    p = ctx["profile"]
+    holes = ctx["holes"]
     highlights = []
     improvements = []
     tips = []
 
-    if ctx["birdies"] > 0:
-        highlights.append(
-            f"全場錄得 {ctx['birdies']} 個 Birdie 或更好成績，進攻火力有亮點。"
-        )
-    if ctx["pars"] >= 9:
-        highlights.append(f"完成 {ctx['pars']} 個 Par，整體穩定度值得肯定。")
-    if ctx.get("front_to_par") is not None and ctx["front_to_par"] < ctx.get("back_to_par", 99):
-        highlights.append(
-            f"前九 {ctx['front9']} 桿（{_to_par_label(ctx['front_to_par'])}）優於後九，開局節奏掌握佳。"
-        )
-    elif ctx.get("back_to_par") is not None and ctx["back_to_par"] < ctx.get("front_to_par", 99):
-        highlights.append(
-            f"後九 {ctx['back9']} 桿（{_to_par_label(ctx['back_to_par'])}）收得更穩，關鍵時刻心理素質不錯。"
-        )
-    if ctx["rank"] == 1 and ctx["field_size"] > 1:
-        highlights.append(f"在同組 {ctx['field_size']} 位球手中奪冠，表現最佳。")
-    if not highlights:
-        highlights.append("完整打完 18 洞並留下數據，有利後續追蹤進步軌跡。")
-
-    if ctx["double_plus"] >= 2:
-        improvements.append(
-            f"出現 {ctx['double_plus']} 個 Double Bogey 或更差，大失分洞需優先檢討。"
-        )
-    if ctx["bogeys"] >= 8:
-        improvements.append("柏忌洞偏多，鐵桿進攻與果嶺周圍的距離控制還可再加強。")
-
-    for h in ctx["worst_holes"][:2]:
-        if h.get("diff", 0) >= 2:
-            improvements.append(
-                f"第 {h['hole']} 洞（Par {h['par']} 打 {h['score']}）是主要失分點。"
+    # —— 亮點：必須具名洞號與數據 ——
+    if p.get("excellent"):
+        for h in p["excellent"]:
+            highlights.append(
+                f"第 {h['hole']} 洞 Par {h['par']} 打出 {h['score']} 桿（{_diff_name(h['diff'])}），"
+                f"在當日 {_to_par_label(ctx['to_par'])} 的基調下，這洞證明你具備抓住機會的能力。"
             )
 
-    if ctx["to_par"] > 12:
-        improvements.append("總桿與標準桿差距較大，建議從開球穩定度與三桿洞策略著手。")
+    if p.get("clean_pars") and len(p["clean_pars"]) >= 3:
+        nums = "、".join(str(h["hole"]) for h in p["clean_pars"][:6])
+        more = f"等共 {len(p['clean_pars'])} 洞" if len(p["clean_pars"]) > 6 else ""
+        highlights.append(
+            f"第 {nums}{more} 洞守住 Par，佔全場 {len(p['clean_pars'])}/18——"
+            "代表多數時間球道策略尚可，問題集中在少數「爆洞」而非全程失控。"
+        )
+
+    for cat_key, label in (("par3", "三桿洞"), ("par4", "四桿洞"), ("par5", "五桿洞")):
+        cat = p.get(cat_key)
+        if cat and cat["birdie_plus"] > 0:
+            best = cat["best"]
+            if best["diff"] <= -1:
+                highlights.append(
+                    f"{label}最佳：第 {best['hole']} 洞 {best['score']} 桿完成（Par {best['par']}），"
+                    f"該洞型平均僅 +{cat['avg_diff']:.1f}，顯示這類球洞並非你的絕對弱項。"
+                )
+
+    if p.get("nine_insight") and ctx.get("back_to_par", 99) < ctx.get("front_to_par", 99):
+        highlights.append(p["nine_insight"])
+
+    if ctx["rank"] == 1 and ctx["field_size"] > 1:
+        gap = ctx["all_players"][-1]["to_par"] - ctx["to_par"] if ctx["all_players"] else 0
+        highlights.append(
+            f"同組 {ctx['field_size']} 人中以 {ctx['total']} 桿奪冠"
+            + (f"（領先末位 {gap} 桿）" if gap > 0 else "")
+            + "，關鍵洞的抗壓選擇優於其他球友。"
+        )
+
+    if not highlights:
+        best_h = min(holes, key=lambda x: x["diff"])
+        highlights.append(
+            f"相對最佳為第 {best_h['hole']} 洞（Par {best_h['par']} 打 {best_h['score']}，{_to_par_label(best_h['diff'])}），"
+            "建議以此洞的選桿與節奏作為下場模板。"
+        )
+
+    # —— 改進：爆洞 + 洞型弱項 + 連續失分 ——
+    for h in p.get("blowups") or []:
+        mech = _infer_blowup_mechanism(h)
+        improvements.append(
+            f"第 {h['hole']} 洞 Par {h['par']} 打 {h['score']} 桿（{_diff_name(h['diff'])}）——本場主要失分點。"
+            + (f" {mech}" if mech else "")
+        )
+
+    if p.get("category_loss"):
+        top = p["category_loss"][0][2]
+        improvements.append(
+            f"數據顯示「{top['label']}」是主要失分來源：{top['count']} 洞合計超標 {top['strokes_over']} 桿、"
+            f"平均 +{top['avg_diff']:.2f}（洞號 {top['holes']}）。"
+            f"其中 {top['double_plus']} 洞爆洞、{top['bogey_only']} 洞為小幅柏忌。"
+        )
+
+    for w in p.get("weakness_guess") or []:
+        if w not in " ".join(improvements):
+            improvements.append(w)
+
+    for streak in p.get("streaks_bad") or []:
+        if len(streak) >= 2:
+            nums = "→".join(f"{h['hole']}(+{h['diff']})" for h in streak)
+            improvements.append(
+                f"第 {streak[0]['hole']}–{streak[-1]['hole']} 洞連續失分（{nums}），"
+                "顯示第一洞出錯後節奏變快、選桿變冒進，需建立「止損打」習慣。"
+            )
+
+    if len(p.get("soft_bogeys") or []) >= 8:
+        improvements.append(
+            f"全場 {len(p['soft_bogeys'])} 洞是「+1 柏忌」——代表常差在最後一桿或最後兩推，"
+            "攻果嶺距離常落在 8–15 米，推桿壓力累積成總桿數。"
+        )
+
     if not improvements:
-        improvements.append("整體表現均衡，可進一步壓縮柏忌並提升 Par 轉 Birdie 的轉換率。")
+        worst = max(holes, key=lambda x: x["diff"])
+        improvements.append(
+            f"最需檢討第 {worst['hole']} 洞（+{worst['diff']}），"
+            "建議回放該洞每一桿的目標與實際執行是否一致。"
+        )
 
-    tips.append("練習前先設定本場目標：例如「雙柏忌不超過 2 個」或「Par 3 平均 +1 以內」。")
-    if ctx["double_plus"] > 0:
-        tips.append("針對失分洞回放：是開球方向、第二桿距離還是短桿？分類後各練 15 分鐘。")
-    if ctx.get("worst_holes"):
-        tips.append("最難洞下次採保守策略：果嶺前寧可留短一點，避免爆洞。")
-    tips.append("推桿練習以 1.5 米內連續 10 推進洞開始，建立推桿信心。")
+    # —— 建議：對應具體洞與練習 ——
+    if p.get("blowups"):
+        h = p["blowups"][0]
+        if h["par"] == 4 and h["diff"] >= 3:
+            tips.append(
+                f"針對第 {h['hole']} 洞型（Par 4）練習「開球偏離後的止損」："
+                "下一桿只用 7 號以內把球放回球道寬處，禁止第二桿直接攻旗。"
+                "練習場連續 10 球：故意打偏開球，測試第三桿能否穩定 Par。"
+            )
+        elif h["par"] == 3:
+            tips.append(
+                f"第 {h['hole']} 洞（Par 3）爆洞後，下場 Par 3 策略改為："
+                "果嶺前一律以「洞中央」為目標，選大一號桿確保上果嶺，"
+                "接受兩推 Par 而非高風險切球過洞。"
+            )
+        else:
+            tips.append(
+                f"為第 {h['hole']} 洞建立專屬賽前計畫：寫下開球目標區、第二桿目標距離、"
+                "「超過 Par+2 就改打保守」的止損線，洞邊實際執行。"
+            )
 
-    summary_parts = [
-        f"{ctx['player_name']} 在 {ctx['course']}（{ctx['tee']}）",
-        f"總桿 {ctx['total']}（比標準桿 {_to_par_label(ctx['to_par'])}）。",
-    ]
-    if ctx["birdies"] >= 2 and ctx["double_plus"] <= 1:
+    if p.get("par4") and p["par4"]["strokes_over"] >= 4:
+        tips.append(
+            f"四桿洞（洞 {p['par4']['holes']}）練習：球道中央 100–130 碼內用同一支鐵桿（如 8 號）"
+            "連打 15 球，記錄落點散布；目標散布半徑 < 12 米，直接提升攻果嶺品質。"
+        )
+
+    if p.get("par3") and p["par3"]["avg_diff"] >= 0.8:
+        tips.append(
+            f"三桿洞（洞 {p['par3']['holes']}）加練：TEE 用同一顆桿建立固定距離，"
+            "果嶺邊 20–30 碼內切杆各 10 球，記錄上果嶺率；目標 7/10 進入 2 推圈。"
+        )
+
+    if ctx.get("front_to_par", 0) > ctx.get("back_to_par", 0) + 3:
+        tips.append(
+            "前九失分較多：開球前 3 洞採「開球桿 + 3/4 揮桿」節奏，"
+            "第 4 洞起再恢復全揮；熱身多打 5 顆模擬開球，避免開局倉促。"
+        )
+    elif ctx.get("back_to_par", 0) > ctx.get("front_to_par", 0) + 3:
+        tips.append(
+            "後九失分較多：第 10 洞前補充水分+2 分鐘揮桿節奏練習，"
+            "後九鐵桿目標改為果嶺「安全區」而非旗桿，保存體力。"
+        )
+
+    if len(p.get("soft_bogeys") or []) >= 6:
+        tips.append(
+            "針對大量「+1」：練習 1.5m / 3m / 5m 三個距離各 10 推，"
+            "記錄進洞數；下場若攻果嶺剩 5 米內，心態目標改為「穩定兩推」而非追鳥。"
+        )
+
+    if not tips:
+        tips.append(
+            f"下場前針對 {ctx['course']} 標記 3 個最難洞（參考今日爆洞："
+            f"{', '.join(str(h['hole']) for h in (p.get('blowups') or [])[:3]) or '待標記'}），"
+            "每洞寫一句「開球目標 + 止損策略」，洞前 10 秒默念執行。"
+        )
+
+    # —— 總評 ——
+    blowup_nums = ", ".join(f"第{h['hole']}洞" for h in (p.get("blowups") or [])[:2])
+    main_weak = p["category_loss"][0][2]["label"] if p.get("category_loss") else "整體穩定度"
+    if p.get("blowups") and ctx["to_par"] > 10:
         summary = (
-            f"這場整體節奏不錯，{' '.join(summary_parts)} "
-            "推桿與短桿貢獻明顯，保持開球穩定就能再下一城。"
+            f"{ctx['player_name']}，這場 {ctx['total']} 桿（{_to_par_label(ctx['to_par'])}）"
+            f"並非全程崩潰，而是 {blowup_nums} 等少數洞拉高總數；"
+            f"數據指向「{main_weak}」是主要失分來源。"
+            f"下場優先目標：爆洞洞號採止損策略，其餘洞守住柏忌即可明顯降桿。"
         )
     elif ctx["to_par"] <= 5:
         summary = (
-            f"這是一場有競爭力的回合，{' '.join(summary_parts)} "
-            "鐵桿距離控制佳，繼續減少非受迫性失誤即可。"
+            f"這場 {ctx['total']} 桿（{_to_par_label(ctx['to_par'])}）具競爭力；"
+            f"{main_weak}仍有小幅超標，但 Par 洞與關鍵洞把握度不錯。"
+            "再壓縮 2–3 個柏忌洞，就有機會穩定進入個人最佳區間。"
         )
     else:
         summary = (
-            f"這場還有提升空間，{' '.join(summary_parts)} "
-            "推桿若再穩一些、鐵桿選桿更果斷，下一場會明顯進步。"
+            f"總桿 {ctx['total']}（{_to_par_label(ctx['to_par'])}），"
+            f"全場 {len(p.get('soft_bogeys') or [])} 洞小幅柏忌 + {len(p.get('blowups') or [])} 洞爆洞；"
+            f"優先處理 {blowup_nums or '爆洞洞'}，同時把攻果嶺距離控制在兩推範圍內，"
+            "下一場有明確進步空間。"
         )
 
     return _normalize_analysis({
-        "highlights": highlights,
-        "improvements": improvements,
-        "tips": tips,
+        "highlights": highlights[:4],
+        "improvements": improvements[:4],
+        "tips": tips[:4],
         "summary": summary,
     })
 
@@ -195,40 +578,67 @@ def _extract_json(text):
     return None
 
 
+def _validate_analysis_quality(analysis, ctx):
+    """過濾過於空泛的句子（若全為空則回退）"""
+    generic_phrases = (
+        "保持開球穩定",
+        "繼續加油",
+        "整體不錯",
+        "有待提升",
+        "多練習",
+        "設定目標",
+    )
+
+    def _ok_list(items):
+        good = []
+        for item in items:
+            if len(item) < 20:
+                continue
+            if not any(g in item for g in ("第", "洞", "Par", "桿", "+", "Birdie", "柏忌", "三桿", "四桿", "五桿")):
+                if any(g in item for g in generic_phrases):
+                    continue
+            good.append(item)
+        return good
+
+    h = _ok_list(analysis.get("highlights", []))
+    i = _ok_list(analysis.get("improvements", []))
+    t = _ok_list(analysis.get("tips", []))
+    s = analysis.get("summary", "")
+
+    if len(h) >= 1 and len(i) >= 1 and len(t) >= 1 and len(s) >= 40:
+        return _normalize_analysis({
+            "highlights": h,
+            "improvements": i,
+            "tips": t,
+            "summary": s,
+        })
+    return None
+
+
 def call_grok_analysis(ctx):
-    """呼叫 xAI Grok Chat Completions，失敗時回傳 None"""
     api_key = os.environ.get("XAI_API_KEY") or os.environ.get("GROK_API_KEY")
     if not api_key:
         return None
 
-    players_text = "\n".join(
-        f"- {p['name']}: {p['total']} 桿 ({_to_par_label(p['to_par'])})"
-        for p in ctx["all_players"]
-    )
-    holes_text = "\n".join(ctx["hole_lines"])
+    brief = build_coach_data_brief(ctx)
 
-    system = (
-        "你是專業 PGA 風格的高爾夫教練，用繁體中文（香港用語）撰寫簡潔、鼓勵但誠實的賽後總結。"
-        "只回傳 JSON，不要 markdown，格式："
-        '{"highlights":["..."],"improvements":["..."],"tips":["..."],"summary":"..."}'
-        "每個陣列 2-4 條，summary 一段 2-3 句。"
-    )
-    user = f"""請為以下球員撰寫賽後教練分析：
+    system = """你是擁有 12 年巡迴賽教學經驗的 PGA 私人教練，正在為學員做「一對一賽後講評」。
+語言：繁體中文（香港高球用語）。語氣：專業、直接、親切，像教練坐在會所酒吧旁拿著記分卡講解。
 
-球場：{ctx['course']} · {ctx['tee']} · Par {ctx['par_total']}
-日期：{ctx['date']}
-備註：{ctx['note'] or '無'}
+【硬性規則 — 違反即不合格】
+1. 禁止空泛建議（如「多練習」「保持心態」「繼續加油」「注意開球」而不附洞號與數據）。
+2. highlights / improvements / tips 每一條必須包含：具體洞號 或 洞型(Par3/4/5) + 桿數/差桿數據。
+3. improvements 必須解釋「問題本質」（開球/鐵桿/短桿/推桿/策略/心理連鎖），不可只描述結果。
+4. tips 必須是可立刻執行的練習或下場策略（含距離、桿數、次數、止損條件等）。
+5. 優先使用「數據簡報」中已算好的結論；可修正但不可忽略爆洞清單與洞型統計。
+6. 只輸出 JSON，無 markdown：
+{"highlights":["..."],"improvements":["..."],"tips":["..."],"summary":"..."}
+7. 陣列各 3–4 條；summary 3–4 句，須點名最關鍵洞號與主要失分來源。"""
 
-分析對象：{ctx['player_name']}（本組第 {ctx['rank']}/{ctx['field_size']} 名）
-總桿：{ctx['total']}（比標準桿 {_to_par_label(ctx['to_par'])}）
-前九/後九：{ctx['front9']}/{ctx['back9']}（{_to_par_label(ctx.get('front_to_par', 0))} / {_to_par_label(ctx.get('back_to_par', 0))}）
-Birdie+：{ctx['birdies']} · Par：{ctx['pars']} · Bogey：{ctx['bogeys']} · Double+：{ctx['double_plus']}
+    user = f"""請根據以下「已完成的數據分析簡報」撰寫教練講評。
+你的任務不是重新算數，而是把數據轉成有溫度的專業洞察。
 
-同組成績：
-{players_text}
-
-逐洞：
-{holes_text}
+{brief}
 """
 
     payload = {
@@ -237,8 +647,8 @@ Birdie+：{ctx['birdies']} · Par：{ctx['pars']} · Bogey：{ctx['bogeys']} · 
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ],
-        "temperature": 0.6,
-        "max_tokens": 900,
+        "temperature": 0.45,
+        "max_tokens": 1400,
     }
 
     req = urllib.request.Request(
@@ -252,22 +662,20 @@ Birdie+：{ctx['birdies']} · Par：{ctx['pars']} · Bogey：{ctx['bogeys']} · 
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
+        with urllib.request.urlopen(req, timeout=90) as resp:
             body = json.loads(resp.read().decode("utf-8"))
         content = body["choices"][0]["message"]["content"]
         parsed = _extract_json(content)
         if parsed:
-            return _normalize_analysis(parsed)
+            validated = _validate_analysis_quality(_normalize_analysis(parsed), ctx)
+            if validated:
+                return validated
     except (urllib.error.HTTPError, urllib.error.URLError, KeyError, json.JSONDecodeError, TimeoutError):
-        return None
+        pass
     return None
 
 
 def generate_coach_analysis(round_data, player_name=None):
-    """
-    回傳 (analysis_dict, source)
-    source: 'grok' | 'mock'
-    """
     ctx = build_round_context(round_data, player_name)
     if not ctx:
         return None, None
@@ -276,4 +684,4 @@ def generate_coach_analysis(round_data, player_name=None):
     if grok:
         return grok, "grok"
 
-    return mock_coach_analysis(ctx), "mock"
+    return deep_coach_analysis(ctx), "mock"
