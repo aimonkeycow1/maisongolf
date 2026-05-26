@@ -1,7 +1,7 @@
 """
 多球場 · 多 Tee 資料庫
 新增球場：在 COURSES 加入一筆，並設定 tees 內的 pars / yardages / handicap
-數據來源：GolfPass 公開記分卡（白梯 White Tee）
+數據來源：球會官網 / GolfPass 公開記分卡（白梯 White Tee）
 """
 
 DEFAULT_COURSE_ID = "ksc-south"
@@ -37,6 +37,30 @@ _KSC_NORTH_WHITE = [
     450, 166, 508, 303, 168, 344, 308, 551, 373,
 ]
 
+# —— 馬來西亞 · Templer Park · 白梯 6343 碼（官網記分卡）——
+_TPCC_PARS = [5, 3, 4, 4, 4, 4, 5, 3, 4, 4, 3, 5, 4, 4, 5, 3, 4, 4]
+_TPCC_HCP = [11, 15, 1, 7, 5, 17, 13, 9, 3, 16, 12, 6, 10, 14, 2, 18, 4, 8]
+_TPCC_WHITE = [
+    505, 145, 370, 340, 385, 363, 542, 143, 370,
+    355, 155, 520, 360, 370, 535, 125, 380, 380,
+]
+_TPCC_BLUE = [
+    535, 160, 400, 365, 410, 382, 554, 169, 395,
+    370, 180, 530, 385, 385, 540, 145, 425, 395,
+]
+
+# —— 馬來西亞 · 雲頂 Awana · 白梯 5884 碼（GolfPass）——
+_GENTING_PARS = [4, 4, 4, 3, 5, 3, 4, 5, 3, 4, 4, 5, 5, 4, 3, 4, 3, 4]
+_GENTING_HCP = [1, 17, 7, 15, 5, 13, 9, 3, 11, 4, 14, 12, 6, 16, 10, 2, 18, 8]
+_GENTING_WHITE = [
+    399, 350, 314, 151, 503, 180, 325, 529, 132,
+    422, 353, 443, 506, 334, 177, 326, 137, 303,
+]
+_GENTING_BLUE = [
+    413, 385, 355, 176, 516, 207, 348, 560, 189,
+    433, 375, 469, 527, 354, 221, 363, 155, 361,
+]
+
 COURSES = {
     "ksc-east": {
         "id": "ksc-east",
@@ -44,6 +68,7 @@ COURSES = {
         "name_en": "Kau Sai Chau - East",
         "description": "Nelson & Haworth 設計，山丘臨海、景觀最美的一場。白梯 Par 72、6025 碼，需乘球車。",
         "location": "香港 · 西貢滘西洲",
+        "region": "香港",
         "hero_image": _HERO,
         "tees": {
             "white": {
@@ -62,6 +87,7 @@ COURSES = {
         "name_en": "Kau Sai Chau - South",
         "description": "Gary Player 設計，三場中最親和。白梯 Par 69、5906 碼，可步行或乘車。",
         "location": "香港 · 西貢滘西洲",
+        "region": "香港",
         "hero_image": _HERO,
         "tees": {
             "white": {
@@ -88,6 +114,7 @@ COURSES = {
         "name_en": "Kau Sai Chau - North",
         "description": "Gary Player 設計，競賽級球道。白梯 Par 72、6357 碼，僅限步行。",
         "location": "香港 · 西貢滘西洲",
+        "region": "香港",
         "hero_image": _HERO,
         "tees": {
             "white": {
@@ -97,6 +124,60 @@ COURSES = {
                 "pars": _KSC_NORTH_PARS,
                 "yardages": _KSC_NORTH_WHITE,
                 "handicap": _KSC_NORTH_HCP,
+            },
+        },
+    },
+    "my-templer": {
+        "id": "my-templer",
+        "name": "Templer Park Country Club",
+        "name_en": "Templer Park Country Club",
+        "description": "Jumbo Ozaki & Kentaro Sato 設計，石灰岩山景與森林環繞。白梯 Par 72、6343 碼，吉隆坡近郊名場。",
+        "location": "馬來西亞 · 雪蘭莪 Rawang",
+        "region": "馬來西亞",
+        "hero_image": _HERO,
+        "tees": {
+            "white": {
+                "id": "white",
+                "name": "白梯",
+                "name_en": "White Tee",
+                "pars": _TPCC_PARS,
+                "yardages": _TPCC_WHITE,
+                "handicap": _TPCC_HCP,
+            },
+            "blue": {
+                "id": "blue",
+                "name": "藍梯",
+                "name_en": "Blue Tee",
+                "pars": _TPCC_PARS,
+                "yardages": _TPCC_BLUE,
+                "handicap": _TPCC_HCP,
+            },
+        },
+    },
+    "my-genting": {
+        "id": "my-genting",
+        "name": "雲頂高原 · Awana 球場",
+        "name_en": "Awana Genting Highlands",
+        "description": "Ronald Fream 設計，海拔約 3100 呎，雲霧與雨林球道。白梯 Par 71、5884 碼，清涼高地體驗。",
+        "location": "馬來西亞 · 彭亨雲頂",
+        "region": "馬來西亞",
+        "hero_image": _HERO,
+        "tees": {
+            "white": {
+                "id": "white",
+                "name": "白梯",
+                "name_en": "White Tee",
+                "pars": _GENTING_PARS,
+                "yardages": _GENTING_WHITE,
+                "handicap": _GENTING_HCP,
+            },
+            "blue": {
+                "id": "blue",
+                "name": "藍梯",
+                "name_en": "Blue Tee",
+                "pars": _GENTING_PARS,
+                "yardages": _GENTING_BLUE,
+                "handicap": _GENTING_HCP,
             },
         },
     },
@@ -129,7 +210,7 @@ def get_tee(course_id, tee_id):
 
 
 def list_courses_for_web():
-    """供前端選擇頁使用的精簡列表（順序：東 → 南 → 北）"""
+    """供前端選擇頁使用的精簡列表"""
     out = []
     for c in COURSES.values():
         tees = []
@@ -148,10 +229,21 @@ def list_courses_for_web():
             "name_en": c.get("name_en", ""),
             "description": c.get("description", ""),
             "location": c.get("location", ""),
+            "region": c.get("region", ""),
             "hero_image": c.get("hero_image", _HERO),
             "tees": tees,
         })
     return out
+
+
+def list_course_regions():
+    """依 COURSES 順序回傳不重複地區標籤"""
+    seen = []
+    for c in COURSES.values():
+        r = c.get("region", "")
+        if r and r not in seen:
+            seen.append(r)
+    return seen
 
 
 def courses_catalog_full():

@@ -10,7 +10,7 @@ import socket
 from flask import Flask, render_template, abort, request, jsonify
 
 from course_data import PAR_TOTAL, COURSE_NAME
-from courses import list_courses_for_web, courses_catalog_full
+from courses import list_courses_for_web, courses_catalog_full, list_course_regions
 from round_storage import load_rounds, save_rounds, add_round, BASE_DIR
 from web_helpers import get_round_by_id, get_player_stats_table, get_hardest_holes
 from web_score import validate_score_submission
@@ -97,6 +97,7 @@ def score_entry():
             "score.html",
             page="score",
             courses_catalog=list_courses_for_web(),
+            course_regions=list_course_regions(),
             courses_full=courses_catalog_full(),
             secret_required=secret_required,
         )
