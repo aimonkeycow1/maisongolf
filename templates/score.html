@@ -8,7 +8,7 @@
   <div class="relative px-6 py-10 sm:px-10">
     <p class="mb-2 text-xs font-semibold uppercase tracking-widest text-gold-light">New Round</p>
     <h1 class="text-2xl font-bold text-white sm:text-3xl">開始新場次</h1>
-    <p id="hero-subtitle" class="mt-2 text-green-100/80">請先選擇球場與發球台</p>
+    <p id="hero-subtitle" class="mt-2 text-green-100/80">請先選擇國家，再選球場與發球台</p>
   </div>
 </section>
 
@@ -29,46 +29,49 @@
 
 <div id="score-app" class="space-y-6">
 
-  {# Step 0a：選擇球場 #}
-  <section id="step-course" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8">
+  {# Step 1：選擇國家 #}
+  <section id="step-country" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8">
     <div class="mb-6 flex items-center justify-between">
-      <h2 class="text-lg font-bold text-fairway-dark">選擇球場</h2>
+      <h2 class="text-lg font-bold text-fairway-dark">選擇國家</h2>
       <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 1</span>
     </div>
-    <p class="mb-4 text-sm text-green-600">共 {{ courses_catalog|length }} 個球場可選 · 香港滘西洲與馬來西亞</p>
-
-    {% for region in course_regions %}
-    <p class="mb-3 mt-2 text-xs font-bold uppercase tracking-widest text-fairway-dark/70">{{ region }}</p>
-    <div class="course-region-grid mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {% for c in courses_catalog if c.region == region %}
-      <button type="button" data-course-id="{{ c.id }}"
-              class="course-card group relative overflow-hidden rounded-2xl border-2 border-green-100 text-left transition hover:border-fairway hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-fairway">
-        <div class="relative h-36 overflow-hidden">
-          <div class="absolute inset-0 bg-cover bg-center transition group-hover:scale-105"
-               style="background-image: url('{{ c.hero_image }}')"></div>
-          <div class="absolute inset-0 bg-gradient-to-t from-fairway-dark/95 via-fairway-dark/50 to-transparent"></div>
-          <div class="absolute bottom-0 left-0 right-0 p-4">
-            <p class="text-xs text-gold-light">{{ c.location }}</p>
-            <p class="text-lg font-bold text-white">{{ c.name }}</p>
-          </div>
-        </div>
-        <div class="p-4">
-          <p class="text-sm leading-relaxed text-green-700">{{ c.description }}</p>
-          <p class="mt-3 text-xs font-semibold text-fairway">
-            Par {{ c.tees[0].par_total }} · {{ c.tees[0].yardage_total }} 碼起 · {{ c.tees|length }} 種 Tee →
-          </p>
+    <p class="mb-6 text-sm text-green-600">共 {{ courses_by_country|length }} 個國家 · {{ courses_catalog|length }} 個球場</p>
+    <div class="grid gap-4 sm:grid-cols-2">
+      {% for group in courses_by_country %}
+      <button type="button" data-country="{{ group.country }}"
+              class="country-card group flex items-center gap-4 rounded-2xl border-2 border-green-100 p-5 text-left transition hover:border-fairway hover:bg-green-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-fairway">
+        <span class="text-4xl leading-none">{{ group.flag }}</span>
+        <div class="flex-1 min-w-0">
+          <p class="text-xl font-bold text-fairway-dark group-hover:text-fairway">{{ group.country }}</p>
+          {% if group.subtitle %}
+          <p class="text-xs text-green-600">{{ group.subtitle }}</p>
+          {% endif %}
+          <p class="mt-1 text-sm font-medium text-green-700">{{ group.count }} 個球場可選 →</p>
         </div>
       </button>
       {% endfor %}
     </div>
-    {% endfor %}
   </section>
 
-  {# Step 0b：選擇 Tee #}
+  {# Step 2：選擇球場 #}
+  <section id="step-course" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8" hidden>
+    <div class="mb-2 flex items-center justify-between">
+      <h2 class="text-lg font-bold text-fairway-dark">選擇球場</h2>
+      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 2</span>
+    </div>
+    <p id="course-country-label" class="mb-5 flex items-center gap-2 text-sm font-medium text-green-700"></p>
+    <div id="course-grid" class="grid gap-4 sm:grid-cols-2"></div>
+    <button type="button" id="btn-back-country"
+            class="mt-6 text-sm font-semibold text-fairway hover:text-fairway-dark">
+      ← 返回選擇國家
+    </button>
+  </section>
+
+  {# Step 3：選擇 Tee #}
   <section id="step-tee" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8" hidden>
     <div class="mb-2 flex items-center justify-between">
       <h2 class="text-lg font-bold text-fairway-dark">選擇發球台</h2>
-      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 2</span>
+      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 3</span>
     </div>
     <p id="tee-course-name" class="mb-5 text-sm text-green-600"></p>
     <div id="tee-grid" class="grid gap-3 sm:grid-cols-2"></div>
@@ -78,11 +81,11 @@
     </button>
   </section>
 
-  {# Step 1：球友設定 #}
+  {# Step 4：球友設定 #}
   <section id="step-setup" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8" hidden>
     <div class="mb-6 flex items-center justify-between">
       <h2 class="text-lg font-bold text-fairway-dark">球友設定</h2>
-      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 3</span>
+      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 4</span>
     </div>
 
     <label class="mb-4 block">
@@ -120,6 +123,10 @@
 
   {# Step 2：逐洞記分 #}
   <section id="step-holes" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8" hidden>
+    <div class="mb-4 flex items-center justify-between">
+      <h2 class="text-lg font-bold text-fairway-dark">逐洞記分</h2>
+      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 5</span>
+    </div>
     <div class="mb-4 h-1.5 overflow-hidden rounded-full bg-green-100">
       <div id="progress-bar" class="h-full rounded-full bg-gradient-to-r from-fairway to-gold transition-all duration-300" style="width:0%"></div>
     </div>
@@ -142,7 +149,7 @@
   <section id="step-review" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8" hidden>
     <div class="mb-6 flex items-center justify-between">
       <h2 class="text-lg font-bold text-fairway-dark">確認並存檔</h2>
-      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 4</span>
+      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 6</span>
     </div>
     <div id="review-board"></div>
     <p id="submit-error" class="mt-4 hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"></p>
@@ -161,12 +168,14 @@
 
 <script>
 const CATALOG = {{ courses_full|tojson }};
+const COUNTRIES = {{ courses_by_country|tojson }};
 const SECRET_REQUIRED = {{ secret_required|tojson }};
 
 (function () {
   const HOLES = 18;
-  const STEPS = ["course", "tee", "setup", "holes", "review"];
+  const STEPS = ["country", "course", "tee", "setup", "holes", "review"];
 
+  let selectedCountry = null;
   let courseId = null;
   let teeId = null;
   let activeTee = null;
@@ -209,15 +218,75 @@ const SECRET_REQUIRED = {{ secret_required|tojson }};
     const banner = el("selection-banner");
     if (!activeTee) {
       banner.classList.add("hidden");
-      el("hero-subtitle").textContent = "請先選擇球場與發球台";
+      if (!selectedCountry) {
+        el("hero-subtitle").textContent = "請先選擇國家";
+      } else if (!courseId) {
+        el("hero-subtitle").textContent = `已選 ${selectedCountry} · 請選擇球場`;
+      } else {
+        el("hero-subtitle").textContent = "請選擇發球台";
+      }
       return;
     }
     banner.classList.remove("hidden");
-    el("banner-course").textContent = CATALOG[courseId].name;
+    el("banner-course").textContent = `${selectedCountry} · ${CATALOG[courseId].name}`;
     el("banner-tee").textContent =
       `${activeTee.name} · Par ${activeTee.par_total} · ${activeTee.yardage_total} 碼`;
     el("hero-subtitle").textContent =
       `${CATALOG[courseId].name} · ${activeTee.name}`;
+  }
+
+  function renderCourseGrid(countryName) {
+    const group = COUNTRIES.find((g) => g.country === countryName);
+    const grid = el("course-grid");
+    grid.innerHTML = "";
+    if (!group) return;
+
+    el("course-country-label").innerHTML =
+      `<span class="text-xl">${group.flag}</span> ${group.country} · 請選擇球場`;
+
+    group.courses.forEach((c) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.dataset.courseId = c.id;
+      btn.className =
+        "course-card group relative overflow-hidden rounded-2xl border-2 border-green-100 text-left transition hover:border-fairway hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-fairway";
+      const tee0 = c.tees[0];
+      btn.innerHTML = `
+        <div class="relative h-36 overflow-hidden">
+          <div class="absolute inset-0 bg-cover bg-center transition group-hover:scale-105"
+               style="background-image: url('${c.hero_image}')"></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-fairway-dark/95 via-fairway-dark/50 to-transparent"></div>
+          <div class="absolute bottom-0 left-0 right-0 p-4">
+            <p class="text-xs text-gold-light">${c.location}</p>
+            <p class="text-lg font-bold text-white">${c.name}</p>
+          </div>
+        </div>
+        <div class="p-4">
+          <p class="text-sm leading-relaxed text-green-700">${c.description}</p>
+          <p class="mt-3 text-xs font-semibold text-fairway">
+            Par ${tee0.par_total} · ${tee0.yardage_total} 碼 · ${c.tees.length} 種 Tee →
+          </p>
+        </div>`;
+      btn.addEventListener("click", () => selectCourse(c.id));
+      grid.appendChild(btn);
+    });
+  }
+
+  function selectCountry(countryName) {
+    selectedCountry = countryName;
+    courseId = null;
+    teeId = null;
+    activeTee = null;
+    document.querySelectorAll(".country-card").forEach((btn) => {
+      const on = btn.dataset.country === countryName;
+      btn.classList.toggle("border-fairway", on);
+      btn.classList.toggle("bg-green-50", on);
+      btn.classList.toggle("ring-2", on);
+      btn.classList.toggle("ring-fairway", on);
+    });
+    renderCourseGrid(countryName);
+    showStep("course");
+    updateBanner();
   }
 
   function selectCourse(cid) {
@@ -225,7 +294,7 @@ const SECRET_REQUIRED = {{ secret_required|tojson }};
     teeId = null;
     activeTee = null;
     const course = CATALOG[cid];
-    el("tee-course-name").textContent = course.name;
+    el("tee-course-name").textContent = `${selectedCountry} · ${course.name}`;
     const grid = el("tee-grid");
     grid.innerHTML = "";
     Object.values(course.tees).forEach((tee) => {
@@ -249,11 +318,6 @@ const SECRET_REQUIRED = {{ secret_required|tojson }};
       btn.addEventListener("click", () => selectTee(tee.id));
       grid.appendChild(btn);
     });
-    document.querySelectorAll(".course-card").forEach((c) => {
-      c.classList.toggle("border-fairway", c.dataset.courseId === cid);
-      c.classList.toggle("ring-2", c.dataset.courseId === cid);
-      c.classList.toggle("ring-fairway", c.dataset.courseId === cid);
-    });
     showStep("tee");
     updateBanner();
   }
@@ -266,12 +330,13 @@ const SECRET_REQUIRED = {{ secret_required|tojson }};
   }
 
   function resetCourseSelection() {
+    selectedCountry = null;
     courseId = teeId = null;
     activeTee = null;
-    document.querySelectorAll(".course-card").forEach((c) => {
-      c.classList.remove("border-fairway", "ring-2", "ring-fairway");
+    document.querySelectorAll(".country-card").forEach((c) => {
+      c.classList.remove("border-fairway", "bg-green-50", "ring-2", "ring-fairway");
     });
-    showStep("course");
+    showStep("country");
     updateBanner();
   }
 
@@ -457,10 +522,30 @@ const SECRET_REQUIRED = {{ secret_required|tojson }};
     }
   }
 
-  document.querySelectorAll(".course-card").forEach((btn) => {
-    btn.addEventListener("click", () => selectCourse(btn.dataset.courseId));
+  document.querySelectorAll(".country-card").forEach((btn) => {
+    btn.addEventListener("click", () => selectCountry(btn.dataset.country));
   });
-  el("btn-back-course").addEventListener("click", () => showStep("course"));
+  el("btn-back-country").addEventListener("click", () => {
+    selectedCountry = null;
+    courseId = teeId = null;
+    activeTee = null;
+    document.querySelectorAll(".country-card").forEach((c) => {
+      c.classList.remove("border-fairway", "bg-green-50", "ring-2", "ring-fairway");
+    });
+    showStep("country");
+    updateBanner();
+  });
+  el("btn-back-course").addEventListener("click", () => {
+    if (selectedCountry) {
+      courseId = teeId = null;
+      activeTee = null;
+      renderCourseGrid(selectedCountry);
+      showStep("course");
+      updateBanner();
+    } else {
+      showStep("country");
+    }
+  });
   el("btn-change-course").addEventListener("click", resetCourseSelection);
   el("player-count").addEventListener("change", buildPlayerNames);
   el("btn-start").addEventListener("click", startScoring);
@@ -479,7 +564,7 @@ const SECRET_REQUIRED = {{ secret_required|tojson }};
   el("btn-save").addEventListener("click", saveRound);
 
   buildPlayerNames();
-  showStep("course");
+  showStep("country");
 })();
 </script>
 {% endblock %}

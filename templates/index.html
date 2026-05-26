@@ -1,25 +1,166 @@
 {% extends "base.html" %}
 {% from '_macros.html' import cta_button, trophy_icon %}
-{% block title %}歷史戰績 · 滘西洲南場{% endblock %}
+{% block title %}歷史戰績 · Maison Golf{% endblock %}
 {% block content %}
 
-{# Hero #}
-<section class="relative mb-6 overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10">
-  <div class="hero-bg-image absolute inset-0 scale-105"></div>
-  <div class="absolute inset-0 bg-gradient-to-r from-fairway-dark/95 via-fairway-dark/70 to-fairway-dark/50"></div>
-  <div class="absolute inset-0 bg-gradient-to-t from-fairway-dark via-fairway-dark/40 to-transparent"></div>
-  <div class="relative px-6 py-10 sm:px-10 sm:py-14">
-    <p class="mb-2 inline-block rounded-full border border-gold-light/40 bg-gold/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-gold-light">
-      South Course · White Tee
-    </p>
-    <h1 class="text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
-      {{ course_name }}
-    </h1>
-    <p class="mt-3 max-w-xl text-base text-green-100/80 sm:text-lg">
-      香港滘西洲 · 馬來西亞球場 · 群組共用記分
-    </p>
+{# Hero 走馬燈 #}
+<section id="hero-carousel"
+         class="group/carousel relative mb-6 overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10"
+         aria-roledescription="carousel"
+         aria-label="精選球場">
+  <div class="relative min-h-[280px] sm:min-h-[340px] lg:min-h-[380px]">
+    {% for slide in hero_slides %}
+    <article class="hero-slide absolute inset-0 transition-opacity duration-700 ease-in-out
+                    {% if loop.first %}z-10 opacity-100{% else %}z-0 opacity-0 pointer-events-none{% endif %}"
+             data-index="{{ loop.index0 }}"
+             aria-hidden="{{ 'false' if loop.first else 'true' }}">
+      <div class="absolute inset-0 bg-cover bg-center transition-transform duration-[1200ms] scale-105 hero-slide-bg"
+           style="background-image: url('{{ slide.image }}')"></div>
+      <div class="absolute inset-0 bg-gradient-to-r from-fairway-dark/95 via-fairway-dark/75 to-fairway-dark/45"></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-fairway-dark via-fairway-dark/35 to-transparent"></div>
+      <div class="relative flex h-full min-h-[inherit] flex-col justify-end px-6 py-10 sm:px-10 sm:py-14">
+        <p class="mb-2 inline-block w-fit rounded-full border border-gold-light/40 bg-gold/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-gold-light">
+          {{ slide.badge }}
+        </p>
+        <h1 class="text-2xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
+          {{ slide.name }}
+        </h1>
+        <p class="mt-3 max-w-2xl text-sm text-green-100/85 sm:text-lg">
+          {{ slide.subtitle }}
+        </p>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+
+  {# 左右箭頭 #}
+  <button type="button"
+          id="hero-prev"
+          class="absolute left-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-fairway-dark/70 text-white shadow-lg backdrop-blur-sm transition hover:border-gold-light/50 hover:bg-fairway-dark/90 focus:outline-none focus:ring-2 focus:ring-gold-light/60 sm:left-4 sm:h-11 sm:w-11"
+          aria-label="上一張球場照片">
+    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+    </svg>
+  </button>
+  <button type="button"
+          id="hero-next"
+          class="absolute right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-fairway-dark/70 text-white shadow-lg backdrop-blur-sm transition hover:border-gold-light/50 hover:bg-fairway-dark/90 focus:outline-none focus:ring-2 focus:ring-gold-light/60 sm:right-4 sm:h-11 sm:w-11"
+          aria-label="下一張球場照片">
+    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+    </svg>
+  </button>
+
+  {# 指示點 #}
+  <div class="absolute bottom-4 left-0 right-0 z-20 flex justify-center gap-2 px-4"
+       role="tablist"
+       aria-label="選擇球場照片">
+    {% for slide in hero_slides %}
+    <button type="button"
+            class="hero-dot h-2 w-2 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gold-light/60 sm:h-2.5 sm:w-2.5
+                   {% if loop.first %}w-6 bg-gold-light sm:w-8{% else %}bg-white/40 hover:bg-white/70{% endif %}"
+            data-index="{{ loop.index0 }}"
+            aria-label="{{ slide.name }}"
+            aria-selected="{{ 'true' if loop.first else 'false' }}"
+            role="tab"></button>
+    {% endfor %}
   </div>
 </section>
+
+<script>
+(function () {
+  const root = document.getElementById("hero-carousel");
+  if (!root) return;
+
+  const slides = Array.from(root.querySelectorAll(".hero-slide"));
+  const dots = Array.from(root.querySelectorAll(".hero-dot"));
+  const prevBtn = document.getElementById("hero-prev");
+  const nextBtn = document.getElementById("hero-next");
+  const INTERVAL_MS = 4500;
+  let current = 0;
+  let timer = null;
+  let paused = false;
+
+  function goTo(index) {
+    if (!slides.length) return;
+    current = (index + slides.length) % slides.length;
+
+    slides.forEach((slide, i) => {
+      const active = i === current;
+      slide.classList.toggle("opacity-100", active);
+      slide.classList.toggle("z-10", active);
+      slide.classList.toggle("opacity-0", !active);
+      slide.classList.toggle("pointer-events-none", !active);
+      slide.classList.toggle("z-0", !active);
+      slide.setAttribute("aria-hidden", active ? "false" : "true");
+      const bg = slide.querySelector(".hero-slide-bg");
+      if (bg) bg.classList.toggle("scale-110", active);
+    });
+
+    dots.forEach((dot, i) => {
+      const active = i === current;
+      dot.setAttribute("aria-selected", active ? "true" : "false");
+      dot.classList.remove("w-2", "w-6", "sm:w-2.5", "sm:w-8", "bg-gold-light", "bg-white/40");
+      if (active) {
+        dot.classList.add("w-6", "sm:w-8", "bg-gold-light");
+      } else {
+        dot.classList.add("w-2", "sm:w-2.5", "bg-white/40");
+      }
+    });
+  }
+
+  function next() { goTo(current + 1); }
+  function prev() { goTo(current - 1); }
+
+  function startAutoplay() {
+    stopAutoplay();
+    timer = setInterval(() => {
+      if (!paused) next();
+    }, INTERVAL_MS);
+  }
+
+  function stopAutoplay() {
+    if (timer) clearInterval(timer);
+    timer = null;
+  }
+
+  function resetAutoplay() {
+    stopAutoplay();
+    startAutoplay();
+  }
+
+  nextBtn?.addEventListener("click", () => { next(); resetAutoplay(); });
+  prevBtn?.addEventListener("click", () => { prev(); resetAutoplay(); });
+
+  dots.forEach((dot) => {
+    dot.addEventListener("click", () => {
+      goTo(Number(dot.dataset.index));
+      resetAutoplay();
+    });
+  });
+
+  root.addEventListener("mouseenter", () => { paused = true; });
+  root.addEventListener("mouseleave", () => { paused = false; });
+
+    root.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowLeft") { prev(); resetAutoplay(); }
+    if (e.key === "ArrowRight") { next(); resetAutoplay(); }
+  });
+
+  let touchStartX = 0;
+  root.addEventListener("touchstart", (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, { passive: true });
+  root.addEventListener("touchend", (e) => {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    if (Math.abs(dx) < 40) return;
+    if (dx < 0) next(); else prev();
+    resetAutoplay();
+  }, { passive: true });
+
+  startAutoplay();
+})();
+</script>
 
 {# 醒目 CTA — Hero 正下方 #}
 <div class="mb-8 flex flex-col items-stretch sm:items-start">

@@ -62,14 +62,74 @@ _GENTING_BLUE = [
     433, 375, 469, 527, 354, 221, 363, 155, 361,
 ]
 
+# —— 泰國 · Alpine Golf · 白梯 6048 碼（GolfPass）——
+_ALPINE_PARS = [4, 4, 3, 4, 5, 3, 5, 4, 4, 4, 4, 3, 4, 5, 3, 4, 5, 4]
+_ALPINE_HCP = [17, 3, 13, 15, 5, 7, 9, 1, 11, 2, 6, 14, 16, 8, 12, 18, 4, 10]
+_ALPINE_WHITE = [
+    334, 374, 165, 334, 506, 190, 471, 370, 344,
+    378, 349, 157, 325, 469, 160, 272, 521, 329,
+]
+_ALPINE_BLUE = [
+    382, 399, 185, 357, 528, 210, 507, 425, 361,
+    417, 387, 173, 345, 493, 179, 311, 555, 365,
+]
+
+# —— 泰國 · Thai Country Club · 白梯 6034 碼（Golfify / 官網）——
+_TCC_TH_PARS = [4, 4, 3, 5, 4, 3, 5, 4, 4, 4, 3, 4, 4, 5, 4, 3, 5, 4]
+_TCC_TH_HCP = [18, 12, 16, 4, 6, 8, 2, 14, 10, 9, 11, 3, 7, 1, 13, 17, 5, 15]
+_TCC_TH_WHITE = [
+    314, 337, 157, 443, 356, 167, 449, 365, 371,
+    324, 124, 381, 347, 547, 352, 145, 522, 333,
+]
+_TCC_TH_BLUE = [
+    353, 366, 176, 466, 393, 197, 476, 386, 413,
+    337, 142, 410, 365, 579, 391, 166, 539, 365,
+]
+
+# —— 泰國 · Thana City · 白梯 6342 碼（Thai Golf Booking / 18Birdies）——
+_THANA_PARS = [5, 4, 3, 4, 4, 4, 5, 3, 4, 4, 4, 5, 3, 5, 4, 3, 4, 4]
+_THANA_HCP = [6, 18, 16, 10, 12, 8, 2, 14, 4, 11, 17, 5, 13, 1, 9, 15, 7, 3]
+_THANA_WHITE = [
+    562, 377, 154, 374, 307, 391, 540, 166, 396,
+    349, 272, 450, 124, 482, 360, 206, 412, 420,
+]
+
+# —— 泰國 · Summit Windmill · 白梯 6211 碼（GolfPass）——
+_SUMMIT_PARS = [5, 3, 4, 3, 4, 4, 5, 4, 4, 4, 4, 3, 4, 5, 4, 4, 3, 5]
+_SUMMIT_HCP = [3, 17, 9, 15, 7, 1, 11, 13, 5, 10, 6, 18, 2, 14, 8, 12, 16, 4]
+_SUMMIT_WHITE = [
+    550, 134, 325, 181, 372, 419, 452, 305, 400,
+    352, 358, 129, 403, 453, 363, 312, 160, 543,
+]
+_SUMMIT_BLUE = [
+    618, 163, 378, 212, 413, 453, 504, 378, 438,
+    385, 398, 154, 438, 493, 398, 371, 193, 577,
+]
+
+# —— 泰國 · Panya Indra Lagoon + Palm · 白梯 6744 碼（官網 A/B 九）——
+_PANYA_PARS = [4, 4, 3, 5, 4, 4, 5, 3, 4, 5, 4, 4, 3, 4, 5, 4, 3, 4]
+_PANYA_HCP = [9, 2, 8, 7, 1, 6, 5, 3, 4, 9, 8, 1, 7, 3, 5, 6, 4, 2]
+_PANYA_WHITE = [
+    370, 421, 155, 526, 437, 363, 511, 210, 390,
+    528, 385, 420, 139, 398, 544, 371, 176, 400,
+]
+
+# 國家分類（選球場頁依此分組）
+COUNTRY_ORDER = ["香港", "馬來西亞", "泰國"]
+COUNTRY_META = {
+    "香港": {"flag": "🇭🇰", "subtitle": "Hong Kong SAR"},
+    "馬來西亞": {"flag": "🇲🇾", "subtitle": "Malaysia"},
+    "泰國": {"flag": "🇹🇭", "subtitle": "Thailand · Bangkok"},
+}
+
 COURSES = {
     "ksc-east": {
         "id": "ksc-east",
         "name": "滘西洲高爾夫球場 · 東場",
         "name_en": "Kau Sai Chau - East",
         "description": "Nelson & Haworth 設計，山丘臨海、景觀最美的一場。白梯 Par 72、6025 碼，需乘球車。",
-        "location": "香港 · 西貢滘西洲",
-        "region": "香港",
+        "location": "西貢滘西洲",
+        "country": "香港",
         "hero_image": f"{_IMG}/ksc-east.jpg",
         "tees": {
             "white": {
@@ -87,8 +147,8 @@ COURSES = {
         "name": "滘西洲高爾夫球場 · 南場",
         "name_en": "Kau Sai Chau - South",
         "description": "Gary Player 設計，三場中最親和。白梯 Par 69、5906 碼，可步行或乘車。",
-        "location": "香港 · 西貢滘西洲",
-        "region": "香港",
+        "location": "西貢滘西洲",
+        "country": "香港",
         "hero_image": f"{_IMG}/ksc-south.jpg",
         "tees": {
             "white": {
@@ -114,8 +174,8 @@ COURSES = {
         "name": "滘西洲高爾夫球場 · 北場",
         "name_en": "Kau Sai Chau - North",
         "description": "Gary Player 設計，競賽級球道。白梯 Par 72、6357 碼，僅限步行。",
-        "location": "香港 · 西貢滘西洲",
-        "region": "香港",
+        "location": "西貢滘西洲",
+        "country": "香港",
         "hero_image": f"{_IMG}/ksc-north.jpg",
         "tees": {
             "white": {
@@ -133,8 +193,8 @@ COURSES = {
         "name": "Templer Park Country Club",
         "name_en": "Templer Park Country Club",
         "description": "Jumbo Ozaki & Kentaro Sato 設計，石灰岩山景與森林環繞。白梯 Par 72、6343 碼，吉隆坡近郊名場。",
-        "location": "馬來西亞 · 雪蘭莪 Rawang",
-        "region": "馬來西亞",
+        "location": "雪蘭莪 Rawang",
+        "country": "馬來西亞",
         "hero_image": f"{_IMG}/my-templer.jpg",
         "tees": {
             "white": {
@@ -160,8 +220,8 @@ COURSES = {
         "name": "雲頂高原 · Awana 球場",
         "name_en": "Awana Genting Highlands",
         "description": "Ronald Fream 設計，海拔約 3100 呎，雲霧與雨林球道。白梯 Par 71、5884 碼，清涼高地體驗。",
-        "location": "馬來西亞 · 彭亨雲頂",
-        "region": "馬來西亞",
+        "location": "彭亨雲頂",
+        "country": "馬來西亞",
         "hero_image": f"{_IMG}/my-genting.jpg",
         "tees": {
             "white": {
@@ -179,6 +239,125 @@ COURSES = {
                 "pars": _GENTING_PARS,
                 "yardages": _GENTING_BLUE,
                 "handicap": _GENTING_HCP,
+            },
+        },
+    },
+    "th-alpine": {
+        "id": "th-alpine",
+        "name": "Alpine Golf & Sports Club",
+        "name_en": "Alpine Golf & Sports Club",
+        "description": "Ron Garl 設計，曼谷北郊 Pathum Thani 名場，曾舉辦泰國公開賽。白梯 Par 72、6048 碼，水障與沙坑策略性強。",
+        "location": "曼谷 Pathum Thani",
+        "country": "泰國",
+        "hero_image": f"{_IMG}/th-alpine.jpg",
+        "tees": {
+            "white": {
+                "id": "white",
+                "name": "白梯",
+                "name_en": "White Tee",
+                "pars": _ALPINE_PARS,
+                "yardages": _ALPINE_WHITE,
+                "handicap": _ALPINE_HCP,
+            },
+            "blue": {
+                "id": "blue",
+                "name": "藍梯",
+                "name_en": "Blue Tee",
+                "pars": _ALPINE_PARS,
+                "yardages": _ALPINE_BLUE,
+                "handicap": _ALPINE_HCP,
+            },
+        },
+    },
+    "th-tcc": {
+        "id": "th-tcc",
+        "name": "Thai Country Club",
+        "name_en": "Thai Country Club",
+        "description": "Denis Griffiths 設計，1997 亞洲本田經典賽 Tiger Woods 奪冠球場。白梯 Par 72、6034 碼，水景與起伏果嶺。",
+        "location": "曼谷 Chachoengsao",
+        "country": "泰國",
+        "hero_image": f"{_IMG}/th-tcc.jpg",
+        "tees": {
+            "white": {
+                "id": "white",
+                "name": "白梯",
+                "name_en": "White Tee",
+                "pars": _TCC_TH_PARS,
+                "yardages": _TCC_TH_WHITE,
+                "handicap": _TCC_TH_HCP,
+            },
+            "blue": {
+                "id": "blue",
+                "name": "藍梯",
+                "name_en": "Blue Tee",
+                "pars": _TCC_TH_PARS,
+                "yardages": _TCC_TH_BLUE,
+                "handicap": _TCC_TH_HCP,
+            },
+        },
+    },
+    "th-thana": {
+        "id": "th-thana",
+        "name": "Thana City Country Club",
+        "name_en": "Thana City Country Club",
+        "description": "Greg Norman 設計，泰國唯一由其操刀的 18 洞錦標場。白梯 Par 72、6342 碼，多座島嶼果嶺，近素萬那普機場。",
+        "location": "曼谷 Samut Prakan",
+        "country": "泰國",
+        "hero_image": f"{_IMG}/th-thana.jpg",
+        "tees": {
+            "white": {
+                "id": "white",
+                "name": "白梯",
+                "name_en": "White Tee",
+                "pars": _THANA_PARS,
+                "yardages": _THANA_WHITE,
+                "handicap": _THANA_HCP,
+            },
+        },
+    },
+    "th-summit": {
+        "id": "th-summit",
+        "name": "Summit Windmill Golf Club",
+        "name_en": "Summit Windmill Golf Club",
+        "description": "Nick Faldo 設計，機場旁度假式球場，湖泊與園景交錯。白梯 Par 72、6211 碼，可日間／夜間擊球。",
+        "location": "曼谷 Samut Prakan",
+        "country": "泰國",
+        "hero_image": f"{_IMG}/th-summit.jpg",
+        "tees": {
+            "white": {
+                "id": "white",
+                "name": "白梯",
+                "name_en": "White Tee",
+                "pars": _SUMMIT_PARS,
+                "yardages": _SUMMIT_WHITE,
+                "handicap": _SUMMIT_HCP,
+            },
+            "blue": {
+                "id": "blue",
+                "name": "藍梯",
+                "name_en": "Blue Tee",
+                "pars": _SUMMIT_PARS,
+                "yardages": _SUMMIT_BLUE,
+                "handicap": _SUMMIT_HCP,
+            },
+        },
+    },
+    "th-panya": {
+        "id": "th-panya",
+        "name": "Panya Indra · Lagoon + Palm",
+        "name_en": "Panya Indra Golf Club (A+B)",
+        "description": "Ronald Fream 設計 27 洞名場，此組合為 Lagoon 與 Palm 兩九。白梯 Par 72、6744 碼，水障與棕櫚球道，曾辦 LPGA。",
+        "location": "曼谷 Khan Na Yao",
+        "country": "泰國",
+        "hero_image": f"{_IMG}/th-panya.jpg",
+        "tees": {
+            "white": {
+                "id": "white",
+                "name": "白梯",
+                "name_en": "White Tee",
+                "pars": _PANYA_PARS,
+                "yardages": _PANYA_WHITE,
+                "handicap": _PANYA_HCP,
             },
         },
     },
@@ -230,21 +409,62 @@ def list_courses_for_web():
             "name_en": c.get("name_en", ""),
             "description": c.get("description", ""),
             "location": c.get("location", ""),
-            "region": c.get("region", ""),
+            "country": c.get("country", ""),
             "hero_image": c.get("hero_image", _HERO),
             "tees": tees,
         })
     return out
 
 
+def list_hero_carousel_slides():
+    """首頁 Hero 走馬燈：各球場真實照片與文案（依國家順序）"""
+    slides = []
+    for country in COUNTRY_ORDER:
+        for c in COURSES.values():
+            if c.get("country") != country:
+                continue
+            tee = c["tees"].get("white") or next(iter(c["tees"].values()))
+            totals = _tee_totals(tee)
+            tee_label = tee.get("name_en") or tee["name"]
+            slides.append({
+                "id": c["id"],
+                "name": c["name"],
+                "badge": f"{tee_label.upper()} · PAR {totals['par_total']}",
+                "subtitle": (
+                    f"{c['country']} · {c['location']} · "
+                    f"{tee['name']} · {totals['yardage_total']} 碼"
+                ),
+                "image": c.get("hero_image", _HERO),
+            })
+    return slides
+
+
+def list_course_countries():
+    """依 COUNTRY_ORDER 回傳國家列表（僅含實際有球場的國家）"""
+    present = {c.get("country") for c in COURSES.values() if c.get("country")}
+    return [name for name in COUNTRY_ORDER if name in present]
+
+
+def list_courses_by_country():
+    """選球場頁：按國家分組的球場列表"""
+    catalog = list_courses_for_web()
+    groups = []
+    for country in list_course_countries():
+        meta = COUNTRY_META.get(country, {})
+        courses = [c for c in catalog if c["country"] == country]
+        groups.append({
+            "country": country,
+            "flag": meta.get("flag", ""),
+            "subtitle": meta.get("subtitle", ""),
+            "count": len(courses),
+            "courses": courses,
+        })
+    return groups
+
+
 def list_course_regions():
-    """依 COURSES 順序回傳不重複地區標籤"""
-    seen = []
-    for c in COURSES.values():
-        r = c.get("region", "")
-        if r and r not in seen:
-            seen.append(r)
-    return seen
+    """向後相容"""
+    return list_course_countries()
 
 
 def courses_catalog_full():
