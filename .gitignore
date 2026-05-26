@@ -4,3 +4,6 @@ __pycache__/
 .DS_Store
 記分卡_*.html
 course_aerial.jpg
+static/uploads/share/*
+!static/uploads/share/.gitkeep
+static/fonts/NotoSansTC-Regular.otf

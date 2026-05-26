@@ -2,6 +2,7 @@
 {% from '_macros.html' import score_cell_class, diff_text, to_par_text, score_name %}
 {% block title %}{{ round.date }} 記分卡{% endblock %}
 {% block content %}
+<div id="round-page-root" data-round-id="{{ round.id }}" class="contents"></div>
 
 {# Hero #}
 {% set round_hero = '/static/img/' ~ (round.course_id ~ '.jpg' if round.course_id else 'hero.jpg') %}
@@ -50,6 +51,40 @@
   {% set round_id = round.id %}
   {% set players = ranked %}
   {% include '_ai_coach_widget.html' %}
+</section>
+
+{# 社交分享 #}
+<section class="mb-8 overflow-hidden rounded-2xl border border-gold/40 bg-gradient-to-br from-gold/15 via-fairway-dark/90 to-black/50 p-5 shadow-xl ring-1 ring-gold/30 sm:p-7">
+  <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <p class="text-xs font-bold uppercase tracking-widest text-gold-light">Share Studio</p>
+      <h2 class="mt-1 text-lg font-bold text-white sm:text-xl">生成分享內容</h2>
+      <p class="mt-1 text-sm text-green-200/65">上傳球場照片或短片，一鍵製作朋友圈 / 小紅書 / 抖音素材</p>
+    </div>
+    <button type="button"
+            class="share-content-trigger inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-gold via-gold-light to-amber-300 px-6 py-3.5 text-sm font-black text-fairway-dark shadow-lg shadow-gold/25 transition hover:brightness-110"
+            data-round-id="{{ round.id }}"
+            data-share-tab="photo">
+      <span aria-hidden="true">📱</span>
+      生成分享內容
+    </button>
+  </div>
+  <div class="grid gap-3 sm:grid-cols-2">
+    <button type="button"
+            class="share-content-trigger rounded-xl border border-gold/35 bg-black/25 px-4 py-3 text-left text-sm transition hover:border-gold/55 hover:bg-gold/10"
+            data-round-id="{{ round.id }}"
+            data-share-tab="photo">
+      <span class="font-bold text-gold-light">📷 照片模式</span>
+      <span class="mt-1 block text-xs text-green-200/55">高爾夫濾鏡 + 總桿疊字 · 4 種尺寸</span>
+    </button>
+    <button type="button"
+            class="share-content-trigger rounded-xl border border-sky-400/30 bg-black/25 px-4 py-3 text-left text-sm transition hover:border-sky-400/50 hover:bg-sky-950/30"
+            data-round-id="{{ round.id }}"
+            data-share-tab="video">
+      <span class="font-bold text-sky-200">🎬 視頻模式</span>
+      <span class="mt-1 block text-xs text-green-200/55">直式短片 · 文字特效 · 可選配樂</span>
+    </button>
+  </div>
 </section>
 
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
