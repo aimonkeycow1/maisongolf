@@ -17,10 +17,16 @@
   </div>
 </section>
 
-<a href="{{ url_for('index') }}"
-   class="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-green-100 transition hover:bg-white/10 hover:text-white no-underline">
-  ← 返回歷史列表
-</a>
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+  <a href="{{ url_for('index') }}"
+     class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-green-100 transition hover:bg-white/10 hover:text-white no-underline">
+    ← 返回歷史列表
+  </a>
+  <a href="{{ url_for('score_entry') }}"
+     class="inline-flex items-center gap-2 rounded-xl bg-gold px-5 py-2.5 text-sm font-bold text-fairway-dark shadow-md transition hover:bg-gold-light no-underline">
+    + 開始新場次
+  </a>
+</div>
 
 {# 排名 #}
 <section class="mb-8 rounded-2xl bg-white/5 p-6 shadow-xl ring-1 ring-white/10 sm:p-8">

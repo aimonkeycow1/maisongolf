@@ -54,6 +54,7 @@ def index():
         page="home",
         rounds_rev=list(reversed(rounds)),
         par_total=PAR_TOTAL,
+        course_name=COURSE_NAME,
     )
 
 

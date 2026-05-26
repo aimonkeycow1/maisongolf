@@ -27,10 +27,31 @@
 {%- endif -%}
 {%- endmacro %}
 
-{% macro nav_link(url, label, active) -%}
+{% macro trophy_icon(class) -%}
+<svg class="{{ class }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+  <path d="M5 3h14v2a5 5 0 0 1-4.9 5 6.5 6.5 0 0 1-3.6 5.8L12 21l-1.5-5.2A6.5 6.5 0 0 1 6.9 10 5 5 0 0 1 5 5V3zm2 2v0a3 3 0 0 0 3 3h4a3 3 0 0 0 3-3V5H7zm2.2 12.4L12 18.3l2.8-1.9A4.5 4.5 0 0 0 17 12H7a4.5 4.5 0 0 0 2.2 5.4z"/>
+</svg>
+{%- endmacro %}
+
+{% macro nav_link(url, label, active, primary=false) -%}
 <a href="{{ url }}"
-   class="rounded-full px-4 py-2 text-sm font-medium transition-colors
-          {% if active %}bg-fairway text-white shadow-sm{% else %}text-green-100 hover:bg-white/10 hover:text-white{% endif %}">
+   class="flex flex-1 items-center justify-center gap-1.5 rounded-xl px-4 py-3 text-sm font-bold transition-all sm:flex-none sm:min-w-[5.5rem]
+          {% if active and primary %}bg-gold text-fairway-dark shadow-lg ring-2 ring-gold-light ring-offset-2 ring-offset-fairway-dark
+          {% elif active %}bg-white text-fairway-dark shadow-lg
+          {% elif primary %}bg-gold/90 text-fairway-dark shadow-md hover:bg-gold-light hover:shadow-lg
+          {% else %}bg-white/10 text-green-100 hover:bg-white/20 hover:text-white{% endif %}">
+  {% if primary and not active %}
+  <span class="text-base leading-none">+</span>
+  {% endif %}
   {{ label }}
+</a>
+{%- endmacro %}
+
+{% macro cta_button(url, text, full=false) -%}
+<a href="{{ url }}"
+   class="{% if full %}w-full{% else %}w-full sm:w-auto{% endif %} group inline-flex items-center justify-center gap-3 rounded-2xl bg-fairway-dark px-10 py-5 text-xl font-bold text-gold-light shadow-[0_8px_30px_rgba(0,0,0,0.45)] ring-2 ring-gold/60 transition hover:bg-[#14532d] hover:text-yellow-300 hover:shadow-[0_12px_40px_rgba(202,138,4,0.25)] hover:ring-gold-light active:scale-[0.98] no-underline sm:text-2xl">
+  <span class="flex h-10 w-10 items-center justify-center rounded-full bg-gold/20 ring-1 ring-gold-light/50 transition group-hover:bg-gold/30">⛳</span>
+  {{ text }}
+  <svg class="h-6 w-6 transition group-hover:translate-x-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
 </a>
 {%- endmacro %}

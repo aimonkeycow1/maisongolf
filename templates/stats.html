@@ -2,7 +2,7 @@
 {% block title %}球員統計 · 滘西洲南場{% endblock %}
 {% block content %}
 
-<section class="relative mb-8 overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10">
+<section class="relative mb-6 overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10">
   <div class="hero-bg-image absolute inset-0"></div>
   <div class="absolute inset-0 bg-gradient-to-r from-fairway-dark/95 to-fairway-dark/60"></div>
   <div class="relative px-6 py-10 sm:px-10 sm:py-12">
@@ -11,6 +11,11 @@
     <p class="mt-2 text-green-100/80">依所有已存檔場次計算</p>
   </div>
 </section>
+
+<a href="{{ url_for('score_entry') }}"
+   class="mb-8 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gold/40 bg-gold/15 px-5 py-3 text-sm font-bold text-gold-light transition hover:bg-gold/25 no-underline sm:w-auto">
+  立即錄分 · 開始新場次 →
+</a>
 
 <section class="mb-8 overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-green-900/10">
   <div class="bg-fairway-dark px-6 py-4 sm:px-8">
