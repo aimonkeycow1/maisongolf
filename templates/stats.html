@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}球員統計 · 滘西洲南場{% endblock %}
+{% block content %}
+<header class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-body">
+    <h1>📊 球員歷史統計</h1>
+    <p>依所有已存檔場次計算</p>
+  </div>
+</header>
+
+<section class="card">
+  <h2>👥 球員排行榜（平均總桿）</h2>
+  {% if player_rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>球員</th><th>場次</th><th>冠軍</th><th>平均桿</th><th>最佳</th><th>平均+/-</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in player_rows %}
+      <tr>
+        <td><strong>{{ row.name }}</strong></td>
+        <td>{{ row.rounds }}</td>
+        <td>{{ row.wins }}</td>
+        <td>{{ row.avg_total }}</td>
+        <td>{{ row.best_total }}</td>
+        <td>{{ row.avg_to_par }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">尚無資料</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>⛳ 最難打的洞 TOP 5</h2>
+  {% if hard_holes %}
+  <table>
+    <thead>
+      <tr><th>排名</th><th>洞</th><th>Par</th><th>碼數</th><th>平均+/-</th></tr>
+    </thead>
+    <tbody>
+      {% for h in hard_holes %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>第 {{ h.hole }} 洞</td>
+        <td>{{ h.par }}</td>
+        <td>{{ h.yard }}</td>
+        <td>+{{ h.avg_diff }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</section>
+{% endblock %}

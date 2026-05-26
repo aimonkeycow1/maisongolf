@@ -1,0 +1,175 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  background: #0a1f18;
+  color: #f1f8f4;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+a { color: #81c784; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.wrap { max-width: 960px; margin: 0 auto; padding: 0 16px 48px; }
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  margin-bottom: 20px;
+}
+.nav a {
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.08);
+  font-size: 0.9rem;
+}
+.nav a.active { background: #2e7d32; color: #fff; }
+
+.hero {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  min-height: 200px;
+  display: flex;
+  align-items: flex-end;
+}
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background: center/cover no-repeat;
+  background-image: url("/static/img/hero.jpg");
+}
+.hero-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(8,30,22,0.92), rgba(8,30,22,0.35));
+}
+.hero-body {
+  position: relative;
+  z-index: 1;
+  padding: 28px 22px;
+  width: 100%;
+}
+.hero h1 { font-size: 1.5rem; margin-bottom: 6px; }
+.hero p { opacity: 0.9; font-size: 0.95rem; }
+
+.card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.card h2 { font-size: 1.1rem; margin-bottom: 12px; color: #a5d6a7; }
+
+.round-list-item {
+  display: block;
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.2);
+  margin-bottom: 10px;
+  transition: background 0.2s;
+}
+.round-list-item:hover {
+  background: rgba(46,125,50,0.25);
+  text-decoration: none;
+}
+.round-meta { font-size: 0.85rem; opacity: 0.8; margin-top: 6px; }
+
+.podium {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.podium-card {
+  text-align: center;
+  padding: 16px 12px;
+  border-radius: 14px;
+  background: rgba(0,0,0,0.25);
+  border: 2px solid rgba(255,255,255,0.1);
+}
+.podium-card.rank1 { border-color: #ffd54f; }
+.podium-medal { font-size: 1.8rem; }
+.podium-name { font-weight: 700; margin: 6px 0; }
+.podium-score { font-size: 2rem; font-weight: 800; color: #a5d6a7; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+th, td {
+  padding: 10px 8px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+th { color: #a5d6a7; font-weight: 600; }
+
+.holes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.hole {
+  text-align: center;
+  padding: 10px 6px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.hole .num { font-size: 1.4rem; font-weight: 800; }
+.hole.birdie { background: #1b5e20; }
+.hole.par { background: #455a64; }
+.hole.bogey { background: #f9a825; color: #111; }
+.hole.bad { background: #c62828; }
+
+.legend {
+  background: #fff;
+  color: #222;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.85rem;
+}
+.legend span { display: flex; align-items: center; gap: 6px; }
+.dot {
+  width: 14px; height: 14px; border-radius: 4px;
+  display: inline-block;
+}
+.dot.birdie { background: #2e7d32; }
+.dot.par { background: #607d8b; }
+.dot.bogey { background: #ffca28; }
+.dot.bad { background: #e53935; }
+
+.empty {
+  text-align: center;
+  padding: 40px 20px;
+  opacity: 0.8;
+}
+
+.footer {
+  text-align: center;
+  padding: 24px;
+  font-size: 0.8rem;
+  opacity: 0.55;
+}
+
+.hint-box {
+  background: rgba(255,213,79,0.15);
+  border: 1px solid rgba(255,213,79,0.4);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+}

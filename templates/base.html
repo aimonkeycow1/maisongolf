@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}滘西洲南場記分{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="wrap">
+    <nav class="nav">
+      <a href="{{ url_for('index') }}" {% if page == 'home' %}class="active"{% endif %}>🏠 首頁</a>
+      <a href="{{ url_for('stats') }}" {% if page == 'stats' %}class="active"{% endif %}>📊 球員統計</a>
+    </nav>
+    {% block content %}{% endblock %}
+    <footer class="footer">
+      <p>滘西洲高爾夫球場 · 南場 · Python 記分器網頁版</p>
+      <p>本機錄分請用 <code>python3 golf_score.py</code></p>
+    </footer>
+  </div>
+</body>
+</html>

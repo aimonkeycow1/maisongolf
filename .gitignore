@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+.env
+.DS_Store
+記分卡_*.html
+course_aerial.jpg

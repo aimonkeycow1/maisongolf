@@ -1,0 +1,657 @@
+[
+  {
+    "id": "20260525_212945",
+    "date": "2026-05-25",
+    "time": "21:29",
+    "course": "滘西洲高爾夫球場 · 南場",
+    "par_total": 69,
+    "tee": "白梯",
+    "note": "25/5/2026 天晴",
+    "players": [
+      {
+        "scores": [
+          5,
+          3,
+          7,
+          5,
+          3,
+          5,
+          5,
+          5,
+          5,
+          4,
+          3,
+          5,
+          4,
+          5,
+          6,
+          5,
+          5,
+          5
+        ],
+        "total": 85,
+        "to_par": 16,
+        "front9": 43,
+        "back9": 42,
+        "front_to_par": 9,
+        "back_to_par": 7,
+        "birdies": 0,
+        "pars": 5,
+        "bogeys": 11,
+        "double_plus": 2,
+        "hole_results": [
+          {
+            "hole": 1,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 2,
+            "score": 3,
+            "par": 3,
+            "diff": 0,
+            "name": "Par"
+          },
+          {
+            "hole": 3,
+            "score": 7,
+            "par": 4,
+            "diff": 3,
+            "name": "三柏忌"
+          },
+          {
+            "hole": 4,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 5,
+            "score": 3,
+            "par": 3,
+            "diff": 0,
+            "name": "Par"
+          },
+          {
+            "hole": 6,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 7,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 8,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 9,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 10,
+            "score": 4,
+            "par": 4,
+            "diff": 0,
+            "name": "Par"
+          },
+          {
+            "hole": 11,
+            "score": 3,
+            "par": 3,
+            "diff": 0,
+            "name": "Par"
+          },
+          {
+            "hole": 12,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 13,
+            "score": 4,
+            "par": 4,
+            "diff": 0,
+            "name": "Par"
+          },
+          {
+            "hole": 14,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 15,
+            "score": 6,
+            "par": 5,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 16,
+            "score": 5,
+            "par": 3,
+            "diff": 2,
+            "name": "雙柏忌"
+          },
+          {
+            "hole": 17,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 18,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          }
+        ],
+        "name": "舒老闆"
+      },
+      {
+        "scores": [
+          4,
+          3,
+          7,
+          6,
+          5,
+          6,
+          5,
+          5,
+          4,
+          5,
+          5,
+          5,
+          5,
+          6,
+          8,
+          8,
+          5,
+          5
+        ],
+        "total": 97,
+        "to_par": 28,
+        "front9": 45,
+        "back9": 52,
+        "front_to_par": 11,
+        "back_to_par": 17,
+        "birdies": 0,
+        "pars": 3,
+        "bogeys": 7,
+        "double_plus": 8,
+        "hole_results": [
+          {
+            "hole": 1,
+            "score": 4,
+            "par": 4,
+            "diff": 0,
+            "name": "Par"
+          },
+          {
+            "hole": 2,
+            "score": 3,
+            "par": 3,
+            "diff": 0,
+            "name": "Par"
+          },
+          {
+            "hole": 3,
+            "score": 7,
+            "par": 4,
+            "diff": 3,
+            "name": "三柏忌"
+          },
+          {
+            "hole": 4,
+            "score": 6,
+            "par": 4,
+            "diff": 2,
+            "name": "雙柏忌"
+          },
+          {
+            "hole": 5,
+            "score": 5,
+            "par": 3,
+            "diff": 2,
+            "name": "雙柏忌"
+          },
+          {
+            "hole": 6,
+            "score": 6,
+            "par": 4,
+            "diff": 2,
+            "name": "雙柏忌"
+          },
+          {
+            "hole": 7,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 8,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 9,
+            "score": 4,
+            "par": 4,
+            "diff": 0,
+            "name": "Par"
+          },
+          {
+            "hole": 10,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 11,
+            "score": 5,
+            "par": 3,
+            "diff": 2,
+            "name": "雙柏忌"
+          },
+          {
+            "hole": 12,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 13,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 14,
+            "score": 6,
+            "par": 4,
+            "diff": 2,
+            "name": "雙柏忌"
+          },
+          {
+            "hole": 15,
+            "score": 8,
+            "par": 5,
+            "diff": 3,
+            "name": "三柏忌"
+          },
+          {
+            "hole": 16,
+            "score": 8,
+            "par": 3,
+            "diff": 5,
+            "name": "+5"
+          },
+          {
+            "hole": 17,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 18,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          }
+        ],
+        "name": "段總"
+      },
+      {
+        "scores": [
+          5,
+          4,
+          7,
+          5,
+          5,
+          5,
+          5,
+          5,
+          6,
+          5,
+          4,
+          6,
+          5,
+          6,
+          6,
+          5,
+          5,
+          5
+        ],
+        "total": 94,
+        "to_par": 25,
+        "front9": 47,
+        "back9": 47,
+        "front_to_par": 13,
+        "back_to_par": 12,
+        "birdies": 0,
+        "pars": 0,
+        "bogeys": 12,
+        "double_plus": 6,
+        "hole_results": [
+          {
+            "hole": 1,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 2,
+            "score": 4,
+            "par": 3,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 3,
+            "score": 7,
+            "par": 4,
+            "diff": 3,
+            "name": "三柏忌"
+          },
+          {
+            "hole": 4,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 5,
+            "score": 5,
+            "par": 3,
+            "diff": 2,
+            "name": "雙柏忌"
+          },
+          {
+            "hole": 6,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 7,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 8,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 9,
+            "score": 6,
+            "par": 4,
+            "diff": 2,
+            "name": "雙柏忌"
+          },
+          {
+            "hole": 10,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 11,
+            "score": 4,
+            "par": 3,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 12,
+            "score": 6,
+            "par": 4,
+            "diff": 2,
+            "name": "雙柏忌"
+          },
+          {
+            "hole": 13,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 14,
+            "score": 6,
+            "par": 4,
+            "diff": 2,
+            "name": "雙柏忌"
+          },
+          {
+            "hole": 15,
+            "score": 6,
+            "par": 5,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 16,
+            "score": 5,
+            "par": 3,
+            "diff": 2,
+            "name": "雙柏忌"
+          },
+          {
+            "hole": 17,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 18,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          }
+        ],
+        "name": "保羅"
+      },
+      {
+        "scores": [
+          7,
+          4,
+          8,
+          7,
+          6,
+          7,
+          7,
+          7,
+          7,
+          6,
+          4,
+          5,
+          6,
+          6,
+          6,
+          7,
+          7,
+          7
+        ],
+        "total": 114,
+        "to_par": 45,
+        "front9": 60,
+        "back9": 54,
+        "front_to_par": 26,
+        "back_to_par": 19,
+        "birdies": 0,
+        "pars": 0,
+        "bogeys": 4,
+        "double_plus": 14,
+        "hole_results": [
+          {
+            "hole": 1,
+            "score": 7,
+            "par": 4,
+            "diff": 3,
+            "name": "三柏忌"
+          },
+          {
+            "hole": 2,
+            "score": 4,
+            "par": 3,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 3,
+            "score": 8,
+            "par": 4,
+            "diff": 4,
+            "name": "+4"
+          },
+          {
+            "hole": 4,
+            "score": 7,
+            "par": 4,
+            "diff": 3,
+            "name": "三柏忌"
+          },
+          {
+            "hole": 5,
+            "score": 6,
+            "par": 3,
+            "diff": 3,
+            "name": "三柏忌"
+          },
+          {
+            "hole": 6,
+            "score": 7,
+            "par": 4,
+            "diff": 3,
+            "name": "三柏忌"
+          },
+          {
+            "hole": 7,
+            "score": 7,
+            "par": 4,
+            "diff": 3,
+            "name": "三柏忌"
+          },
+          {
+            "hole": 8,
+            "score": 7,
+            "par": 4,
+            "diff": 3,
+            "name": "三柏忌"
+          },
+          {
+            "hole": 9,
+            "score": 7,
+            "par": 4,
+            "diff": 3,
+            "name": "三柏忌"
+          },
+          {
+            "hole": 10,
+            "score": 6,
+            "par": 4,
+            "diff": 2,
+            "name": "雙柏忌"
+          },
+          {
+            "hole": 11,
+            "score": 4,
+            "par": 3,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 12,
+            "score": 5,
+            "par": 4,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 13,
+            "score": 6,
+            "par": 4,
+            "diff": 2,
+            "name": "雙柏忌"
+          },
+          {
+            "hole": 14,
+            "score": 6,
+            "par": 4,
+            "diff": 2,
+            "name": "雙柏忌"
+          },
+          {
+            "hole": 15,
+            "score": 6,
+            "par": 5,
+            "diff": 1,
+            "name": "柏忌"
+          },
+          {
+            "hole": 16,
+            "score": 7,
+            "par": 3,
+            "diff": 4,
+            "name": "+4"
+          },
+          {
+            "hole": 17,
+            "score": 7,
+            "par": 4,
+            "diff": 3,
+            "name": "三柏忌"
+          },
+          {
+            "hole": 18,
+            "score": 7,
+            "par": 4,
+            "diff": 3,
+            "name": "三柏忌"
+          }
+        ],
+        "name": "詹總"
+      }
+    ]
+  }
+]

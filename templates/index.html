@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}歷史戰績 · 滘西洲南場{% endblock %}
+{% block content %}
+<header class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-body">
+    <h1>⛳ 滘西洲高爾夫球場 · 南場</h1>
+    <p>群組共用戰績 · 白梯 Par {{ par_total }}</p>
+  </div>
+</header>
+
+<div class="hint-box">
+  💡 <b>給球友：</b>把此頁網址傳到 WhatsApp 群（4G 也能開），即可查看歷史戰績。
+  新比賽由管理員本機錄分後同步上雲，再重新整理本頁。
+</div>
+
+<div class="legend">
+  <span><i class="dot birdie"></i> 綠 = 鳥擊以上</span>
+  <span><i class="dot par"></i> 灰 = Par</span>
+  <span><i class="dot bogey"></i> 黃 = 柏忌</span>
+  <span><i class="dot bad"></i> 紅 = 雙柏忌+</span>
+</div>
+
+<section class="card">
+  <h2>📋 歷史場次（共 {{ rounds_rev|length }} 場）</h2>
+  {% if rounds_rev %}
+    {% for r in rounds_rev %}
+    {% set best = r.players|sort(attribute='total')|first %}
+    <a class="round-list-item" href="{{ url_for('round_detail', round_id=r.id) }}">
+      <strong>{{ r.date }} {{ r.time }}</strong>
+      {% if r.note %} · {{ r.note }}{% endif %}
+      <div class="round-meta">
+        🏆 {{ best.name }} {{ best.total }} 桿
+        · {{ r.players|length }} 位球員
+        · 點此查看完整記分卡 →
+      </div>
+    </a>
+    {% endfor %}
+  {% else %}
+    <p class="empty">尚無紀錄。請先在本機執行「多人同組記分」存檔。</p>
+  {% endif %}
+</section>
+{% endblock %}
