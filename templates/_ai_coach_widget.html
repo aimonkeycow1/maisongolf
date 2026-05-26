@@ -1,0 +1,24 @@
+{# 參數：round_id, players (可選，用於選擇分析對象) #}
+<div data-ai-coach data-round-id="{{ round_id }}" class="ai-coach-widget">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  {% if players and players|length > 1 %}
+    <label class="flex flex-1 items-center gap-2 text-sm text-green-200/80">
+      <span class="shrink-0 font-medium text-green-100">分析對象</span>
+      <select class="ai-coach-player w-full max-w-xs rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/30">
+        {% for p in players %}
+        <option value="{{ p.name }}" {% if loop.first %}selected{% endif %}>{{ p.name }} · {{ p.total }} 桿</option>
+        {% endfor %}
+      </select>
+    </label>
+  {% endif %}
+    <button type="button"
+            class="ai-coach-trigger group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 via-fairway to-emerald-700 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-900/40 ring-2 ring-emerald-400/50 transition hover:from-emerald-500 hover:via-fairway-light hover:to-emerald-600 hover:shadow-emerald-500/20 sm:w-auto sm:min-w-[220px]">
+      <span class="flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-base" aria-hidden="true">✨</span>
+      <span class="ai-coach-label">AI 教練分析</span>
+      <svg class="h-4 w-4 transition group-hover:translate-x-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+      </svg>
+    </button>
+  </div>
+  <div class="ai-coach-panel hidden"></div>
+</div>

@@ -40,6 +40,18 @@
   </div>
 </div>
 
+{# AI 教練 #}
+<section class="mb-8 overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950/50 via-fairway-dark/90 to-black/40 p-5 shadow-xl ring-1 ring-emerald-400/20 sm:p-7">
+  <div class="mb-4">
+    <p class="text-xs font-bold uppercase tracking-widest text-emerald-300/90">AI Coach</p>
+    <h2 class="mt-1 text-lg font-bold text-white sm:text-xl">賽後智能教練總結</h2>
+    <p class="mt-1 text-sm text-green-200/65">依本場記分卡分析亮點、待改進項目與練習建議</p>
+  </div>
+  {% set round_id = round.id %}
+  {% set players = ranked %}
+  {% include '_ai_coach_widget.html' %}
+</section>
+
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
   <a href="{{ url_for('index') }}"
      class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-green-100 transition hover:bg-white/10 hover:text-white no-underline">

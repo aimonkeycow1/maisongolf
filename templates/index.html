@@ -198,8 +198,9 @@
       {% set best = r.players|sort(attribute='total')|first %}
       {% set round_par = r.par_total if r.par_total is defined else par_total %}
       {% set to_par = best.to_par if best.to_par is defined else (best.total - round_par) %}
+      <article class="group relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.08] via-black/20 to-black/40 shadow-lg shadow-black/30 ring-1 ring-white/10 transition duration-300 hover:-translate-y-0.5 hover:border-gold/50 hover:shadow-2xl hover:shadow-gold/10">
       <a href="{{ url_for('round_detail', round_id=r.id) }}"
-         class="group relative block overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.08] via-black/20 to-black/40 p-5 shadow-lg shadow-black/30 ring-1 ring-white/10 transition duration-300 hover:-translate-y-0.5 hover:border-gold/50 hover:shadow-2xl hover:shadow-gold/10 no-underline sm:p-7">
+         class="relative block p-5 no-underline sm:p-7">
 
         <div class="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-gold/10 blur-2xl transition group-hover:bg-gold/20"></div>
 
@@ -266,6 +267,15 @@
           </div>
         </div>
       </a>
+      <div class="relative z-10 border-t border-white/10 bg-black/25 px-5 py-4 sm:px-7">
+        <button type="button"
+                class="ai-coach-trigger-standalone flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-400/40 bg-gradient-to-r from-emerald-800/80 to-fairway-dark px-4 py-2.5 text-sm font-bold text-emerald-100 shadow-md transition hover:border-emerald-300/60 hover:from-emerald-700/90 hover:text-white"
+                data-round-id="{{ r.id }}">
+          <span aria-hidden="true">✨</span>
+          AI 教練分析
+        </button>
+      </div>
+      </article>
       {% endfor %}
     </div>
   {% else %}
@@ -278,5 +288,16 @@
     </div>
   {% endif %}
 </section>
+
+{# 首頁 AI 教練彈層 #}
+<div id="ai-coach-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="ai-coach-modal-title">
+  <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-emerald-500/30 bg-fairway-dark shadow-2xl ring-1 ring-emerald-400/20">
+    <div class="sticky top-0 flex items-center justify-between border-b border-white/10 bg-fairway-dark/95 px-5 py-4 backdrop-blur">
+      <h3 id="ai-coach-modal-title" class="text-base font-bold text-white">AI 教練分析</h3>
+      <button type="button" id="ai-coach-modal-close" class="rounded-lg border border-white/15 px-3 py-1 text-sm text-green-200 hover:bg-white/10">關閉</button>
+    </div>
+    <div id="ai-coach-modal-body" class="p-5"></div>
+  </div>
+</div>
 
 {% endblock %}

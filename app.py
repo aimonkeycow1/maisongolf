@@ -25,6 +25,7 @@ from web_helpers import (
     get_global_round_stats,
 )
 from web_score import validate_score_submission
+from ai_coach import generate_coach_analysis
 
 app = Flask(__name__)
 
@@ -132,7 +133,34 @@ def score_entry():
     return jsonify({
         "ok": True,
         "id": rid,
-        "redirect": request.url_root.rstrip("/") + f"/round/{rid}",
+        "redirect": request.url_root.rstrip("/") + f"/round/{rid}?ai=1",
+    })
+
+
+@app.route("/ai_analysis", methods=["POST"])
+def ai_analysis():
+    """AI 教練賽後總結（Grok API 或本機模擬）"""
+    data = request.get_json(force=True, silent=True) or {}
+    round_id = data.get("round_id")
+    player_name = data.get("player_name") or None
+
+    if not round_id:
+        return jsonify({"ok": False, "error": "缺少 round_id"}), 400
+
+    rounds = load_rounds()
+    r = get_round_by_id(rounds, round_id)
+    if not r:
+        return jsonify({"ok": False, "error": "找不到該場次"}), 404
+
+    analysis, source = generate_coach_analysis(r, player_name=player_name)
+    if not analysis:
+        return jsonify({"ok": False, "error": "無法產生分析（球員資料不足）"}), 400
+
+    return jsonify({
+        "ok": True,
+        "analysis": analysis,
+        "source": source,
+        "player_name": player_name or sorted(r["players"], key=lambda p: p["total"])[0]["name"],
     })
 
 
