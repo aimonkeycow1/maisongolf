@@ -41,12 +41,10 @@
   <header class="sticky top-0 z-50 border-b border-white/10 bg-fairway-dark/95 backdrop-blur-md shadow-lg shadow-black/20">
     <div class="mx-auto max-w-5xl px-4 py-3 sm:px-6 lg:px-8">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <a href="{{ url_for('index') }}" class="group flex items-center gap-3 no-underline shrink-0">
-          <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-fairway text-lg shadow-lg ring-1 ring-white/20 transition group-hover:bg-fairway-light">⛳</span>
-          <span>
-            <span class="block text-lg font-bold tracking-tight text-white">Maison Golf</span>
-            <span class="block text-xs font-medium uppercase tracking-widest text-gold-light">Kau Sai Chau · South</span>
-          </span>
+        <a href="{{ url_for('index') }}"
+           class="group flex items-center no-underline shrink-0 rounded-2xl p-0.5 outline-none transition focus-visible:ring-2 focus-visible:ring-gold-light/60 focus-visible:ring-offset-2 focus-visible:ring-offset-fairway-dark group-hover:scale-[1.02]"
+           aria-label="Maison Golf 首頁">
+          {% include '_brand_logo.html' %}
         </a>
 
         {# 主導覽 Tab #}
