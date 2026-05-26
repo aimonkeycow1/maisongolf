@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+{% block title %}網頁錄分 · 滘西洲南場{% endblock %}
+{% block content %}
+<header class="hero hero-compact">
+  <div class="hero-bg"></div>
+  <div class="hero-body">
+    <h1>✏️ 多人同組錄分</h1>
+    <p>{{ course_name }} · 白梯 Par {{ par_total }}</p>
+  </div>
+</header>
+
+<div id="score-app" class="score-app">
+  <!-- Step 1 -->
+  <section id="step-setup" class="card score-step">
+    <h2>① 球友設定</h2>
+    <label class="field">
+      <span>今天幾位球友？</span>
+      <select id="player-count">
+        {% for n in range(1, 9) %}
+        <option value="{{ n }}" {% if n == 4 %}selected{% endif %}>{{ n }} 位</option>
+        {% endfor %}
+      </select>
+    </label>
+    <div id="player-names" class="player-names"></div>
+    <label class="field">
+      <span>備註（可留空）</span>
+      <input type="text" id="round-note" placeholder="例：6/1 天晴">
+    </label>
+    {% if secret_required %}
+    <label class="field">
+      <span>管理員密鑰</span>
+      <input type="password" id="sync-key" placeholder="Render 的 SYNC_SECRET" autocomplete="off">
+      <small class="field-hint">僅管理員需填，與同步腳本用的是同一組密鑰</small>
+    </label>
+    {% endif %}
+    <button type="button" class="btn btn-primary" id="btn-start">開始逐洞記分 →</button>
+  </section>
+
+  <!-- Step 2 -->
+  <section id="step-holes" class="card score-step" hidden>
+    <div class="hole-progress">
+      <div class="hole-progress-bar" id="progress-bar"></div>
+    </div>
+    <p class="hole-counter" id="hole-counter">第 1 洞 / 18</p>
+    <div class="hole-info" id="hole-info"></div>
+    <div id="hole-inputs" class="hole-inputs"></div>
+    <div class="score-nav">
+      <button type="button" class="btn btn-secondary" id="btn-prev" disabled>← 上一洞</button>
+      <button type="button" class="btn btn-primary" id="btn-next">下一洞 →</button>
+    </div>
+  </section>
+
+  <!-- Step 3 -->
+  <section id="step-review" class="card score-step" hidden>
+    <h2>③ 確認並存檔</h2>
+    <div id="review-board"></div>
+    <p id="submit-error" class="submit-error" hidden></p>
+    <div class="score-nav">
+      <button type="button" class="btn btn-secondary" id="btn-back-edit">← 修改成績</button>
+      <button type="button" class="btn btn-primary" id="btn-save">💾 存入並查看記分卡</button>
+    </div>
+  </section>
+</div>
+
+<script>
+const COURSE = {{ course|tojson }};
+const SECRET_REQUIRED = {{ secret_required|tojson }};
+
+(function () {
+  const HOLES = 18;
+  let players = [];
+  let scores = [];
+  let holeIndex = 0;
+
+  const el = (id) => document.getElementById(id);
+
+  function buildPlayerNames() {
+    const n = parseInt(el("player-count").value, 10);
+    const box = el("player-names");
+    box.innerHTML = "";
+    for (let i = 0; i < n; i++) {
+      const label = document.createElement("label");
+      label.className = "field";
+      label.innerHTML = `<span>第 ${i + 1} 位</span>`;
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "player-name-input";
+      input.placeholder = `球友 ${i + 1}`;
+      label.appendChild(input);
+      box.appendChild(label);
+    }
+  }
+
+  function scoreClass(diff) {
+    if (diff <= -1) return "birdie";
+    if (diff === 0) return "par";
+    if (diff === 1) return "bogey";
+    return "bad";
+  }
+
+  function scoreLabel(diff) {
+    const names = { "-3": "信天翁", "-2": "老鷹", "-1": "鳥擊", "0": "Par", "1": "柏忌", "2": "雙柏忌", "3": "三柏忌" };
+    const k = String(diff);
+    if (names[k]) return names[k];
+    return diff > 0 ? `+${diff}` : String(diff);
+  }
+
+  function showStep(name) {
+    ["setup", "holes", "review"].forEach((s) => {
+      el(`step-${s}`).hidden = s !== name;
+    });
+  }
+
+  function startScoring() {
+    const inputs = document.querySelectorAll(".player-name-input");
+    players = Array.from(inputs).map((inp, i) => (inp.value.trim() || `球友${i + 1}`));
+    scores = players.map(() => Array(HOLES).fill(null));
+    holeIndex = 0;
+    showStep("holes");
+    renderHole();
+  }
+
+  function renderHole() {
+    const h = holeIndex + 1;
+    const par = COURSE.pars[holeIndex];
+    const yard = COURSE.yardages[holeIndex];
+    const hcp = COURSE.handicap[holeIndex];
+    const section = holeIndex < 9 ? "🌅 前九洞" : "🌇 後九洞";
+
+    el("hole-counter").textContent = `第 ${h} 洞 / 18 · ${section}`;
+    el("progress-bar").style.width = `${((holeIndex + 1) / HOLES) * 100}%`;
+    el("hole-info").innerHTML = `
+      <div class="hole-info-grid">
+        <div><b>Par</b><br>${par}</div>
+        <div><b>碼數</b><br>${yard}</div>
+        <div><b>差點</b><br>${hcp}</div>
+      </div>`;
+
+    const container = el("hole-inputs");
+    container.innerHTML = "";
+    players.forEach((name, pi) => {
+      const val = scores[pi][holeIndex];
+      const diff = val !== null ? val - par : null;
+      const row = document.createElement("div");
+      row.className = "player-hole-row";
+      row.innerHTML = `
+        <div class="player-hole-name">${name}</div>
+        <div class="tap-row">
+          <button type="button" data-pi="${pi}" data-val="${Math.max(1, par - 1)}" class="tap-btn">${Math.max(1, par - 1)}</button>
+          <button type="button" data-pi="${pi}" data-val="${par}" class="tap-btn tap-par">${par}</button>
+          <button type="button" data-pi="${pi}" data-val="${par + 1}" class="tap-btn">${par + 1}</button>
+          <button type="button" data-pi="${pi}" data-val="${par + 2}" class="tap-btn">${par + 2}</button>
+        </div>
+        <div class="score-input-row">
+          <input type="number" min="1" max="20" class="score-input" data-pi="${pi}" value="${val !== null ? val : ""}" placeholder="桿數">
+          <span class="score-hint ${diff !== null ? scoreClass(diff) : ""}" data-hint="${pi}">${diff !== null ? scoreLabel(diff) : ""}</span>
+        </div>`;
+      container.appendChild(row);
+    });
+
+    container.querySelectorAll(".tap-btn").forEach((btn) => {
+      btn.addEventListener("click", () => setScore(parseInt(btn.dataset.pi, 10), parseInt(btn.dataset.val, 10)));
+    });
+    container.querySelectorAll(".score-input").forEach((inp) => {
+      inp.addEventListener("change", () => {
+        const v = parseInt(inp.value, 10);
+        if (v >= 1 && v <= 20) setScore(parseInt(inp.dataset.pi, 10), v);
+      });
+    });
+
+    el("btn-prev").disabled = holeIndex === 0;
+    el("btn-next").textContent = holeIndex === HOLES - 1 ? "查看總成績 →" : "下一洞 →";
+  }
+
+  function setScore(pi, val) {
+    if (val < 1 || val > 20) return;
+    scores[pi][holeIndex] = val;
+    const par = COURSE.pars[holeIndex];
+    const diff = val - par;
+    const inp = document.querySelector(`.score-input[data-pi="${pi}"]`);
+    const hint = document.querySelector(`.score-hint[data-hint="${pi}"]`);
+    if (inp) inp.value = val;
+    if (hint) {
+      hint.textContent = scoreLabel(diff);
+      hint.className = `score-hint ${scoreClass(diff)}`;
+    }
+  }
+
+  function allFilled() {
+    return scores.every((row) => row.every((s) => s !== null && s >= 1));
+  }
+
+  function calcTotal(pi) {
+    return scores[pi].reduce((a, b) => a + b, 0);
+  }
+
+  function showReview() {
+    if (!allFilled()) {
+      alert("請為每位球友填完本洞桿數後再繼續");
+      return;
+    }
+    if (holeIndex < HOLES - 1) {
+      holeIndex++;
+      renderHole();
+      return;
+    }
+    showStep("review");
+    const ranked = players
+      .map((name, i) => ({ name, total: calcTotal(i), idx: i }))
+      .sort((a, b) => a.total - b.total);
+
+    el("review-board").innerHTML = `
+      <div class="podium">
+        ${ranked.map((p, i) => `
+          <div class="podium-card ${i === 0 ? "rank1" : ""}">
+            <div class="podium-medal">${i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}</div>
+            <div class="podium-name">${p.name}</div>
+            <div class="podium-score">${p.total}</div>
+            <div>總桿 ${p.total}（${p.total - {{ par_total }} >= 0 ? "+" : ""}${p.total - {{ par_total }}}）</div>
+          </div>`).join("")}
+      </div>
+      <p class="review-hint">確認無誤後按下方按鈕存檔，會立即出現在歷史戰績。</p>`;
+    el("submit-error").hidden = true;
+  }
+
+  async function saveRound() {
+    const errEl = el("submit-error");
+    errEl.hidden = true;
+    const payload = {
+      note: el("round-note").value.trim(),
+      players: players.map((name, i) => ({ name, scores: scores[i] })),
+    };
+    if (SECRET_REQUIRED) {
+      payload.sync_key = el("sync-key").value.trim();
+      if (!payload.sync_key) {
+        errEl.textContent = "請填寫管理員密鑰";
+        errEl.hidden = false;
+        return;
+      }
+    }
+
+    el("btn-save").disabled = true;
+    el("btn-save").textContent = "存檔中…";
+
+    try {
+      const res = await fetch("{{ url_for('score_entry') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "存檔失敗");
+      }
+      window.location.href = data.redirect || `/round/${data.id}`;
+    } catch (e) {
+      errEl.textContent = e.message || "網路錯誤，請重試";
+      errEl.hidden = false;
+      el("btn-save").disabled = false;
+      el("btn-save").textContent = "💾 存入並查看記分卡";
+    }
+  }
+
+  el("player-count").addEventListener("change", buildPlayerNames);
+  el("btn-start").addEventListener("click", startScoring);
+  el("btn-prev").addEventListener("click", () => {
+    if (holeIndex > 0) { holeIndex--; renderHole(); }
+  });
+  el("btn-next").addEventListener("click", showReview);
+  el("btn-back-edit").addEventListener("click", () => {
+    holeIndex = HOLES - 1;
+    showStep("holes");
+    renderHole();
+  });
+  el("btn-save").addEventListener("click", saveRound);
+
+  buildPlayerNames();
+})();
+</script>
+{% endblock %}

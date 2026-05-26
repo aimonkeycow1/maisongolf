@@ -173,3 +173,157 @@ th { color: #a5d6a7; font-weight: 600; }
   margin-bottom: 20px;
   font-size: 0.9rem;
 }
+
+.hero-compact { min-height: 140px; }
+
+.score-app .field {
+  display: block;
+  margin-bottom: 14px;
+}
+.score-app .field span {
+  display: block;
+  font-size: 0.85rem;
+  color: #a5d6a7;
+  margin-bottom: 6px;
+}
+.score-app input,
+.score-app select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.35);
+  color: #f1f8f4;
+  font-size: 1rem;
+}
+.field-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+.player-names { margin-bottom: 8px; }
+
+.btn {
+  display: inline-block;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-primary {
+  background: #2e7d32;
+  color: #fff;
+  width: 100%;
+  margin-top: 8px;
+}
+.btn-secondary {
+  background: rgba(255,255,255,0.12);
+  color: #f1f8f4;
+}
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.hole-progress {
+  height: 6px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 3px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.hole-progress-bar {
+  height: 100%;
+  background: #66bb6a;
+  width: 0;
+  transition: width 0.2s;
+}
+.hole-counter {
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: #a5d6a7;
+}
+.hole-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  text-align: center;
+  padding: 14px;
+  background: rgba(0,0,0,0.25);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+.hole-info-grid b { color: #a5d6a7; font-size: 0.75rem; }
+
+.player-hole-row {
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.player-hole-row:last-child { border-bottom: none; }
+.player-hole-name {
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.tap-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.tap-btn {
+  padding: 10px 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.08);
+  color: #f1f8f4;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+.tap-btn.tap-par { background: rgba(46,125,50,0.45); border-color: #66bb6a; }
+.tap-btn:active { transform: scale(0.97); }
+
+.score-input-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.score-input {
+  width: 72px !important;
+  text-align: center;
+  font-size: 1.25rem !important;
+  font-weight: 700;
+}
+.score-hint {
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  min-width: 4em;
+  text-align: center;
+}
+.score-hint.birdie { background: #1b5e20; }
+.score-hint.par { background: #455a64; }
+.score-hint.bogey { background: #f9a825; color: #111; }
+.score-hint.bad { background: #c62828; }
+
+.score-nav {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.score-nav .btn { flex: 1; min-width: 120px; text-align: center; }
+.score-nav .btn-primary { width: auto; margin-top: 0; }
+
+.submit-error {
+  color: #ef9a9a;
+  margin: 12px 0;
+  font-size: 0.9rem;
+}
+.review-hint {
+  font-size: 0.85rem;
+  opacity: 0.85;
+  margin-top: 12px;
+}

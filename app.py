@@ -9,9 +9,10 @@ import socket
 
 from flask import Flask, render_template, abort, request, jsonify
 
-from course_data import PAR_TOTAL
-from round_storage import load_rounds, save_rounds, BASE_DIR
+from course_data import PAR_TOTAL, PARS, YARDAGES_WHITE, HANDICAP, COURSE_NAME
+from round_storage import load_rounds, save_rounds, add_round, BASE_DIR
 from web_helpers import get_round_by_id, get_player_stats_table, get_hardest_holes
+from web_score import validate_score_submission
 
 app = Flask(__name__)
 
@@ -69,6 +70,54 @@ def round_detail(round_id):
         round=r,
         ranked=ranked,
     )
+
+
+def _sync_secret_ok():
+    secret = os.environ.get("SYNC_SECRET", "")
+    if not secret:
+        return True
+    key = request.headers.get("X-Sync-Key") or ""
+    if not key and request.is_json:
+        data = request.get_json(silent=True) or {}
+        key = data.get("sync_key", "")
+    if not key:
+        key = request.form.get("sync_key", "")
+    return key == secret
+
+
+@app.route("/score", methods=["GET", "POST"])
+def score_entry():
+    """網頁多人同組錄分（雲端需 SYNC_SECRET）"""
+    secret_required = bool(os.environ.get("SYNC_SECRET", ""))
+
+    if request.method == "GET":
+        return render_template(
+            "score.html",
+            page="score",
+            course_name=COURSE_NAME,
+            par_total=PAR_TOTAL,
+            course={
+                "pars": PARS,
+                "yardages": YARDAGES_WHITE,
+                "handicap": HANDICAP,
+            },
+            secret_required=secret_required,
+        )
+
+    if not _sync_secret_ok():
+        return jsonify({"ok": False, "error": "管理員密鑰錯誤或未填寫"}), 403
+
+    data = request.get_json(force=True, silent=True)
+    result, err = validate_score_submission(data)
+    if err:
+        return jsonify({"ok": False, "error": err}), 400
+
+    rid = add_round(result["players_stats"], result["note"])
+    return jsonify({
+        "ok": True,
+        "id": rid,
+        "redirect": request.url_root.rstrip("/") + f"/round/{rid}",
+    })
 
 
 @app.route("/stats")

@@ -41,21 +41,24 @@ git push -u origin main
 
 ---
 
-## 之後每次打完球（本機錄分 → 同步雲端）
+## 之後每次打完球
+
+### 方式 A：網頁直接錄分（推薦）
+
+1. 打開 `https://你的網址.onrender.com/score`
+2. 填球友名字 → 逐洞記分（可點 Par / +1 快捷鍵）
+3. 填 **管理員密鑰**（與 Render 的 `SYNC_SECRET` 相同）→ 存檔
+4. 群友重新整理首頁即可看到
+
+### 方式 B：本機錄分再同步
 
 ```bash
 cd ~/Desktop/Python高爾夫
-
-# 1. 本機錄分（和以前一樣）
 python3 golf_score.py   # 選 2 多人記分
-
-# 2. 上傳到雲端（把網址和密鑰換成你的）
-export DEPLOY_URL="https://kau-sai-golf.onrender.com"
+export DEPLOY_URL="https://你的網址.onrender.com"
 export SYNC_KEY="貼上 SYNC_SECRET"
 python3 sync_rounds.py
 ```
-
-群友重新整理網頁即可看到新成績。
 
 ---
 

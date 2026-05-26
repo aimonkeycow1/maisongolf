@@ -10,12 +10,13 @@
   <div class="wrap">
     <nav class="nav">
       <a href="{{ url_for('index') }}" {% if page == 'home' %}class="active"{% endif %}>🏠 首頁</a>
+      <a href="{{ url_for('score_entry') }}" {% if page == 'score' %}class="active"{% endif %}>✏️ 錄分</a>
       <a href="{{ url_for('stats') }}" {% if page == 'stats' %}class="active"{% endif %}>📊 球員統計</a>
     </nav>
     {% block content %}{% endblock %}
     <footer class="footer">
       <p>滘西洲高爾夫球場 · 南場 · Python 記分器網頁版</p>
-      <p>本機錄分請用 <code>python3 golf_score.py</code></p>
+      <p>網頁錄分：<a href="{{ url_for('score_entry') }}">/score</a> · 本機也可用 <code>python3 golf_score.py</code></p>
     </footer>
   </div>
 </body>
