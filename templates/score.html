@@ -35,7 +35,8 @@
       <h2 class="text-lg font-bold text-fairway-dark">選擇球場</h2>
       <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 1</span>
     </div>
-    <div id="course-grid" class="grid gap-4 sm:grid-cols-2">
+    <p class="mb-4 text-sm text-green-600">香港賽馬會滘西洲公眾高爾夫球場 · 共 3 個 18 洞球場</p>
+    <div id="course-grid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {% for c in courses_catalog %}
       <button type="button" data-course-id="{{ c.id }}"
               class="course-card group relative overflow-hidden rounded-2xl border-2 border-green-100 text-left transition hover:border-fairway hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-fairway">
