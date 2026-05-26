@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from '_macros.html' import cta_button, trophy_icon %}
+{% from '_macros.html' import cta_button, trophy_icon, par_trend_badge %}
 {% block title %}歷史戰績 · Maison Golf{% endblock %}
 {% block content %}
 
@@ -196,56 +196,72 @@
     <div class="space-y-4">
       {% for r in rounds_rev %}
       {% set best = r.players|sort(attribute='total')|first %}
+      {% set round_par = r.par_total if r.par_total is defined else par_total %}
+      {% set to_par = best.to_par if best.to_par is defined else (best.total - round_par) %}
       <a href="{{ url_for('round_detail', round_id=r.id) }}"
-         class="group relative block overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-black/30 to-black/10 p-5 transition hover:border-gold/40 hover:shadow-xl hover:shadow-gold/5 no-underline sm:p-6">
+         class="group relative block overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.08] via-black/20 to-black/40 p-5 shadow-lg shadow-black/30 ring-1 ring-white/10 transition duration-300 hover:-translate-y-0.5 hover:border-gold/50 hover:shadow-2xl hover:shadow-gold/10 no-underline sm:p-7">
 
-        {# 左側：賽事資訊 #}
-        <div class="flex items-stretch gap-4 sm:gap-6">
+        <div class="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-gold/10 blur-2xl transition group-hover:bg-gold/20"></div>
+
+        <div class="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          {# 左側：賽事資訊 #}
           <div class="min-w-0 flex-1">
-            {# 日期 #}
             <div class="flex flex-wrap items-center gap-2 text-sm text-green-200/70">
               <time class="font-semibold text-white">{{ r.date }}</time>
               <span class="opacity-40">·</span>
               <span>{{ r.time }}</span>
             </div>
 
-            {# 球場 #}
-            <p class="mt-1 truncate text-xs font-medium uppercase tracking-wide text-fairway-light sm:text-sm">
+            <p class="mt-1.5 truncate text-xs font-semibold uppercase tracking-wide text-fairway-light sm:text-sm">
               {{ r.course or course_name }}
             </p>
-
-            {% if r.note %}
-            <p class="mt-1 text-sm italic text-green-200/50">{{ r.note }}</p>
+            {% if r.tee %}
+            <p class="mt-0.5 text-xs text-green-200/50">Par {{ round_par }} · {{ r.tee }}</p>
             {% endif %}
 
-            {# 冠軍 + 獎盃 #}
-            <div class="mt-4 flex items-center gap-2">
-              <span class="flex h-9 w-9 items-center justify-center rounded-full bg-gold/20 text-gold-light ring-1 ring-gold/40">
-                {{ trophy_icon('h-5 w-5') }}
-              </span>
-              <div>
-                <p class="text-xs font-medium uppercase tracking-wider text-gold-light/80">冠軍</p>
-                <p class="font-bold text-white group-hover:text-gold-light transition-colors">{{ best.name }}</p>
+            {% if r.note %}
+            <p class="mt-2 text-sm italic text-green-200/45 line-clamp-2">{{ r.note }}</p>
+            {% endif %}
+
+            <div class="mt-4 flex flex-wrap items-center gap-3">
+              <div class="flex items-center gap-2">
+                <span class="flex h-10 w-10 items-center justify-center rounded-full bg-gold/25 text-gold-light shadow-inner ring-2 ring-gold/40">
+                  {{ trophy_icon('h-5 w-5') }}
+                </span>
+                <div>
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-gold-light/75">冠軍</p>
+                  <p class="text-base font-bold text-white transition group-hover:text-gold-light sm:text-lg">{{ best.name }}</p>
+                </div>
               </div>
+              {{ par_trend_badge(to_par, 'sm') }}
             </div>
 
-            {# 球手數 #}
-            <p class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-xs text-green-200/70 ring-1 ring-white/10">
-              <svg class="h-3.5 w-3.5 opacity-60" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <p class="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-xs font-medium text-green-200/75 ring-1 ring-white/10">
+              <svg class="h-3.5 w-3.5 opacity-60" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
               {{ r.players|length }} 位球手
             </p>
           </div>
 
-          {# 右側：超大總桿 #}
-          <div class="flex shrink-0 flex-col items-end justify-center border-l border-white/10 pl-4 sm:pl-6">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-gold-light/70 sm:text-xs">冠軍總桿</p>
-            <p class="text-5xl font-black tabular-nums leading-none text-gold-light drop-shadow-lg sm:text-6xl lg:text-7xl group-hover:scale-105 transition-transform">
-              {{ best.total }}
-            </p>
-            <p class="mt-1 text-sm font-medium text-green-200/60">桿</p>
-            <span class="mt-3 flex items-center gap-1 text-xs font-semibold text-fairway-light opacity-0 transition group-hover:opacity-100">
+          {# 右側：超大總桿 + 獎盃 #}
+          <div class="flex shrink-0 items-center justify-between gap-4 border-t border-white/10 pt-4 sm:flex-col sm:items-end sm:justify-center sm:border-l sm:border-t-0 sm:pl-8 sm:pt-0">
+            <div class="flex flex-col items-start sm:items-end">
+              <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gold-light/80 sm:text-xs">冠軍總桿</p>
+              <div class="mt-1 flex items-center gap-2 sm:gap-3">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-gold/40 to-gold/10 text-gold-light shadow-lg ring-2 ring-gold/50 sm:h-12 sm:w-12">
+                  {{ trophy_icon('h-6 w-6 sm:h-7 sm:w-7') }}
+                </span>
+                <p class="text-6xl font-black tabular-nums leading-none tracking-tight text-gold-light drop-shadow-[0_4px_24px_rgba(234,179,8,0.35)] transition duration-300 group-hover:scale-[1.03] sm:text-7xl lg:text-8xl">
+                  {{ best.total }}
+                </p>
+              </div>
+              <p class="mt-1 text-sm font-semibold text-green-200/55 sm:text-right">桿 · 比標準桿</p>
+              <div class="mt-2 sm:flex sm:justify-end">
+                {{ par_trend_badge(to_par) }}
+              </div>
+            </div>
+            <span class="hidden items-center gap-1 text-xs font-semibold text-fairway-light sm:flex opacity-0 transition group-hover:opacity-100">
               查看記分卡
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
             </span>
           </div>
         </div>

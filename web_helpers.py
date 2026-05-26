@@ -1,6 +1,6 @@
 """網頁版用的資料整理（不印終端機）"""
 
-from course_data import PARS, YARDAGES_WHITE, HANDICAP
+from course_data import PARS, YARDAGES_WHITE, HANDICAP, PAR_TOTAL as DEFAULT_PAR_TOTAL
 from golf_utils import to_par_str
 
 
@@ -21,6 +21,76 @@ def get_round_by_id(rounds, round_id):
         if r["id"] == round_id:
             return r
     return None
+
+
+def _player_to_par(player, round_par):
+    if player.get("to_par") is not None:
+        return player["to_par"]
+    return player["total"] - round_par
+
+
+def _round_par_total(r):
+    return r.get("par_total") or DEFAULT_PAR_TOTAL
+
+
+def get_global_round_stats(rounds):
+    """全站統計摘要（統計頁卡片與趨勢圖）"""
+    if not rounds:
+        return None
+
+    entries = []
+    for r in rounds:
+        rp = _round_par_total(r)
+        for p in r["players"]:
+            entries.append({
+                "total": p["total"],
+                "to_par": _player_to_par(p, rp),
+                "date": r.get("date", ""),
+                "time": r.get("time", ""),
+                "course": r.get("course", ""),
+                "player": p.get("name", ""),
+                "round_id": r.get("id", ""),
+            })
+
+    totals = [e["total"] for e in entries]
+    to_pars = [e["to_par"] for e in entries]
+    avg_to_par_val = sum(to_pars) / len(to_pars)
+
+    best = min(entries, key=lambda e: e["total"])
+    worst = max(entries, key=lambda e: e["total"])
+
+    sorted_rounds = sorted(rounds, key=lambda r: (r.get("date", ""), r.get("time", "")))
+    recent = []
+    for r in sorted_rounds[-5:]:
+        rp = _round_par_total(r)
+        champ = min(r["players"], key=lambda x: x["total"])
+        tp = _player_to_par(champ, rp)
+        date = r.get("date", "")
+        recent.append({
+            "date": date,
+            "label": date[5:] if len(date) >= 10 else date,
+            "to_par": tp,
+            "to_par_label": to_par_str(tp),
+            "total": champ["total"],
+            "course": r.get("course", ""),
+            "player": champ.get("name", ""),
+        })
+
+    trend_max = max((abs(item["to_par"]) for item in recent), default=1)
+    if trend_max < 1:
+        trend_max = 1
+
+    return {
+        "total_rounds": len(rounds),
+        "player_rounds": len(entries),
+        "avg_score": round(sum(totals) / len(totals), 1),
+        "avg_to_par": to_par_str(round(avg_to_par_val)),
+        "avg_to_par_num": round(avg_to_par_val, 1),
+        "best": best,
+        "worst": worst,
+        "recent_trend": recent,
+        "trend_max": trend_max,
+    }
 
 def get_player_stats_table(rounds):
     players = {}

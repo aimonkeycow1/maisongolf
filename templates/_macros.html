@@ -27,6 +27,42 @@
 {%- endif -%}
 {%- endmacro %}
 
+{% macro par_trend_badge(to_par, size='md') -%}
+{%- set sm = size == 'sm' -%}
+<span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-bold tabular-nums ring-1
+             {% if sm %}text-xs{% else %}text-sm sm:text-base{% endif %}
+             {% if to_par < 0 %}bg-emerald-500/25 text-emerald-200 ring-emerald-400/40
+             {% elif to_par > 0 %}bg-red-500/20 text-red-200 ring-red-400/35
+             {% else %}bg-white/10 text-green-100 ring-white/20{% endif %}">
+  {% if to_par < 0 %}
+  <svg class="{% if sm %}h-3.5 w-3.5{% else %}h-4 w-4 sm:h-5 sm:w-5{% endif %}" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/>
+  </svg>
+  <span>{{ to_par }}</span>
+  {% elif to_par > 0 %}
+  <svg class="{% if sm %}h-3.5 w-3.5{% else %}h-4 w-4 sm:h-5 sm:w-5{% endif %}" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+  </svg>
+  <span>+{{ to_par }}</span>
+  {% else %}
+  <span class="{% if sm %}text-[10px]{% else %}text-xs{% endif %} uppercase tracking-wider opacity-80">E</span>
+  <span>Par</span>
+  {% endif %}
+</span>
+{%- endmacro %}
+
+{% macro stat_card(title, value, subtitle='', icon='chart', accent='fairway') -%}
+<div class="relative overflow-hidden rounded-2xl bg-white p-5 shadow-lg ring-1 ring-green-900/10 transition hover:shadow-xl sm:p-6">
+  <div class="absolute -right-6 -top-6 h-24 w-24 rounded-full opacity-10
+              {% if accent == 'gold' %}bg-gold{% elif accent == 'red' %}bg-red-500{% elif accent == 'blue' %}bg-blue-600{% else %}bg-fairway{% endif %}"></div>
+  <p class="text-xs font-semibold uppercase tracking-wider text-green-600/80">{{ title }}</p>
+  <p class="mt-2 text-3xl font-black tabular-nums leading-none text-fairway-dark sm:text-4xl">{{ value }}</p>
+  {% if subtitle %}
+  <p class="mt-2 text-sm leading-snug text-green-700/80">{{ subtitle }}</p>
+  {% endif %}
+</div>
+{%- endmacro %}
+
 {% macro trophy_icon(class) -%}
 <svg class="{{ class }}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
   <path d="M5 3h14v2a5 5 0 0 1-4.9 5 6.5 6.5 0 0 1-3.6 5.8L12 21l-1.5-5.2A6.5 6.5 0 0 1 6.9 10 5 5 0 0 1 5 5V3zm2 2v0a3 3 0 0 0 3 3h4a3 3 0 0 0 3-3V5H7zm2.2 12.4L12 18.3l2.8-1.9A4.5 4.5 0 0 0 17 12H7a4.5 4.5 0 0 0 2.2 5.4z"/>

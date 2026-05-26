@@ -18,7 +18,12 @@ from courses import (
 )
 from course_images import ensure_course_images
 from round_storage import load_rounds, save_rounds, add_round, BASE_DIR
-from web_helpers import get_round_by_id, get_player_stats_table, get_hardest_holes
+from web_helpers import (
+    get_round_by_id,
+    get_player_stats_table,
+    get_hardest_holes,
+    get_global_round_stats,
+)
 from web_score import validate_score_submission
 
 app = Flask(__name__)
@@ -139,6 +144,7 @@ def stats():
         page="stats",
         player_rows=get_player_stats_table(rounds),
         hard_holes=get_hardest_holes(rounds),
+        global_stats=get_global_round_stats(rounds),
     )
 
 
