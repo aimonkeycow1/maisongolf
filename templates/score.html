@@ -1,24 +1,81 @@
 {% extends "base.html" %}
-{% block title %}網頁錄分 · 滘西洲南場{% endblock %}
+{% block title %}選擇球場 · 開始新場次{% endblock %}
 {% block content %}
 
-<section class="relative mb-8 overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10">
+<section class="relative mb-6 overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10">
   <div class="hero-bg-image absolute inset-0"></div>
   <div class="absolute inset-0 bg-gradient-to-r from-fairway-dark/95 to-fairway-dark/60"></div>
   <div class="relative px-6 py-10 sm:px-10">
-    <p class="mb-2 text-xs font-semibold uppercase tracking-widest text-gold-light">Live Scoring</p>
-    <h1 class="text-2xl font-bold text-white sm:text-3xl">多人同組錄分</h1>
-    <p class="mt-2 text-green-100/80">{{ course_name }} · 白梯 Par {{ par_total }}</p>
+    <p class="mb-2 text-xs font-semibold uppercase tracking-widest text-gold-light">New Round</p>
+    <h1 class="text-2xl font-bold text-white sm:text-3xl">開始新場次</h1>
+    <p id="hero-subtitle" class="mt-2 text-green-100/80">請先選擇球場與發球台</p>
   </div>
 </section>
 
+{# 已選球場摘要條 #}
+<div id="selection-banner" class="mb-6 hidden rounded-xl border border-gold/40 bg-fairway-dark/90 px-5 py-4 shadow-lg ring-1 ring-gold/20">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wider text-gold-light">目前場次</p>
+      <p id="banner-course" class="text-lg font-bold text-white"></p>
+      <p id="banner-tee" class="text-sm text-green-100/80"></p>
+    </div>
+    <button type="button" id="btn-change-course"
+            class="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-green-100 hover:bg-white/10">
+      更換球場
+    </button>
+  </div>
+</div>
+
 <div id="score-app" class="space-y-6">
 
-  {# Step 1 #}
-  <section id="step-setup" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8">
+  {# Step 0a：選擇球場 #}
+  <section id="step-course" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8">
+    <div class="mb-6 flex items-center justify-between">
+      <h2 class="text-lg font-bold text-fairway-dark">選擇球場</h2>
+      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 1</span>
+    </div>
+    <div id="course-grid" class="grid gap-4 sm:grid-cols-2">
+      {% for c in courses_catalog %}
+      <button type="button" data-course-id="{{ c.id }}"
+              class="course-card group relative overflow-hidden rounded-2xl border-2 border-green-100 text-left transition hover:border-fairway hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-fairway">
+        <div class="relative h-36 overflow-hidden">
+          <div class="absolute inset-0 bg-cover bg-center transition group-hover:scale-105"
+               style="background-image: url('{{ c.hero_image }}')"></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-fairway-dark/95 via-fairway-dark/50 to-transparent"></div>
+          <div class="absolute bottom-0 left-0 right-0 p-4">
+            <p class="text-xs text-gold-light">{{ c.location }}</p>
+            <p class="text-lg font-bold text-white">{{ c.name }}</p>
+          </div>
+        </div>
+        <div class="p-4">
+          <p class="text-sm leading-relaxed text-green-700">{{ c.description }}</p>
+          <p class="mt-3 text-xs font-semibold text-fairway">{{ c.tees|length }} 種發球台可選 →</p>
+        </div>
+      </button>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# Step 0b：選擇 Tee #}
+  <section id="step-tee" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8" hidden>
+    <div class="mb-2 flex items-center justify-between">
+      <h2 class="text-lg font-bold text-fairway-dark">選擇發球台</h2>
+      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 2</span>
+    </div>
+    <p id="tee-course-name" class="mb-5 text-sm text-green-600"></p>
+    <div id="tee-grid" class="grid gap-3 sm:grid-cols-2"></div>
+    <button type="button" id="btn-back-course"
+            class="mt-5 text-sm font-semibold text-fairway hover:text-fairway-dark">
+      ← 返回選擇球場
+    </button>
+  </section>
+
+  {# Step 1：球友設定 #}
+  <section id="step-setup" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8" hidden>
     <div class="mb-6 flex items-center justify-between">
       <h2 class="text-lg font-bold text-fairway-dark">球友設定</h2>
-      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 1</span>
+      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 3</span>
     </div>
 
     <label class="mb-4 block">
@@ -49,12 +106,12 @@
     {% endif %}
 
     <button type="button" id="btn-start"
-            class="w-full rounded-xl bg-fairway py-3.5 text-base font-semibold text-white shadow-lg transition hover:bg-fairway-light focus:outline-none focus:ring-2 focus:ring-fairway focus:ring-offset-2">
+            class="w-full rounded-xl bg-fairway py-3.5 text-base font-semibold text-white shadow-lg transition hover:bg-fairway-light">
       開始逐洞記分 →
     </button>
   </section>
 
-  {# Step 2 #}
+  {# Step 2：逐洞記分 #}
   <section id="step-holes" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8" hidden>
     <div class="mb-4 h-1.5 overflow-hidden rounded-full bg-green-100">
       <div id="progress-bar" class="h-full rounded-full bg-gradient-to-r from-fairway to-gold transition-all duration-300" style="width:0%"></div>
@@ -64,27 +121,27 @@
     <div id="hole-inputs" class="mt-4 space-y-6"></div>
     <div class="mt-6 flex flex-wrap gap-3">
       <button type="button" id="btn-prev" disabled
-              class="flex-1 min-w-[120px] rounded-xl border border-green-200 bg-green-50 py-3 font-semibold text-fairway-dark transition hover:bg-green-100 disabled:opacity-40">
+              class="flex-1 min-w-[120px] rounded-xl border border-green-200 bg-green-50 py-3 font-semibold text-fairway-dark disabled:opacity-40">
         ← 上一洞
       </button>
       <button type="button" id="btn-next"
-              class="flex-1 min-w-[120px] rounded-xl bg-fairway py-3 font-semibold text-white shadow transition hover:bg-fairway-light">
+              class="flex-1 min-w-[120px] rounded-xl bg-fairway py-3 font-semibold text-white shadow hover:bg-fairway-light">
         下一洞 →
       </button>
     </div>
   </section>
 
-  {# Step 3 #}
+  {# Step 3：確認 #}
   <section id="step-review" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8" hidden>
     <div class="mb-6 flex items-center justify-between">
       <h2 class="text-lg font-bold text-fairway-dark">確認並存檔</h2>
-      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 3</span>
+      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 4</span>
     </div>
     <div id="review-board"></div>
     <p id="submit-error" class="mt-4 hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"></p>
     <div class="mt-6 flex flex-wrap gap-3">
       <button type="button" id="btn-back-edit"
-              class="flex-1 min-w-[120px] rounded-xl border border-green-200 bg-green-50 py-3 font-semibold text-fairway-dark hover:bg-green-100">
+              class="flex-1 min-w-[120px] rounded-xl border border-green-200 bg-green-50 py-3 font-semibold text-fairway-dark">
         ← 修改成績
       </button>
       <button type="button" id="btn-save"
@@ -96,13 +153,20 @@
 </div>
 
 <script>
-const COURSE = {{ course|tojson }};
+const CATALOG = {{ courses_full|tojson }};
 const SECRET_REQUIRED = {{ secret_required|tojson }};
-const PAR_TOTAL = {{ par_total }};
 
 (function () {
   const HOLES = 18;
-  let players = [], scores = [], holeIndex = 0;
+  const STEPS = ["course", "tee", "setup", "holes", "review"];
+
+  let courseId = null;
+  let teeId = null;
+  let activeTee = null;
+  let players = [];
+  let scores = [];
+  let holeIndex = 0;
+
   const el = (id) => document.getElementById(id);
 
   const SCORE_TW = {
@@ -127,6 +191,83 @@ const PAR_TOTAL = {{ par_total }};
     return n[k] || (diff > 0 ? `+${diff}` : String(diff));
   }
 
+  function showStep(name) {
+    STEPS.forEach((s) => {
+      const node = el(`step-${s}`);
+      if (node) node.hidden = s !== name;
+    });
+  }
+
+  function updateBanner() {
+    const banner = el("selection-banner");
+    if (!activeTee) {
+      banner.classList.add("hidden");
+      el("hero-subtitle").textContent = "請先選擇球場與發球台";
+      return;
+    }
+    banner.classList.remove("hidden");
+    el("banner-course").textContent = CATALOG[courseId].name;
+    el("banner-tee").textContent =
+      `${activeTee.name} · Par ${activeTee.par_total} · ${activeTee.yardage_total} 碼`;
+    el("hero-subtitle").textContent =
+      `${CATALOG[courseId].name} · ${activeTee.name}`;
+  }
+
+  function selectCourse(cid) {
+    courseId = cid;
+    teeId = null;
+    activeTee = null;
+    const course = CATALOG[cid];
+    el("tee-course-name").textContent = course.name;
+    const grid = el("tee-grid");
+    grid.innerHTML = "";
+    Object.values(course.tees).forEach((tee) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className =
+        "tee-card rounded-xl border-2 border-green-100 p-5 text-left transition hover:border-fairway hover:bg-green-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-fairway";
+      btn.innerHTML = `
+        <p class="text-lg font-bold text-fairway-dark">${tee.name}</p>
+        <div class="mt-3 flex gap-6">
+          <div>
+            <p class="text-xs uppercase tracking-wide text-green-600">總 Par</p>
+            <p class="text-2xl font-black tabular-nums text-fairway-dark">${tee.par_total}</p>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-wide text-green-600">總碼數</p>
+            <p class="text-2xl font-black tabular-nums text-fairway-dark">${tee.yardage_total}</p>
+          </div>
+        </div>
+        <p class="mt-3 text-xs font-semibold text-fairway">選擇此發球台 →</p>`;
+      btn.addEventListener("click", () => selectTee(tee.id));
+      grid.appendChild(btn);
+    });
+    document.querySelectorAll(".course-card").forEach((c) => {
+      c.classList.toggle("border-fairway", c.dataset.courseId === cid);
+      c.classList.toggle("ring-2", c.dataset.courseId === cid);
+      c.classList.toggle("ring-fairway", c.dataset.courseId === cid);
+    });
+    showStep("tee");
+    updateBanner();
+  }
+
+  function selectTee(tid) {
+    teeId = tid;
+    activeTee = CATALOG[courseId].tees[tid];
+    updateBanner();
+    showStep("setup");
+  }
+
+  function resetCourseSelection() {
+    courseId = teeId = null;
+    activeTee = null;
+    document.querySelectorAll(".course-card").forEach((c) => {
+      c.classList.remove("border-fairway", "ring-2", "ring-fairway");
+    });
+    showStep("course");
+    updateBanner();
+  }
+
   function buildPlayerNames() {
     const n = parseInt(el("player-count").value, 10);
     const box = el("player-names");
@@ -137,21 +278,22 @@ const PAR_TOTAL = {{ par_total }};
       wrap.innerHTML = `<span class="mb-1 block text-sm font-medium text-green-800">第 ${i + 1} 位</span>`;
       const input = document.createElement("input");
       input.type = "text";
-      input.className = "player-name-input w-full rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-900 focus:border-fairway focus:outline-none focus:ring-2 focus:ring-fairway/30";
+      input.className =
+        "player-name-input w-full rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-900 focus:border-fairway focus:outline-none focus:ring-2 focus:ring-fairway/30";
       input.placeholder = `球友 ${i + 1}`;
       wrap.appendChild(input);
       box.appendChild(wrap);
     }
   }
 
-  function showStep(name) {
-    ["setup", "holes", "review"].forEach((s) => {
-      el(`step-${s}`).hidden = s !== name;
-    });
-  }
-
   function startScoring() {
-    players = [...document.querySelectorAll(".player-name-input")].map((inp, i) => inp.value.trim() || `球友${i + 1}`);
+    if (!activeTee) {
+      alert("請先選擇球場與發球台");
+      return;
+    }
+    players = [...document.querySelectorAll(".player-name-input")].map(
+      (inp, i) => inp.value.trim() || `球友${i + 1}`
+    );
     scores = players.map(() => Array(HOLES).fill(null));
     holeIndex = 0;
     showStep("holes");
@@ -160,9 +302,9 @@ const PAR_TOTAL = {{ par_total }};
 
   function renderHole() {
     const h = holeIndex + 1;
-    const par = COURSE.pars[holeIndex];
-    const yard = COURSE.yardages[holeIndex];
-    const hcp = COURSE.handicap[holeIndex];
+    const par = activeTee.pars[holeIndex];
+    const yard = activeTee.yardages[holeIndex];
+    const hcp = activeTee.handicap[holeIndex];
     const section = holeIndex < 9 ? "前九洞" : "後九洞";
 
     el("hole-counter").textContent = `第 ${h} 洞 / 18 · ${section}`;
@@ -186,7 +328,7 @@ const PAR_TOTAL = {{ par_total }};
         <p class="mb-3 font-bold text-fairway-dark">${name}</p>
         <div class="mb-3 grid grid-cols-4 gap-2">
           <button type="button" data-pi="${pi}" data-val="${Math.max(1, par - 1)}"
-            class="tap-btn rounded-lg border border-green-200 py-2.5 text-sm font-semibold text-fairway-dark hover:bg-green-50">${Math.max(1, par - 1)}</button>
+            class="tap-btn rounded-lg border border-green-200 py-2.5 text-sm font-semibold hover:bg-green-50">${Math.max(1, par - 1)}</button>
           <button type="button" data-pi="${pi}" data-val="${par}"
             class="tap-btn rounded-lg bg-fairway py-2.5 text-sm font-semibold text-white">${par}</button>
           <button type="button" data-pi="${pi}" data-val="${par + 1}"
@@ -196,7 +338,7 @@ const PAR_TOTAL = {{ par_total }};
         </div>
         <div class="flex items-center gap-3">
           <input type="number" min="1" max="20" data-pi="${pi}" value="${val !== null ? val : ""}" placeholder="桿"
-            class="score-input w-20 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-center text-2xl font-bold text-fairway-dark focus:border-fairway focus:outline-none focus:ring-2 focus:ring-fairway/30">
+            class="score-input w-20 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-center text-2xl font-bold focus:border-fairway focus:outline-none focus:ring-2 focus:ring-fairway/30">
           <span data-hint="${pi}" class="score-hint rounded-full px-3 py-1 text-sm font-semibold ${diff !== null ? SCORE_TW[key] : "hidden"}">${diff !== null ? scoreLabel(diff) : ""}</span>
         </div>`;
       container.appendChild(row);
@@ -219,7 +361,7 @@ const PAR_TOTAL = {{ par_total }};
   function setScore(pi, val) {
     if (val < 1 || val > 20) return;
     scores[pi][holeIndex] = val;
-    const par = COURSE.pars[holeIndex];
+    const par = activeTee.pars[holeIndex];
     const diff = val - par;
     const key = scoreKey(diff);
     const inp = document.querySelector(`.score-input[data-pi="${pi}"]`);
@@ -240,21 +382,34 @@ const PAR_TOTAL = {{ par_total }};
   }
 
   function showReview() {
-    if (!allFilled()) { alert("請為每位球友填完本洞桿數"); return; }
-    if (holeIndex < HOLES - 1) { holeIndex++; renderHole(); return; }
+    if (!allFilled()) {
+      alert("請為每位球友填完本洞桿數");
+      return;
+    }
+    if (holeIndex < HOLES - 1) {
+      holeIndex++;
+      renderHole();
+      return;
+    }
     showStep("review");
-    const ranked = players.map((name, i) => ({ name, total: calcTotal(i) })).sort((a, b) => a.total - b.total);
+    const parTotal = activeTee.par_total;
+    const ranked = players
+      .map((name, i) => ({ name, total: calcTotal(i) }))
+      .sort((a, b) => a.total - b.total);
+
     el("review-board").innerHTML = `
+      <p class="mb-4 rounded-lg bg-green-50 px-4 py-2 text-center text-sm font-medium text-fairway-dark">
+        ${CATALOG[courseId].name} · ${activeTee.name} · Par ${parTotal}
+      </p>
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         ${ranked.map((p, i) => `
           <div class="rounded-xl border p-4 text-center ${i === 0 ? "border-gold/50 bg-gold/5" : "border-green-100 bg-green-50"}">
             <p class="text-2xl">${i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}</p>
             <p class="mt-1 font-bold text-fairway-dark">${p.name}</p>
             <p class="text-3xl font-bold tabular-nums text-fairway">${p.total}</p>
-            <p class="text-sm text-green-700">${p.total - PAR_TOTAL >= 0 ? "+" : ""}${p.total - PAR_TOTAL}</p>
+            <p class="text-sm text-green-700">${p.total - parTotal >= 0 ? "+" : ""}${p.total - parTotal}</p>
           </div>`).join("")}
-      </div>
-      <p class="mt-4 text-center text-sm text-green-600">確認後存檔，會立即出現在歷史戰績。</p>`;
+      </div>`;
     el("submit-error").classList.add("hidden");
   }
 
@@ -262,6 +417,8 @@ const PAR_TOTAL = {{ par_total }};
     const errEl = el("submit-error");
     errEl.classList.add("hidden");
     const payload = {
+      course_id: courseId,
+      tee_id: teeId,
       note: el("round-note").value.trim(),
       players: players.map((name, i) => ({ name, scores: scores[i] })),
     };
@@ -293,13 +450,29 @@ const PAR_TOTAL = {{ par_total }};
     }
   }
 
+  document.querySelectorAll(".course-card").forEach((btn) => {
+    btn.addEventListener("click", () => selectCourse(btn.dataset.courseId));
+  });
+  el("btn-back-course").addEventListener("click", () => showStep("course"));
+  el("btn-change-course").addEventListener("click", resetCourseSelection);
   el("player-count").addEventListener("change", buildPlayerNames);
   el("btn-start").addEventListener("click", startScoring);
-  el("btn-prev").addEventListener("click", () => { if (holeIndex > 0) { holeIndex--; renderHole(); } });
+  el("btn-prev").addEventListener("click", () => {
+    if (holeIndex > 0) {
+      holeIndex--;
+      renderHole();
+    }
+  });
   el("btn-next").addEventListener("click", showReview);
-  el("btn-back-edit").addEventListener("click", () => { holeIndex = HOLES - 1; showStep("holes"); renderHole(); });
+  el("btn-back-edit").addEventListener("click", () => {
+    holeIndex = HOLES - 1;
+    showStep("holes");
+    renderHole();
+  });
   el("btn-save").addEventListener("click", saveRound);
+
   buildPlayerNames();
+  showStep("course");
 })();
 </script>
 {% endblock %}

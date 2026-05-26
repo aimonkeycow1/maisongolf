@@ -2,7 +2,7 @@ import json
 import os
 from datetime import datetime
 
-from course_data import COURSE_NAME, PAR_TOTAL
+from courses import DEFAULT_COURSE_ID, DEFAULT_TEE_ID, course_meta_for_round
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FILE = os.path.join(BASE_DIR, "rounds.json")
@@ -21,21 +21,32 @@ def save_rounds(rounds):
     with open(FILE, "w", encoding="utf-8") as file:
         json.dump(rounds, file, ensure_ascii=False, indent=2)
 
-def build_round_record(players_stats, note=""):
+def build_round_record(players_stats, note="", course_id=None, tee_id=None):
     now = datetime.now()
-    return {
+    cid = course_id or DEFAULT_COURSE_ID
+    tid = tee_id or DEFAULT_TEE_ID
+    meta = course_meta_for_round(cid, tid)
+    if not meta:
+        meta = course_meta_for_round(DEFAULT_COURSE_ID, DEFAULT_TEE_ID)
+
+    record = {
         "id": now.strftime("%Y%m%d_%H%M%S"),
         "date": now.strftime("%Y-%m-%d"),
         "time": now.strftime("%H:%M"),
-        "course": COURSE_NAME,
-        "par_total": PAR_TOTAL,
-        "tee": "白梯",
+        "course_id": meta["course_id"],
+        "course": meta["course"],
+        "tee_id": meta["tee_id"],
+        "tee": meta["tee"],
+        "par_total": meta["par_total"],
+        "yardage_total": meta["yardage_total"],
+        "pars": meta["pars"],
         "note": note.strip(),
         "players": players_stats,
     }
+    return record
 
-def add_round(players_stats, note=""):
+def add_round(players_stats, note="", course_id=None, tee_id=None):
     rounds = load_rounds()
-    rounds.append(build_round_record(players_stats, note))
+    rounds.append(build_round_record(players_stats, note, course_id, tee_id))
     save_rounds(rounds)
     return rounds[-1]["id"]

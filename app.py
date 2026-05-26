@@ -9,7 +9,8 @@ import socket
 
 from flask import Flask, render_template, abort, request, jsonify
 
-from course_data import PAR_TOTAL, PARS, YARDAGES_WHITE, HANDICAP, COURSE_NAME
+from course_data import PAR_TOTAL, COURSE_NAME
+from courses import list_courses_for_web, courses_catalog_full
 from round_storage import load_rounds, save_rounds, add_round, BASE_DIR
 from web_helpers import get_round_by_id, get_player_stats_table, get_hardest_holes
 from web_score import validate_score_submission
@@ -95,13 +96,8 @@ def score_entry():
         return render_template(
             "score.html",
             page="score",
-            course_name=COURSE_NAME,
-            par_total=PAR_TOTAL,
-            course={
-                "pars": PARS,
-                "yardages": YARDAGES_WHITE,
-                "handicap": HANDICAP,
-            },
+            courses_catalog=list_courses_for_web(),
+            courses_full=courses_catalog_full(),
             secret_required=secret_required,
         )
 
@@ -113,7 +109,12 @@ def score_entry():
     if err:
         return jsonify({"ok": False, "error": err}), 400
 
-    rid = add_round(result["players_stats"], result["note"])
+    rid = add_round(
+        result["players_stats"],
+        result["note"],
+        course_id=result["course_id"],
+        tee_id=result["tee_id"],
+    )
     return jsonify({
         "ok": True,
         "id": rid,

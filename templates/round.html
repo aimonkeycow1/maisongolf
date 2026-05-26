@@ -17,6 +17,28 @@
   </div>
 </section>
 
+{# 球場 + Tee 資訊條 #}
+<div class="mb-6 grid grid-cols-2 gap-3 rounded-2xl border border-gold/30 bg-fairway-dark/80 p-4 shadow-lg ring-1 ring-white/10 sm:grid-cols-4 sm:gap-4 sm:p-5">
+  <div class="col-span-2 sm:col-span-1">
+    <p class="text-[10px] font-bold uppercase tracking-widest text-gold-light/80">球場</p>
+    <p class="mt-1 font-semibold text-white text-sm sm:text-base">{{ round.course }}</p>
+  </div>
+  <div>
+    <p class="text-[10px] font-bold uppercase tracking-widest text-gold-light/80">發球台</p>
+    <p class="mt-1 text-lg font-bold text-white">{{ round.tee or '白梯' }}</p>
+  </div>
+  <div>
+    <p class="text-[10px] font-bold uppercase tracking-widest text-gold-light/80">總 Par</p>
+    <p class="mt-1 text-2xl font-black tabular-nums text-gold-light">{{ round.par_total }}</p>
+  </div>
+  <div>
+    <p class="text-[10px] font-bold uppercase tracking-widest text-gold-light/80">總碼數</p>
+    <p class="mt-1 text-2xl font-black tabular-nums text-white">
+      {{ round.yardage_total or '—' }}{% if round.yardage_total %} <span class="text-sm font-medium text-green-200/70">碼</span>{% endif %}
+    </p>
+  </div>
+</div>
+
 <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
   <a href="{{ url_for('index') }}"
      class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-green-100 transition hover:bg-white/10 hover:text-white no-underline">

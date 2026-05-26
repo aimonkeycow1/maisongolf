@@ -3,6 +3,19 @@
 from course_data import PARS, YARDAGES_WHITE, HANDICAP
 from golf_utils import to_par_str
 
+
+def _round_pars(r):
+    """優先使用場次儲存的 pars，否則用預設球場"""
+    if r.get("pars") and len(r["pars"]) == 18:
+        return r["pars"]
+    return PARS
+
+
+def _round_yardages(r):
+    if r.get("yardages") and len(r.get("yardages", [])) == 18:
+        return r["yardages"]
+    return YARDAGES_WHITE
+
 def get_round_by_id(rounds, round_id):
     for r in rounds:
         if r["id"] == round_id:
@@ -37,10 +50,22 @@ def get_player_stats_table(rounds):
 
 def get_hardest_holes(rounds, top_n=5):
     hole_diffs = [[] for _ in range(18)]
+    hole_pars = list(PARS)
+    hole_yards = list(YARDAGES_WHITE)
+
     for r in rounds:
+        rp = _round_pars(r)
+        ry = _round_yardages(r)
+        hole_pars = rp
+        hole_yards = ry
         for p in r["players"]:
-            for i, score in enumerate(p["scores"]):
-                hole_diffs[i].append(score - PARS[i])
+            if p.get("hole_results") and len(p["hole_results"]) == 18:
+                for h in p["hole_results"]:
+                    i = h["hole"] - 1
+                    hole_diffs[i].append(h["diff"])
+            else:
+                for i, score in enumerate(p["scores"]):
+                    hole_diffs[i].append(score - rp[i])
 
     hole_avg = []
     for i in range(18):
@@ -48,8 +73,8 @@ def get_hardest_holes(rounds, top_n=5):
             avg = sum(hole_diffs[i]) / len(hole_diffs[i])
             hole_avg.append({
                 "hole": i + 1,
-                "par": PARS[i],
-                "yard": YARDAGES_WHITE[i],
+                "par": hole_pars[i],
+                "yard": hole_yards[i] if i < len(hole_yards) else 0,
                 "hcp": HANDICAP[i],
                 "avg_diff": round(avg, 1),
                 "samples": len(hole_diffs[i]),

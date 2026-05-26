@@ -1,22 +1,16 @@
-# 香港賽馬會滘西洲公眾高爾夫球場 · 南場
-# 數據來源：公開記分卡（白梯 White Tee，總長 5906 碼，Par 69）
+# 向後相容：CLI（golf_score.py）預設使用滘西洲南場白梯
+# 多球場資料請見 courses.py
 
-COURSE_NAME = "滘西洲高爾夫球場 · 南場"
+from courses import DEFAULT_COURSE_ID, DEFAULT_TEE_ID, get_tee
+
+_default = get_tee(DEFAULT_COURSE_ID, DEFAULT_TEE_ID)
+
+COURSE_NAME = _default["course_name"]
 COURSE_NAME_EN = "Kau Sai Chau Public Golf Course - South"
-
-# 每一洞的標準桿
-PARS = [4, 3, 4, 4, 3, 4, 4, 4, 4, 4, 3, 4, 4, 4, 5, 3, 4, 4]
-
-# 白梯碼數（碼）
-YARDAGES_WHITE = [
-    341, 149, 429, 285, 134, 301, 307, 315, 362,
-    317, 159, 417, 377, 464, 577, 198, 375, 399,
-]
-
-# 差點（難度排名，1 最難）
-HANDICAP = [5, 11, 1, 17, 7, 15, 9, 13, 3, 16, 14, 4, 10, 2, 8, 6, 18, 12]
-
-PAR_TOTAL = sum(PARS)       # 69
-PAR_FRONT = sum(PARS[:9])   # 34
-PAR_BACK = sum(PARS[9:])    # 35
-YARDAGE_TOTAL = sum(YARDAGES_WHITE)
+PARS = _default["pars"]
+YARDAGES_WHITE = _default["yardages"]
+HANDICAP = _default["handicap"]
+PAR_TOTAL = _default["par_total"]
+PAR_FRONT = _default["par_front"]
+PAR_BACK = _default["par_back"]
+YARDAGE_TOTAL = _default["yardage_total"]

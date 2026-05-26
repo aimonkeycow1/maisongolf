@@ -1,5 +1,6 @@
 """網頁錄分：驗證與寫入 rounds.json"""
 
+from courses import resolve_course_tee
 from golf_utils import calc_player_stats
 
 MAX_PLAYERS = 8
@@ -9,11 +10,16 @@ MAX_SCORE = 20
 
 def validate_score_submission(data):
     """
-    驗證 POST JSON，回傳 (players_stats, error_message)。
-    players_stats 每筆含 name 與 calc_player_stats 欄位。
+    驗證 POST JSON，回傳 (result_dict, error_message)。
     """
     if not isinstance(data, dict):
         return None, "需要 JSON 物件"
+
+    course_id = data.get("course_id", "")
+    tee_id = data.get("tee_id", "")
+    tee, err = resolve_course_tee(course_id, tee_id)
+    if err:
+        return None, err
 
     players = data.get("players")
     if not isinstance(players, list):
@@ -25,6 +31,7 @@ def validate_score_submission(data):
     if not isinstance(note, str):
         return None, "備註格式錯誤"
 
+    pars = tee["pars"]
     players_stats = []
     for i, p in enumerate(players):
         if not isinstance(p, dict):
@@ -40,8 +47,13 @@ def validate_score_submission(data):
         for hole, s in enumerate(scores, start=1):
             if not MIN_SCORE <= s <= MAX_SCORE:
                 return None, f"{name} 第 {hole} 洞桿數需在 {MIN_SCORE}～{MAX_SCORE} 之間"
-        stats = calc_player_stats(scores)
+        stats = calc_player_stats(scores, pars=pars)
         stats["name"] = name
         players_stats.append(stats)
 
-    return {"players_stats": players_stats, "note": note.strip()}, None
+    return {
+        "players_stats": players_stats,
+        "note": note.strip(),
+        "course_id": course_id,
+        "tee_id": tee_id,
+    }, None
