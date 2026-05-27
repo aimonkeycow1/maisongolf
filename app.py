@@ -101,6 +101,14 @@ with app.app_context():
             alters.append("ALTER TABLE users ADD COLUMN oauth_provider VARCHAR(32)")
         if "oauth_subject" not in existing:
             alters.append("ALTER TABLE users ADD COLUMN oauth_subject VARCHAR(255)")
+        if "nickname" not in existing:
+            alters.append("ALTER TABLE users ADD COLUMN nickname VARCHAR(60)")
+        if "handicap" not in existing:
+            alters.append("ALTER TABLE users ADD COLUMN handicap REAL")
+        if "handedness" not in existing:
+            alters.append("ALTER TABLE users ADD COLUMN handedness VARCHAR(10)")
+        if "home_course" not in existing:
+            alters.append("ALTER TABLE users ADD COLUMN home_course VARCHAR(120)")
         if alters:
             for sql in alters:
                 cur.execute(sql)
