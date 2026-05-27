@@ -57,6 +57,7 @@ from auth import auth_bp
 from friends import friends_bp
 from extensions import mail
 from user_migrations import migrate_users_auth_columns
+from email_verify import email_verification_is_simulated
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 85 * 1024 * 1024
@@ -74,7 +75,7 @@ app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD", "")
 app.config["MAIL_DEFAULT_SENDER"] = (
     os.environ.get("MAIL_DEFAULT_SENDER") or os.environ.get("MAIL_USERNAME")
 )
-app.config["MAIL_SUPPRESS_SEND"] = False
+app.config["MAIL_SUPPRESS_SEND"] = email_verification_is_simulated()
 
 db.init_app(app)
 mail.init_app(app)
@@ -85,7 +86,9 @@ login_manager.login_view = "auth.login"
 
 @app.before_request
 def _require_verified_account():
-    """未完成 Email 驗證時不可使用站內功能（含舊 Session 遺留）"""
+    """未完成 Email 驗證時不可使用站內功能（模擬模式略過）"""
+    if email_verification_is_simulated():
+        return None
     if not current_user.is_authenticated:
         return None
     if current_user.email_verified:

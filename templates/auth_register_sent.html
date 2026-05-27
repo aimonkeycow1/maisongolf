@@ -3,15 +3,23 @@
 {% block content %}
 
 <section class="mx-auto max-w-md rounded-2xl bg-black/30 p-6 shadow-xl ring-1 ring-white/10 sm:p-8">
-  <h1 class="text-xl font-bold text-white sm:text-2xl">請驗證 Email</h1>
+  <h1 class="text-xl font-bold text-white sm:text-2xl">
+    {% if email_simulate %}註冊成功{% else %}請驗證 Email{% endif %}
+  </h1>
   {% if email %}
   <p class="mt-2 text-sm leading-relaxed text-green-100/85">
     驗證信已發送至：<span class="font-semibold text-gold-light">{{ email }}</span>
   </p>
   {% endif %}
+  {% if email_simulate %}
+  <p class="mt-3 rounded-lg border border-emerald-500/30 bg-emerald-900/20 px-3 py-2 text-sm text-emerald-100">
+    目前為<strong>模擬驗證模式</strong>（未實際寄信）。你的帳號已啟用，可直接登入使用。
+  </p>
+  {% else %}
   <p class="mt-3 text-sm text-green-200/65">
     請開啟信中的連結以啟用帳號。若未收到郵件，請先檢查垃圾信件匣，或使用下方重送功能。
   </p>
+  {% endif %}
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -25,11 +33,16 @@
     {% endif %}
   {% endwith %}
 
-  <div class="mt-6 flex flex-col gap-2 text-sm">
+  <div class="mt-6 flex flex-col gap-3 text-sm">
+    <a href="{{ url_for('auth.login') }}"
+       class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-gold to-gold-light px-4 py-2.5 font-bold text-fairway-dark shadow-lg hover:brightness-110">
+      {% if email_simulate %}立即登入 →{% else %}已完成驗證？前往登入{% endif %}
+    </a>
+    {% if not email_simulate %}
     <a href="{{ url_for('auth.resend_verification') }}" class="font-semibold text-gold-light hover:text-white">
       沒收到信？重送驗證連結 →
     </a>
-    <a href="{{ url_for('auth.login') }}" class="text-green-200/70 hover:text-white">已完成驗證？前往登入</a>
+    {% endif %}
   </div>
 </section>
 

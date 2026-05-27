@@ -3,12 +3,12 @@ from __future__ import annotations
 import re
 import secrets
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, current_user
 from sqlalchemy import func
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from email_verify import send_verification_email
+from email_verify import send_verification_email, email_verification_is_simulated
 from models import db, User
 
 auth_bp = Blueprint("auth", __name__)
@@ -41,15 +41,12 @@ def _username_taken(norm_username: str, exclude_id: int | None = None) -> bool:
     return q.first() is not None
 
 
-def _send_verification_or_raise(email: str, username: str, token: str) -> None:
-    """集中寄送驗證信，讓註冊/重送行為一致。"""
-    send_verification_email(email, username, token)
-
-
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
     if current_user.is_authenticated:
         return redirect(url_for("index"))
+
+    simulate = email_verification_is_simulated()
 
     if request.method == "POST":
         username = request.form.get("username") or ""
@@ -70,37 +67,40 @@ def register():
                 error = "密碼長度至少 6 碼"
             elif password != password2:
                 error = "兩次輸入的密碼不一致"
-            else:
-                existing = User.query.filter_by(email=email).first()
-                if existing:
-                    if existing.email_verified:
-                        error = "此 Email 已被註冊，請直接登入"
-                    else:
-                        error = "此 Email 已註冊但尚未驗證，請使用「重送驗證信」。"
+            elif User.query.filter_by(email=email).first():
+                error = "此 Email 已被註冊，請直接登入"
 
         if error:
             flash(error, "error")
         else:
-            token = secrets.token_urlsafe(32)
+            token = secrets.token_urlsafe(32) if not simulate else None
             user = User(
                 username=nu,
                 email=email,
                 password_hash=generate_password_hash(password),
-                email_verified=False,
+                email_verified=simulate,
                 email_verify_token=token,
             )
             db.session.add(user)
-            try:
-                _send_verification_or_raise(email, nu, token)
-            except Exception as exc:
-                current_app.logger.exception("Verification mail send failed during register: %s", exc)
-                db.session.rollback()
-                flash("驗證信發送失敗，請稍後再試或聯絡管理員。", "error")
-                return render_template("auth_register.html", page="auth")
-            db.session.commit()
-            return redirect(url_for("auth.register_sent", email=email))
+            if simulate:
+                send_verification_email(email, nu, token or "")
+                db.session.commit()
+            else:
+                try:
+                    send_verification_email(email, nu, token)
+                except Exception:
+                    db.session.rollback()
+                    flash("驗證信發送失敗，請稍後再試或聯絡管理員。", "error")
+                    return render_template(
+                        "auth_register.html", page="auth", email_simulate=simulate
+                    )
+                db.session.commit()
 
-    return render_template("auth_register.html", page="auth")
+            return redirect(
+                url_for("auth.register_sent", email=email, simulate="1" if simulate else "0")
+            )
+
+    return render_template("auth_register.html", page="auth", email_simulate=simulate)
 
 
 @auth_bp.route("/register/sent")
@@ -108,7 +108,13 @@ def register_sent():
     if current_user.is_authenticated:
         return redirect(url_for("index"))
     email = (request.args.get("email") or "").strip()
-    return render_template("auth_register_sent.html", page="auth", email=email)
+    simulate = request.args.get("simulate", "1" if email_verification_is_simulated() else "0") == "1"
+    return render_template(
+        "auth_register_sent.html",
+        page="auth",
+        email=email,
+        email_simulate=simulate,
+    )
 
 
 @auth_bp.route("/verify-email/<token>")
@@ -133,6 +139,8 @@ def resend_verification():
     if current_user.is_authenticated:
         return redirect(url_for("index"))
 
+    simulate = email_verification_is_simulated()
+
     if request.method == "POST":
         email = (request.form.get("email") or "").strip().lower()
         user = User.query.filter_by(email=email).first()
@@ -143,11 +151,17 @@ def resend_verification():
             flash("此帳號已驗證，請直接登入。", "ok")
             return redirect(url_for("auth.login"))
 
+        if simulate:
+            user.email_verified = True
+            user.email_verify_token = None
+            db.session.commit()
+            flash("帳號已啟用（模擬模式），請直接登入。", "ok")
+            return redirect(url_for("auth.login"))
+
         user.email_verify_token = secrets.token_urlsafe(32)
         try:
-            _send_verification_or_raise(user.email, user.username, user.email_verify_token)
-        except Exception as exc:
-            current_app.logger.exception("Verification mail resend failed: %s", exc)
+            send_verification_email(user.email, user.username, user.email_verify_token)
+        except Exception:
             db.session.rollback()
             flash("重送失敗：郵件服務暫時不可用，請稍後再試。", "error")
             return redirect(url_for("auth.resend_verification"))
@@ -155,13 +169,15 @@ def resend_verification():
         flash("已重新寄送驗證信，請查看信箱。", "ok")
         return redirect(url_for("auth.login"))
 
-    return render_template("auth_resend_verification.html", page="auth")
+    return render_template("auth_resend_verification.html", page="auth", email_simulate=simulate)
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for("index"))
+
+    simulate = email_verification_is_simulated()
 
     if request.method == "POST":
         email = (request.form.get("email") or "").strip().lower()
@@ -170,19 +186,23 @@ def login():
         user = User.query.filter_by(email=email).first()
         if not user or not check_password_hash(user.password_hash, password):
             flash("Email 或密碼錯誤", "error")
-        elif not user.email_verified:
+        elif not user.email_verified and not simulate:
             flash(
                 "此帳號尚未完成 Email 驗證。請開啟信中的連結，或重送驗證信。",
                 "error",
             )
         else:
+            if simulate and not user.email_verified:
+                user.email_verified = True
+                user.email_verify_token = None
+                db.session.commit()
             login_user(user, remember=True)
             next_url = (request.args.get("next") or "").strip()
             if next_url.startswith("/") and not next_url.startswith("//"):
                 return redirect(next_url)
             return redirect(url_for("index"))
 
-    return render_template("auth_login.html", page="auth")
+    return render_template("auth_login.html", page="auth", email_simulate=simulate)
 
 
 @auth_bp.route("/logout")
@@ -190,4 +210,3 @@ def logout():
     if current_user.is_authenticated:
         logout_user()
     return redirect(url_for("auth.login"))
-

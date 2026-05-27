@@ -4,7 +4,13 @@
 
 <section class="mx-auto max-w-md rounded-2xl bg-black/30 p-6 shadow-xl ring-1 ring-white/10 sm:p-8">
   <h1 class="text-xl font-bold text-white sm:text-2xl">建立帳號</h1>
-  <p class="mt-1 text-sm text-green-200/70">註冊後需驗證 Email 才能登入；球友名稱用於搜尋與加好友。</p>
+  <p class="mt-1 text-sm text-green-200/70">
+    {% if email_simulate %}
+    目前為 Email 驗證模擬模式：註冊後可直接登入。球友名稱用於搜尋與加好友。
+    {% else %}
+    註冊後需驗證 Email 才能登入；球友名稱用於搜尋與加好友。
+    {% endif %}
+  </p>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -45,7 +51,7 @@
 
     <button type="submit"
             class="mt-2 flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-gold to-gold-light px-4 py-2.5 text-sm font-bold text-fairway-dark shadow-lg hover:brightness-110">
-      建立帳號（寄送驗證信）
+      {% if email_simulate %}建立帳號{% else %}建立帳號（寄送驗證信）{% endif %}
     </button>
   </form>
 
