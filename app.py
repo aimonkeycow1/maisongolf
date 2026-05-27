@@ -7,7 +7,12 @@ import os
 import shutil
 import socket
 
-from flask import Flask, render_template, abort, request, jsonify
+from flask import Flask, render_template, abort, request, jsonify, redirect, url_for
+from flask_login import (
+    LoginManager,
+    login_required,
+    current_user,
+)
 
 from course_data import PAR_TOTAL, COURSE_NAME
 from courses import (
@@ -34,9 +39,27 @@ from share_media import (
     save_upload,
     PHOTO_STYLES,
 )
+from models import db, User
+from auth import auth_bp
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 85 * 1024 * 1024
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(BASE_DIR, "app.db")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db.init_app(app)
+
+login_manager = LoginManager(app)
+login_manager.login_view = "auth.login"
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    try:
+        return User.query.get(int(user_id))
+    except (TypeError, ValueError):
+        return None
 
 STATIC_IMG = os.path.join(BASE_DIR, "static", "img")
 HERO_SRC = os.path.join(BASE_DIR, "south_course_hole12.jpg")
@@ -55,6 +78,11 @@ def ensure_hero_image():
 ensure_hero_image()
 ensure_course_images()
 
+app.register_blueprint(auth_bp)
+
+with app.app_context():
+    db.create_all()
+
 
 @app.route("/admin/sync", methods=["POST"])
 def admin_sync():
@@ -70,8 +98,10 @@ def admin_sync():
 
 
 @app.route("/")
+@login_required
 def index():
-    rounds = load_rounds()
+    rounds_all = load_rounds()
+    rounds = [r for r in rounds_all if r.get("user_email") == current_user.email]
     return render_template(
         "index.html",
         page="home",
@@ -83,10 +113,11 @@ def index():
 
 
 @app.route("/round/<round_id>")
+@login_required
 def round_detail(round_id):
     rounds = load_rounds()
     r = get_round_by_id(rounds, round_id)
-    if not r:
+    if not r or r.get("user_email") != current_user.email:
         abort(404)
     ranked = sorted(r["players"], key=lambda p: p["total"])
     return render_template(
@@ -111,6 +142,7 @@ def _sync_secret_ok():
 
 
 @app.route("/score", methods=["GET", "POST"])
+@login_required
 def score_entry():
     """網頁多人同組錄分（雲端需 SYNC_SECRET）"""
     secret_required = bool(os.environ.get("SYNC_SECRET", ""))
@@ -138,6 +170,7 @@ def score_entry():
         result["note"],
         course_id=result["course_id"],
         tee_id=result["tee_id"],
+        user_email=current_user.email,
     )
     return jsonify({
         "ok": True,
@@ -147,6 +180,7 @@ def score_entry():
 
 
 @app.route("/ai_analysis", methods=["POST"])
+@login_required
 def ai_analysis():
     """AI 教練賽後總結（Grok API 或本機模擬）"""
     data = request.get_json(force=True, silent=True) or {}
@@ -158,7 +192,7 @@ def ai_analysis():
 
     rounds = load_rounds()
     r = get_round_by_id(rounds, round_id)
-    if not r:
+    if not r or r.get("user_email") != current_user.email:
         return jsonify({"ok": False, "error": "找不到該場次"}), 404
 
     analysis, source = generate_coach_analysis(r, player_name=player_name)
@@ -174,11 +208,12 @@ def ai_analysis():
 
 
 @app.route("/share/meta/<round_id>")
+@login_required
 def share_meta(round_id):
     """分享疊字用場次中繼資料"""
     rounds = load_rounds()
     r = get_round_by_id(rounds, round_id)
-    if not r:
+    if not r or r.get("user_email") != current_user.email:
         return jsonify({"ok": False, "error": "找不到該場次"}), 404
 
     player_name = request.args.get("player_name")
@@ -197,6 +232,7 @@ def share_meta(round_id):
 
 
 @app.route("/share/photo", methods=["POST"])
+@login_required
 def share_photo():
     """上傳照片並生成多風格分享圖"""
     round_id = request.form.get("round_id")
@@ -205,7 +241,7 @@ def share_photo():
 
     rounds = load_rounds()
     r = get_round_by_id(rounds, round_id)
-    if not r:
+    if not r or r.get("user_email") != current_user.email:
         return jsonify({"ok": False, "error": "找不到該場次"}), 404
 
     path, err = save_upload(request.files.get("photo"), "image")
@@ -230,6 +266,7 @@ def share_photo():
 
 
 @app.route("/share/video", methods=["POST"])
+@login_required
 def share_video():
     """上傳短視頻並合成抖音風格短片"""
     round_id = request.form.get("round_id")
@@ -238,7 +275,7 @@ def share_video():
 
     rounds = load_rounds()
     r = get_round_by_id(rounds, round_id)
-    if not r:
+    if not r or r.get("user_email") != current_user.email:
         return jsonify({"ok": False, "error": "找不到該場次"}), 404
 
     path, err = save_upload(request.files.get("video"), "video")
@@ -265,8 +302,10 @@ def share_video():
 
 
 @app.route("/stats")
+@login_required
 def stats():
-    rounds = load_rounds()
+    rounds_all = load_rounds()
+    rounds = [r for r in rounds_all if r.get("user_email") == current_user.email]
     return render_template(
         "stats.html",
         page="stats",

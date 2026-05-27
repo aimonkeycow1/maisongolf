@@ -21,7 +21,8 @@ def save_rounds(rounds):
     with open(FILE, "w", encoding="utf-8") as file:
         json.dump(rounds, file, ensure_ascii=False, indent=2)
 
-def build_round_record(players_stats, note="", course_id=None, tee_id=None):
+
+def build_round_record(players_stats, note="", course_id=None, tee_id=None, user_email=None):
     now = datetime.now()
     cid = course_id or DEFAULT_COURSE_ID
     tid = tee_id or DEFAULT_TEE_ID
@@ -43,10 +44,14 @@ def build_round_record(players_stats, note="", course_id=None, tee_id=None):
         "note": note.strip(),
         "players": players_stats,
     }
+    if user_email:
+        record["user_email"] = user_email
     return record
 
-def add_round(players_stats, note="", course_id=None, tee_id=None):
+
+def add_round(players_stats, note="", course_id=None, tee_id=None, user_email=None):
     rounds = load_rounds()
-    rounds.append(build_round_record(players_stats, note, course_id, tee_id))
+    rounds.append(build_round_record(players_stats, note, course_id, tee_id, user_email=user_email))
     save_rounds(rounds)
     return rounds[-1]["id"]
+

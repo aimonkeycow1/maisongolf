@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}註冊 · Maison Golf{% endblock %}
+{% block content %}
+
+<section class="mx-auto max-w-md rounded-2xl bg-black/30 p-6 shadow-xl ring-1 ring-white/10 sm:p-8">
+  <h1 class="text-xl font-bold text-white sm:text-2xl">建立帳號</h1>
+  <p class="mt-1 text-sm text-green-200/70">註冊後，每一次記分與統計都專屬綁定你的帳號。</p>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mt-4 space-y-2">
+        {% for category, msg in messages %}
+          <p class="rounded-lg border border-red-500/40 bg-red-900/30 px-3 py-2 text-sm text-red-100">
+            {{ msg }}
+          </p>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <form method="post" class="mt-5 space-y-4">
+    <div>
+      <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gold-light">Email</label>
+      <input type="email" name="email" required autocomplete="email"
+             class="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-green-200/40 focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/40">
+    </div>
+    <div>
+      <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gold-light">密碼</label>
+      <input type="password" name="password" required autocomplete="new-password"
+             class="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-green-200/40 focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/40">
+      <p class="mt-1 text-[11px] text-green-200/60">至少 6 碼，建議混合英數字。</p>
+    </div>
+    <div>
+      <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gold-light">確認密碼</label>
+      <input type="password" name="password2" required autocomplete="new-password"
+             class="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-green-200/40 focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/40">
+    </div>
+
+    <button type="submit"
+            class="mt-2 flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-gold to-gold-light px-4 py-2.5 text-sm font-bold text-fairway-dark shadow-lg hover:brightness-110">
+      建立帳號並登入
+    </button>
+  </form>
+
+  <p class="mt-4 text-center text-xs text-green-200/70">
+    已有帳號？
+    <a href="{{ url_for('auth.login') }}" class="font-semibold text-gold-light hover:text-white">前往登入</a>
+  </p>
+</section>
+
+{% endblock %}
+
