@@ -23,6 +23,23 @@ def get_round_by_id(rounds, round_id):
     return None
 
 
+def user_owns_round(round_dict, user) -> bool:
+    """判斷場次是否屬於目前登入使用者"""
+    if not user or not getattr(user, "id", None):
+        return False
+    uid = round_dict.get("user_id")
+    if uid is not None:
+        return int(uid) == int(user.id)
+    legacy_email = round_dict.get("user_email")
+    if legacy_email and getattr(user, "email", None):
+        return legacy_email == user.email
+    return False
+
+
+def filter_rounds_for_user(rounds, user):
+    return [r for r in rounds if user_owns_round(r, user)]
+
+
 def _player_to_par(player, round_par):
     if player.get("to_par") is not None:
         return player["to_par"]

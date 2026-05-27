@@ -64,35 +64,11 @@
           </nav>
 
           {% if current_user.is_authenticated %}
-            {# 使用者選單 #}
-            <div class="relative hidden sm:block" id="user-menu-root">
-              <button type="button" id="user-menu-btn"
-                      class="flex items-center gap-2 rounded-xl border border-white/15 bg-black/30 py-1.5 pl-2 pr-3 text-sm font-semibold text-white transition hover:bg-white/10"
-                      aria-haspopup="true" aria-expanded="false">
-                <span class="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-fairway to-fairway-dark text-xs font-bold text-gold-light ring-1 ring-gold/40">
-                  {{ (current_user.display_name | first) | upper }}
-                </span>
-                <span class="max-w-[90px] truncate text-xs">{{ current_user.display_name }}</span>
-                <svg class="h-3.5 w-3.5 opacity-60" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-              </button>
-              <div id="user-menu-dropdown"
-                   class="absolute right-0 top-full z-50 mt-2 hidden w-44 rounded-xl border border-white/15 bg-fairway-dark shadow-2xl ring-1 ring-black/30">
-                {% if not current_user.profile_complete %}
-                  <a href="{{ url_for('auth.profile_setup') }}"
-                     class="flex items-center gap-2 rounded-t-xl border-b border-amber-400/30 bg-amber-400/10 px-4 py-2.5 text-xs font-bold text-amber-200 no-underline hover:bg-amber-400/20">
-                    ⚠️ 完善個人資料
-                  </a>
-                {% endif %}
-                <a href="{{ url_for('auth.profile_edit') }}"
-                   class="flex items-center gap-2 px-4 py-2.5 text-sm text-green-100 no-underline hover:bg-white/10 {% if current_user.profile_complete %}rounded-t-xl{% endif %}">
-                  👤 個人資料
-                </a>
-                <a href="{{ url_for('auth.logout') }}"
-                   class="flex items-center gap-2 rounded-b-xl border-t border-white/10 px-4 py-2.5 text-sm text-red-300 no-underline hover:bg-red-900/30">
-                  登出
-                </a>
-              </div>
-            </div>
+            <span class="hidden max-w-[120px] truncate text-xs text-green-200/70 sm:inline">{{ current_user.email }}</span>
+            <a href="{{ url_for('auth.logout') }}"
+               class="hidden rounded-xl border border-white/20 bg-black/30 px-3.5 py-1.5 text-xs font-semibold text-green-100 no-underline hover:bg-white/10 sm:inline-flex">
+              登出
+            </a>
           {% else %}
             <a href="{{ url_for('auth.login') }}"
                class="hidden rounded-xl border border-gold/40 bg-gold/20 px-3.5 py-1.5 text-xs font-semibold text-gold-light shadow-sm hover:bg-gold/30 sm:inline-flex sm:items-center">
@@ -120,25 +96,6 @@
   </footer>
 
   {% include '_share_modal.html' %}
-
-  <script>
-  (function () {
-    const root = document.getElementById("user-menu-root");
-    if (!root) return;
-    const btn = document.getElementById("user-menu-btn");
-    const dropdown = document.getElementById("user-menu-dropdown");
-    btn.addEventListener("click", function (e) {
-      e.stopPropagation();
-      const open = !dropdown.classList.contains("hidden");
-      dropdown.classList.toggle("hidden", open);
-      btn.setAttribute("aria-expanded", String(!open));
-    });
-    document.addEventListener("click", function () {
-      dropdown.classList.add("hidden");
-      btn.setAttribute("aria-expanded", "false");
-    });
-  })();
-  </script>
 
 </body>
 </html>

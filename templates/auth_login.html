@@ -4,45 +4,22 @@
 
 <section class="mx-auto max-w-md rounded-2xl bg-black/30 p-6 shadow-xl ring-1 ring-white/10 sm:p-8">
   <h1 class="text-xl font-bold text-white sm:text-2xl">登入 Maison Golf</h1>
-  <p class="mt-1 text-sm text-green-200/70">支援 Email / 電話登入（Google / Apple 可選，未配置時顯示未啟用）。</p>
+  <p class="mt-1 text-sm text-green-200/70">使用 Email 與密碼登入，查看你的記分與統計。</p>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       <div class="mt-4 space-y-2">
         {% for category, msg in messages %}
-          <p class="rounded-lg border border-red-500/40 bg-red-900/30 px-3 py-2 text-sm text-red-100">
-            {{ msg }}
-          </p>
+          <p class="rounded-lg border border-red-500/40 bg-red-900/30 px-3 py-2 text-sm text-red-100">{{ msg }}</p>
         {% endfor %}
       </div>
     {% endif %}
   {% endwith %}
 
-  <div class="mt-5 grid grid-cols-2 gap-2">
-    <a href="#"
-       class="cursor-not-allowed rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-center text-sm font-semibold text-white/70"
-       aria-disabled="true"
-       title="尚未配置 Google OAuth">
-      Google 登入
-    </a>
-    <a href="#"
-       class="cursor-not-allowed rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-center text-sm font-semibold text-white/70"
-       aria-disabled="true"
-       title="尚未配置 Apple Sign In">
-      Apple 登入
-    </a>
-  </div>
-
-  <div class="mt-4 flex items-center gap-3">
-    <div class="h-px flex-1 bg-white/10"></div>
-    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-green-200/50">或</p>
-    <div class="h-px flex-1 bg-white/10"></div>
-  </div>
-
-  <form method="post" class="mt-4 space-y-4">
+  <form method="post" class="mt-5 space-y-4">
     <div>
-      <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gold-light">Email 或電話</label>
-      <input type="text" name="identifier" required autocomplete="username" inputmode="email"
+      <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gold-light">Email</label>
+      <input type="email" name="email" required autocomplete="email"
              class="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-green-200/40 focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/40">
     </div>
     <div>
@@ -64,4 +41,3 @@
 </section>
 
 {% endblock %}
-

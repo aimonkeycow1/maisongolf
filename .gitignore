@@ -7,3 +7,4 @@ course_aerial.jpg
 static/uploads/share/*
 !static/uploads/share/.gitkeep
 static/fonts/NotoSansTC-Regular.otf
+app.db

@@ -7,8 +7,7 @@ import os
 import shutil
 import socket
 
-from flask import Flask, render_template, abort, request, jsonify, redirect, url_for
-import sqlite3
+from flask import Flask, render_template, abort, request, jsonify
 from flask_login import (
     LoginManager,
     login_required,
@@ -29,6 +28,8 @@ from web_helpers import (
     get_player_stats_table,
     get_hardest_holes,
     get_global_round_stats,
+    filter_rounds_for_user,
+    user_owns_round,
 )
 from web_score import validate_score_submission
 from ai_coach import generate_coach_analysis
@@ -84,41 +85,6 @@ app.register_blueprint(auth_bp)
 with app.app_context():
     db.create_all()
 
-    # 輕量 schema 補齊（因使用 create_all 沒有 migration）
-    # 確保既有 app.db 的 users 表有新增欄位：phone/auth_provider/oauth_provider/oauth_subject
-    db_path = os.path.join(BASE_DIR, "app.db")
-    try:
-        con = sqlite3.connect(db_path)
-        cur = con.cursor()
-        cur.execute("PRAGMA table_info(users)")
-        existing = {row[1] for row in cur.fetchall()}
-        alters = []
-        if "phone" not in existing:
-            alters.append("ALTER TABLE users ADD COLUMN phone VARCHAR(40)")
-        if "auth_provider" not in existing:
-            alters.append("ALTER TABLE users ADD COLUMN auth_provider VARCHAR(32) NOT NULL DEFAULT 'password'")
-        if "oauth_provider" not in existing:
-            alters.append("ALTER TABLE users ADD COLUMN oauth_provider VARCHAR(32)")
-        if "oauth_subject" not in existing:
-            alters.append("ALTER TABLE users ADD COLUMN oauth_subject VARCHAR(255)")
-        if "nickname" not in existing:
-            alters.append("ALTER TABLE users ADD COLUMN nickname VARCHAR(60)")
-        if "handicap" not in existing:
-            alters.append("ALTER TABLE users ADD COLUMN handicap REAL")
-        if "handedness" not in existing:
-            alters.append("ALTER TABLE users ADD COLUMN handedness VARCHAR(10)")
-        if "home_course" not in existing:
-            alters.append("ALTER TABLE users ADD COLUMN home_course VARCHAR(120)")
-        if alters:
-            for sql in alters:
-                cur.execute(sql)
-            con.commit()
-    finally:
-        try:
-            con.close()
-        except Exception:
-            pass
-
 
 @app.route("/admin/sync", methods=["POST"])
 def admin_sync():
@@ -136,8 +102,7 @@ def admin_sync():
 @app.route("/")
 @login_required
 def index():
-    rounds_all = load_rounds()
-    rounds = [r for r in rounds_all if r.get("user_email") == current_user.email]
+    rounds = filter_rounds_for_user(load_rounds(), current_user)
     return render_template(
         "index.html",
         page="home",
@@ -153,7 +118,7 @@ def index():
 def round_detail(round_id):
     rounds = load_rounds()
     r = get_round_by_id(rounds, round_id)
-    if not r or r.get("user_email") != current_user.email:
+    if not r or not user_owns_round(r, current_user):
         abort(404)
     ranked = sorted(r["players"], key=lambda p: p["total"])
     return render_template(
@@ -206,7 +171,7 @@ def score_entry():
         result["note"],
         course_id=result["course_id"],
         tee_id=result["tee_id"],
-        user_email=current_user.email,
+        user_id=current_user.id,
     )
     return jsonify({
         "ok": True,
@@ -228,7 +193,7 @@ def ai_analysis():
 
     rounds = load_rounds()
     r = get_round_by_id(rounds, round_id)
-    if not r or r.get("user_email") != current_user.email:
+    if not r or not user_owns_round(r, current_user):
         return jsonify({"ok": False, "error": "找不到該場次"}), 404
 
     analysis, source = generate_coach_analysis(r, player_name=player_name)
@@ -249,7 +214,7 @@ def share_meta(round_id):
     """分享疊字用場次中繼資料"""
     rounds = load_rounds()
     r = get_round_by_id(rounds, round_id)
-    if not r or r.get("user_email") != current_user.email:
+    if not r or not user_owns_round(r, current_user):
         return jsonify({"ok": False, "error": "找不到該場次"}), 404
 
     player_name = request.args.get("player_name")
@@ -277,7 +242,7 @@ def share_photo():
 
     rounds = load_rounds()
     r = get_round_by_id(rounds, round_id)
-    if not r or r.get("user_email") != current_user.email:
+    if not r or not user_owns_round(r, current_user):
         return jsonify({"ok": False, "error": "找不到該場次"}), 404
 
     path, err = save_upload(request.files.get("photo"), "image")
@@ -311,7 +276,7 @@ def share_video():
 
     rounds = load_rounds()
     r = get_round_by_id(rounds, round_id)
-    if not r or r.get("user_email") != current_user.email:
+    if not r or not user_owns_round(r, current_user):
         return jsonify({"ok": False, "error": "找不到該場次"}), 404
 
     path, err = save_upload(request.files.get("video"), "video")
@@ -340,8 +305,7 @@ def share_video():
 @app.route("/stats")
 @login_required
 def stats():
-    rounds_all = load_rounds()
-    rounds = [r for r in rounds_all if r.get("user_email") == current_user.email]
+    rounds = filter_rounds_for_user(load_rounds(), current_user)
     return render_template(
         "stats.html",
         page="stats",
