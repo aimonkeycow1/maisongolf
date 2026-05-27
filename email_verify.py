@@ -1,4 +1,4 @@
-"""註冊驗證信：SMTP 或未設定 SMTP 時改為記錄連結（模擬）"""
+"""註冊驗證信：使用 Flask-Mail + SMTP 寄送"""
 
 from __future__ import annotations
 
@@ -21,11 +21,18 @@ def build_verify_link(token: str) -> str:
     return urljoin(base + "/", path.lstrip("/"))
 
 
+def validate_mail_config() -> None:
+    """檢查正式 SMTP 設定是否完整。"""
+    required_keys = ("MAIL_SERVER", "MAIL_PORT", "MAIL_USERNAME", "MAIL_PASSWORD", "MAIL_DEFAULT_SENDER")
+    missing = [k for k in required_keys if not current_app.config.get(k)]
+    if missing:
+        raise RuntimeError(f"缺少郵件設定：{', '.join(missing)}")
+
+
 def send_verification_email(email: str, username: str, token: str) -> None:
     link = build_verify_link(token)
     subject = "[Maison Golf] 請驗證您的 Email"
-
-    suppress = bool(current_app.config.get("MAIL_SUPPRESS_SEND"))
+    validate_mail_config()
     body_plain = (
         f"您好 {username}，\n\n"
         f"請點擊以下連結完成 Email 驗證，啟用帳號：\n{link}\n\n"
@@ -33,17 +40,10 @@ def send_verification_email(email: str, username: str, token: str) -> None:
     )
     html = (
         f"<p>您好 <strong>{username}</strong>，</p>"
-        f"<p>請點擊連結完成 Email 驗證：<p>"
+        f"<p>請點擊連結完成 Email 驗證：</p>"
         f'<p><a href="{link}">{link}</a></p>'
         "<p>若不是你本人註冊，請忽略此信。</p>"
     )
-
-    if suppress:
-        current_app.logger.warning(
-            "[EMAIL SIMULATED] to=%s subject=%s link=%s", email, subject, link
-        )
-        print(f"\n{'=' * 48}\n[模擬驗證信] 收件人: {email}\n{body_plain}\n{'=' * 48}\n")
-        return
 
     msg = Message(
         subject,

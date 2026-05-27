@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import secrets
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_user, logout_user, current_user
 from sqlalchemy import func
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -39,6 +39,11 @@ def _username_taken(norm_username: str, exclude_id: int | None = None) -> bool:
     if exclude_id is not None:
         q = q.filter(User.id != exclude_id)
     return q.first() is not None
+
+
+def _send_verification_or_raise(email: str, username: str, token: str) -> None:
+    """集中寄送驗證信，讓註冊/重送行為一致。"""
+    send_verification_email(email, username, token)
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])
@@ -85,8 +90,14 @@ def register():
                 email_verify_token=token,
             )
             db.session.add(user)
+            try:
+                _send_verification_or_raise(email, nu, token)
+            except Exception as exc:
+                current_app.logger.exception("Verification mail send failed during register: %s", exc)
+                db.session.rollback()
+                flash("驗證信發送失敗，請稍後再試或聯絡管理員。", "error")
+                return render_template("auth_register.html", page="auth")
             db.session.commit()
-            send_verification_email(email, nu, token)
             return redirect(url_for("auth.register_sent", email=email))
 
     return render_template("auth_register.html", page="auth")
@@ -133,8 +144,14 @@ def resend_verification():
             return redirect(url_for("auth.login"))
 
         user.email_verify_token = secrets.token_urlsafe(32)
+        try:
+            _send_verification_or_raise(user.email, user.username, user.email_verify_token)
+        except Exception as exc:
+            current_app.logger.exception("Verification mail resend failed: %s", exc)
+            db.session.rollback()
+            flash("重送失敗：郵件服務暫時不可用，請稍後再試。", "error")
+            return redirect(url_for("auth.resend_verification"))
         db.session.commit()
-        send_verification_email(user.email, user.username, user.email_verify_token)
         flash("已重新寄送驗證信，請查看信箱。", "ok")
         return redirect(url_for("auth.login"))
 

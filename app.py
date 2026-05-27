@@ -60,21 +60,16 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(BASE_DIR, "a
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 _mail_server = os.environ.get("MAIL_SERVER", "").strip()
-app.config["MAIL_SERVER"] = _mail_server or "localhost"
+app.config["MAIL_SERVER"] = _mail_server
 app.config["MAIL_PORT"] = int(os.environ.get("MAIL_PORT", "587"))
 app.config["MAIL_USE_TLS"] = os.environ.get("MAIL_USE_TLS", "true").lower() == "true"
+app.config["MAIL_USE_SSL"] = os.environ.get("MAIL_USE_SSL", "false").lower() == "true"
 app.config["MAIL_USERNAME"] = os.environ.get("MAIL_USERNAME", "")
 app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD", "")
 app.config["MAIL_DEFAULT_SENDER"] = (
-    os.environ.get("MAIL_DEFAULT_SENDER") or os.environ.get("MAIL_USERNAME") or "noreply@localhost"
+    os.environ.get("MAIL_DEFAULT_SENDER") or os.environ.get("MAIL_USERNAME")
 )
-_mail_suppress_raw = os.environ.get("MAIL_SUPPRESS_SEND", "").strip().lower()
-if _mail_suppress_raw == "false":
-    app.config["MAIL_SUPPRESS_SEND"] = False
-elif _mail_suppress_raw == "true":
-    app.config["MAIL_SUPPRESS_SEND"] = True
-else:
-    app.config["MAIL_SUPPRESS_SEND"] = not bool(_mail_server)
+app.config["MAIL_SUPPRESS_SEND"] = False
 
 db.init_app(app)
 mail.init_app(app)
