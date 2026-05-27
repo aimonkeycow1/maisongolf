@@ -1,3 +1,8 @@
+"""
+記分場次儲存（rounds.json）
+所有讀寫皆支援依 user_id 隔離。
+"""
+
 import json
 import os
 from datetime import datetime
@@ -7,7 +12,9 @@ from courses import DEFAULT_COURSE_ID, DEFAULT_TEE_ID, course_meta_for_round
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FILE = os.path.join(BASE_DIR, "rounds.json")
 
+
 def load_rounds():
+    """載入全部場次（僅內部或管理同步使用）"""
     try:
         with open(FILE, "r", encoding="utf-8") as file:
             return json.load(file)
@@ -17,12 +24,99 @@ def load_rounds():
         print("⚠️ 紀錄檔損壞，將從空白開始。")
         return []
 
+
 def save_rounds(rounds):
     with open(FILE, "w", encoding="utf-8") as file:
         json.dump(rounds, file, ensure_ascii=False, indent=2)
 
 
+def round_belongs_to_user(round_dict, user_id) -> bool:
+    """場次是否屬於指定 user_id（嚴格：無 user_id 的舊資料不算任何人的）"""
+    if user_id is None:
+        return False
+    uid = round_dict.get("user_id")
+    if uid is None:
+        return False
+    return int(uid) == int(user_id)
+
+
+def round_belongs_to_user_account(round_dict, user) -> bool:
+    """場次是否屬於登入使用者（含舊版 user_email 相容）"""
+    if not user or getattr(user, "id", None) is None:
+        return False
+    if round_belongs_to_user(round_dict, user.id):
+        return True
+    legacy_email = round_dict.get("user_email")
+    if legacy_email and getattr(user, "email", None):
+        return legacy_email == user.email
+    return False
+
+
+def load_rounds_for_user(user_id):
+    """只載入屬於該使用者的場次"""
+    return [r for r in load_rounds() if round_belongs_to_user(r, user_id)]
+
+
+def load_rounds_for_user_account(user):
+    """依 Flask-Login 使用者物件過濾場次"""
+    if not user or getattr(user, "id", None) is None:
+        return []
+    return [r for r in load_rounds() if round_belongs_to_user_account(r, user)]
+
+
+def get_round_by_id(rounds, round_id):
+    for r in rounds:
+        if r.get("id") == round_id:
+            return r
+    return None
+
+
+def get_round_for_user(round_id, user_id):
+    """取得單一場次，且必須屬於該 user_id"""
+    for r in load_rounds():
+        if r.get("id") == round_id and round_belongs_to_user(r, user_id):
+            return r
+    return None
+
+
+def get_round_for_user_account(round_id, user):
+    """取得單一場次，且必須屬於目前登入使用者"""
+    for r in load_rounds():
+        if r.get("id") == round_id and round_belongs_to_user_account(r, user):
+            return r
+    return None
+
+
+def migrate_legacy_round_user_ids():
+    """
+    將舊資料（仅有 user_email）回填 user_id。
+    啟動時呼叫一次即可。
+    """
+    try:
+        from models import User
+        users = User.query.all()
+    except Exception:
+        return 0
+
+    email_to_id = {u.email: u.id for u in users if u.email}
+    rounds = load_rounds()
+    changed = 0
+    for r in rounds:
+        if r.get("user_id") is not None:
+            continue
+        email = r.get("user_email")
+        if email and email in email_to_id:
+            r["user_id"] = int(email_to_id[email])
+            changed += 1
+    if changed:
+        save_rounds(rounds)
+    return changed
+
+
 def build_round_record(players_stats, note="", course_id=None, tee_id=None, user_id=None):
+    if user_id is None:
+        raise ValueError("新增場次必須提供 user_id")
+
     now = datetime.now()
     cid = course_id or DEFAULT_COURSE_ID
     tid = tee_id or DEFAULT_TEE_ID
@@ -30,7 +124,7 @@ def build_round_record(players_stats, note="", course_id=None, tee_id=None, user
     if not meta:
         meta = course_meta_for_round(DEFAULT_COURSE_ID, DEFAULT_TEE_ID)
 
-    record = {
+    return {
         "id": now.strftime("%Y%m%d_%H%M%S"),
         "date": now.strftime("%Y-%m-%d"),
         "time": now.strftime("%H:%M"),
@@ -43,15 +137,16 @@ def build_round_record(players_stats, note="", course_id=None, tee_id=None, user
         "pars": meta["pars"],
         "note": note.strip(),
         "players": players_stats,
+        "user_id": int(user_id),
     }
-    if user_id is not None:
-        record["user_id"] = int(user_id)
-    return record
 
 
 def add_round(players_stats, note="", course_id=None, tee_id=None, user_id=None):
+    """新增場次（強制綁定 user_id）"""
     rounds = load_rounds()
-    rounds.append(build_round_record(players_stats, note, course_id, tee_id, user_id=user_id))
+    record = build_round_record(
+        players_stats, note, course_id, tee_id, user_id=user_id
+    )
+    rounds.append(record)
     save_rounds(rounds)
-    return rounds[-1]["id"]
-
+    return record["id"]

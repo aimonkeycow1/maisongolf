@@ -22,14 +22,19 @@ from courses import (
     list_hero_carousel_slides,
 )
 from course_images import ensure_course_images
-from round_storage import load_rounds, save_rounds, add_round, BASE_DIR
+from round_storage import (
+    load_rounds,
+    save_rounds,
+    add_round,
+    BASE_DIR,
+    load_rounds_for_user,
+    get_round_for_user,
+    migrate_legacy_round_user_ids,
+)
 from web_helpers import (
-    get_round_by_id,
     get_player_stats_table,
     get_hardest_holes,
     get_global_round_stats,
-    filter_rounds_for_user,
-    user_owns_round,
 )
 from web_score import validate_score_submission
 from ai_coach import generate_coach_analysis
@@ -84,6 +89,7 @@ app.register_blueprint(auth_bp)
 
 with app.app_context():
     db.create_all()
+    migrate_legacy_round_user_ids()
 
 
 @app.route("/admin/sync", methods=["POST"])
@@ -102,7 +108,7 @@ def admin_sync():
 @app.route("/")
 @login_required
 def index():
-    rounds = filter_rounds_for_user(load_rounds(), current_user)
+    rounds = load_rounds_for_user(current_user.id)
     return render_template(
         "index.html",
         page="home",
@@ -116,9 +122,8 @@ def index():
 @app.route("/round/<round_id>")
 @login_required
 def round_detail(round_id):
-    rounds = load_rounds()
-    r = get_round_by_id(rounds, round_id)
-    if not r or not user_owns_round(r, current_user):
+    r = get_round_for_user(round_id, current_user.id)
+    if not r:
         abort(404)
     ranked = sorted(r["players"], key=lambda p: p["total"])
     return render_template(
@@ -191,9 +196,8 @@ def ai_analysis():
     if not round_id:
         return jsonify({"ok": False, "error": "缺少 round_id"}), 400
 
-    rounds = load_rounds()
-    r = get_round_by_id(rounds, round_id)
-    if not r or not user_owns_round(r, current_user):
+    r = get_round_for_user(round_id, current_user.id)
+    if not r:
         return jsonify({"ok": False, "error": "找不到該場次"}), 404
 
     analysis, source = generate_coach_analysis(r, player_name=player_name)
@@ -212,9 +216,8 @@ def ai_analysis():
 @login_required
 def share_meta(round_id):
     """分享疊字用場次中繼資料"""
-    rounds = load_rounds()
-    r = get_round_by_id(rounds, round_id)
-    if not r or not user_owns_round(r, current_user):
+    r = get_round_for_user(round_id, current_user.id)
+    if not r:
         return jsonify({"ok": False, "error": "找不到該場次"}), 404
 
     player_name = request.args.get("player_name")
@@ -240,9 +243,8 @@ def share_photo():
     if not round_id:
         return jsonify({"ok": False, "error": "缺少 round_id"}), 400
 
-    rounds = load_rounds()
-    r = get_round_by_id(rounds, round_id)
-    if not r or not user_owns_round(r, current_user):
+    r = get_round_for_user(round_id, current_user.id)
+    if not r:
         return jsonify({"ok": False, "error": "找不到該場次"}), 404
 
     path, err = save_upload(request.files.get("photo"), "image")
@@ -274,9 +276,8 @@ def share_video():
     if not round_id:
         return jsonify({"ok": False, "error": "缺少 round_id"}), 400
 
-    rounds = load_rounds()
-    r = get_round_by_id(rounds, round_id)
-    if not r or not user_owns_round(r, current_user):
+    r = get_round_for_user(round_id, current_user.id)
+    if not r:
         return jsonify({"ok": False, "error": "找不到該場次"}), 404
 
     path, err = save_upload(request.files.get("video"), "video")
@@ -305,7 +306,7 @@ def share_video():
 @app.route("/stats")
 @login_required
 def stats():
-    rounds = filter_rounds_for_user(load_rounds(), current_user)
+    rounds = load_rounds_for_user(current_user.id)
     return render_template(
         "stats.html",
         page="stats",
