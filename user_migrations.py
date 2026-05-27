@@ -34,6 +34,8 @@ def migrate_users_auth_columns() -> None:
         statements.append(
             "ALTER TABLE users ADD COLUMN email_verify_token VARCHAR(128)"
         )
+    if "current_round_id" not in cols:
+        statements.append("ALTER TABLE users ADD COLUMN current_round_id VARCHAR(64)")
     for stmt in statements:
         _exec(stmt)
 

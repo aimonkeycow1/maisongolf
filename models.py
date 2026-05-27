@@ -24,6 +24,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     email_verified = db.Column(db.Boolean, default=False, nullable=False)
     email_verify_token = db.Column(db.String(128), nullable=True, index=True)
+    current_round_id = db.Column(db.String(64), nullable=True, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     def get_id(self) -> str:  # type: ignore[override]

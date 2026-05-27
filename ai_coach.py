@@ -685,3 +685,66 @@ def generate_coach_analysis(round_data, player_name=None):
         return grok, "grok"
 
     return deep_coach_analysis(ctx), "mock"
+
+
+def build_next_hole_strategy(tee, next_hole, players, scores):
+    """
+    逐洞策略：輸入下一洞洞號，輸出可直接顯示在 UI 的教練卡片內容。
+    """
+    idx = max(1, min(18, int(next_hole))) - 1
+    pars = tee.get("pars") or [4] * 18
+    yardages = tee.get("yardages") or [0] * 18
+    handicaps = tee.get("handicap") or [0] * 18
+    par = pars[idx] if idx < len(pars) else 4
+    yard = yardages[idx] if idx < len(yardages) else 0
+    hcp = handicaps[idx] if idx < len(handicaps) else 0
+    hole_no = idx + 1
+
+    avg_diff = 0
+    valid = []
+    for row in scores or []:
+        if not isinstance(row, list):
+            continue
+        played = [v for v in row[:idx] if isinstance(v, int) and v >= 1]
+        if not played:
+            continue
+        rel = 0
+        for h_i, s in enumerate(played):
+            rel += s - (pars[h_i] if h_i < len(pars) else 4)
+        valid.append(rel / len(played))
+    if valid:
+        avg_diff = round(sum(valid) / len(valid), 2)
+
+    if par == 5:
+        shot_plan = "開球以球道中左/中右安全區為第一目標；第二桿優先把球送到 80–120 碼舒適攻果嶺距離，第三桿再進攻旗位。"
+        club_plan = "開球可用 Driver 或 3W（依你今天命中率）；第二桿若球位不理想，改用長鐵做位置球，避免硬攻下水或 OB。"
+    elif par == 3:
+        shot_plan = "這洞重點是『一桿上果嶺或安全前緣』，目標先對準果嶺中央，不追旗桿。"
+        club_plan = "選大一號桿，節奏 80–90% 揮桿；寧可留長推，不要短桿進沙坑。"
+    else:
+        shot_plan = "開球先拿球道，再用第二桿攻果嶺安全區（優先中間，不硬攻邊旗）。"
+        club_plan = "若今天開球偏右/左，改用 3W 或混血桿保守開球；第二桿以『可兩推』距離為目標。"
+
+    risk_line = "右側 OB / 左側長草風險較高，失誤方向一律選擇可救球的安全側。"
+    if hcp and hcp <= 6:
+        risk_line = "此洞為高難度洞（差點靠前），請把策略設定為『Bogey 可接受，Double 禁止』。"
+
+    momentum = (
+        f"目前平均表現約 {avg_diff:+.2f} 桿/洞，相比標準桿"
+        if valid else
+        "目前資料不足，建議先用保守策略建立節奏"
+    )
+    coach_tone = (
+        f"第 {hole_no} 洞（Par {par}，{yard} 碼）請你用『先穩再攻』。"
+        "第一桿只求進入可打第二桿的位置，第二桿才決定是否進攻旗位。"
+    )
+
+    return {
+        "title": f"第 {hole_no} 洞策略建議",
+        "subtitle": f"Par {par} · {yard} 碼 · 差點 {hcp}",
+        "summary": coach_tone,
+        "shot_plan": shot_plan,
+        "club_plan": club_plan,
+        "risk_control": risk_line,
+        "momentum": momentum,
+    }

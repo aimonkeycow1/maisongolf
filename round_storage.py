@@ -8,6 +8,7 @@ import os
 from datetime import datetime
 
 from courses import DEFAULT_COURSE_ID, DEFAULT_TEE_ID, course_meta_for_round
+from golf_utils import calc_player_stats
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FILE = os.path.join(BASE_DIR, "rounds.json")
@@ -54,7 +55,11 @@ def round_belongs_to_user_account(round_dict, user) -> bool:
 
 def load_rounds_for_user(user_id):
     """只載入屬於該使用者的場次"""
-    return [r for r in load_rounds() if round_belongs_to_user(r, user_id)]
+    return [
+        r
+        for r in load_rounds()
+        if round_belongs_to_user(r, user_id) and r.get("status", "completed") == "completed"
+    ]
 
 
 def load_rounds_for_user_account(user):
@@ -152,6 +157,7 @@ def build_round_record(players_stats, note="", course_id=None, tee_id=None, user
         "note": note.strip(),
         "players": players_stats,
         "user_id": int(user_id),
+        "status": "completed",
     }
 
 
@@ -164,3 +170,115 @@ def add_round(players_stats, note="", course_id=None, tee_id=None, user_id=None)
     rounds.append(record)
     save_rounds(rounds)
     return record["id"]
+
+
+def _new_round_id(prefix="round"):
+    return f"{prefix}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
+
+
+def get_in_progress_round_for_user(user_id):
+    for r in reversed(load_rounds()):
+        if (
+            round_belongs_to_user(r, user_id)
+            and r.get("status") == "in_progress"
+        ):
+            return r
+    return None
+
+
+def upsert_in_progress_round(
+    user_id,
+    *,
+    round_id=None,
+    course_id=None,
+    tee_id=None,
+    players=None,
+    scores=None,
+    hole_index=0,
+    note="",
+):
+    if user_id is None:
+        raise ValueError("保存草稿必須提供 user_id")
+    if not course_id or not tee_id:
+        raise ValueError("保存草稿需要 course_id 與 tee_id")
+
+    rounds = load_rounds()
+    target = None
+    for r in rounds:
+        if r.get("id") == round_id and round_belongs_to_user(r, user_id):
+            target = r
+            break
+    if target is None:
+        target = {
+            "id": round_id or _new_round_id("draft"),
+            "status": "in_progress",
+            "user_id": int(user_id),
+        }
+        rounds.append(target)
+
+    meta = course_meta_for_round(course_id, tee_id)
+    if not meta:
+        raise ValueError("找不到球場/發球台資料")
+
+    now = datetime.now()
+    target.update({
+        "date": now.strftime("%Y-%m-%d"),
+        "time": now.strftime("%H:%M"),
+        "course_id": meta["course_id"],
+        "course": meta["course"],
+        "tee_id": meta["tee_id"],
+        "tee": meta["tee"],
+        "par_total": meta["par_total"],
+        "yardage_total": meta["yardage_total"],
+        "pars": meta["pars"],
+        "note": (note or "").strip(),
+        "draft_players": players or [],
+        "draft_scores": scores or [],
+        "draft_hole_index": int(hole_index),
+        "status": "in_progress",
+    })
+    save_rounds(rounds)
+    return target
+
+
+def complete_in_progress_round(round_id, user_id, note=""):
+    rounds = load_rounds()
+    target = None
+    for r in rounds:
+        if r.get("id") == round_id and round_belongs_to_user(r, user_id):
+            target = r
+            break
+    if not target:
+        return None, "找不到進行中的場次"
+    if target.get("status") != "in_progress":
+        return None, "此場次已完成或不可編輯"
+
+    players = target.get("draft_players") or []
+    draft_scores = target.get("draft_scores") or []
+    pars = target.get("pars") or []
+    if not players or not draft_scores:
+        return None, "草稿資料不完整"
+
+    players_stats = []
+    for i, name in enumerate(players):
+        scores = draft_scores[i] if i < len(draft_scores) else []
+        if not isinstance(scores, list) or len(scores) != 18:
+            return None, f"{name} 的草稿資料不完整"
+        try:
+            scores_int = [int(s) for s in scores]
+        except (TypeError, ValueError):
+            return None, f"{name} 的桿數格式錯誤"
+        if any(s < 1 or s > 20 for s in scores_int):
+            return None, f"{name} 的桿數超出範圍"
+        stats = calc_player_stats(scores_int, pars=pars)
+        stats["name"] = name
+        players_stats.append(stats)
+
+    target["players"] = players_stats
+    target["note"] = (note or target.get("note") or "").strip()
+    target["status"] = "completed"
+    target.pop("draft_players", None)
+    target.pop("draft_scores", None)
+    target.pop("draft_hole_index", None)
+    save_rounds(rounds)
+    return target, None
