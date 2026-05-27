@@ -65,7 +65,7 @@
           </nav>
 
           {% if current_user.is_authenticated %}
-            <span class="hidden max-w-[120px] truncate text-xs text-green-200/70 sm:inline">{{ current_user.email }}</span>
+            <span class="hidden max-w-[160px] truncate text-xs text-green-200/70 sm:inline" title="{{ current_user.email }}">{{ current_user.username }}</span>
             <a href="{{ url_for('auth.logout') }}"
                class="hidden rounded-xl border border-white/20 bg-black/30 px-3.5 py-1.5 text-xs font-semibold text-green-100 no-underline hover:bg-white/10 sm:inline-flex">
               登出

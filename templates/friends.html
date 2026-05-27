@@ -20,7 +20,7 @@
 
   <form method="get" action="{{ url_for('friends.friends_home') }}" class="mt-6 flex flex-col gap-3 sm:flex-row">
     <input type="search" name="q" value="{{ search_q }}" minlength="2" required
-           placeholder="輸入 Email 關鍵字（至少 2 字）"
+           placeholder="球友名稱或 Email（至少 2 字）"
            class="min-w-0 flex-1 rounded-xl border border-white/15 bg-black/40 px-4 py-3 text-sm text-white placeholder:text-green-200/40 focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/40">
     <button type="submit"
             class="rounded-xl bg-gold px-6 py-3 text-sm font-bold text-fairway-dark shadow-md transition hover:bg-gold-light">

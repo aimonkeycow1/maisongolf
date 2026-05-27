@@ -40,16 +40,17 @@ def can_view_user_data(viewer_id: int, owner_id: int) -> bool:
 
 
 def search_users(query: str, current_user_id: int, limit: int = 10) -> list[User]:
-    q = (query or "").strip().lower()
+    q = (query or "").strip()
     if len(q) < 2:
         return []
     pattern = f"%{q}%"
     return (
         User.query.filter(
             User.id != current_user_id,
-            User.email.ilike(pattern),
+            User.email_verified.is_(True),
+            or_(User.email.ilike(pattern), User.username.ilike(pattern)),
         )
-        .order_by(User.email)
+        .order_by(User.username, User.email)
         .limit(limit)
         .all()
     )
@@ -67,8 +68,11 @@ def _existing_request_between(a_id: int, b_id: int) -> FriendRequest | None:
 def send_friend_request(from_user_id: int, to_user_id: int) -> tuple[bool, str]:
     if from_user_id == to_user_id:
         return False, "不能加自己為好友"
-    if User.query.get(to_user_id) is None:
+    target = User.query.get(to_user_id)
+    if target is None:
         return False, "找不到該使用者"
+    if not target.email_verified:
+        return False, "對方尚未完成 Email 驗證，無法加好友"
     if are_friends(from_user_id, to_user_id):
         return False, "你們已經是好友"
 
@@ -126,7 +130,7 @@ def list_friends(user_id: int) -> list[User]:
         friend_ids.append(fid)
     if not friend_ids:
         return []
-    return User.query.filter(User.id.in_(friend_ids)).order_by(User.email).all()
+    return User.query.filter(User.id.in_(friend_ids)).order_by(User.username, User.email).all()
 
 
 def pending_incoming(user_id: int) -> list[FriendRequest]:
