@@ -48,6 +48,7 @@ from share_media import (
 )
 from models import db, User
 from auth import auth_bp
+from friends import friends_bp
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 85 * 1024 * 1024
@@ -96,6 +97,7 @@ ensure_hero_image()
 ensure_course_images()
 
 app.register_blueprint(auth_bp)
+app.register_blueprint(friends_bp)
 
 with app.app_context():
     db.create_all()

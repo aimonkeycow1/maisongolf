@@ -30,3 +30,28 @@ class User(UserMixin, db.Model):
         """僅載入屬於此使用者的記分場次"""
         from round_storage import load_rounds_for_user
         return load_rounds_for_user(self.id)
+
+    @property
+    def display_label(self) -> str:
+        """列表顯示用（Email 本地段）"""
+        if self.email and "@" in self.email:
+            return self.email.split("@")[0]
+        return self.email or f"球友{self.id}"
+
+
+class FriendRequest(db.Model):
+    """好友邀請：接受後雙方可查看彼此歷史成績"""
+
+    __tablename__ = "friend_requests"
+
+    id = db.Column(db.Integer, primary_key=True)
+    from_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    to_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    status = db.Column(db.String(20), nullable=False, default="pending", index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+
+    from_user = db.relationship("User", foreign_keys=[from_user_id], backref="sent_friend_requests")
+    to_user = db.relationship("User", foreign_keys=[to_user_id], backref="received_friend_requests")

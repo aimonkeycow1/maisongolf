@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% from '_macros.html' import score_cell_class, diff_text, to_par_text, score_name %}
+{% block title %}{{ friend.display_label }} · {{ round.date }} 記分卡{% endblock %}
+{% block content %}
+
+<div class="mb-4 rounded-xl border border-amber-500/30 bg-amber-900/20 px-4 py-3 text-sm text-amber-100/90">
+  正在查看好友 <strong class="text-gold-light">{{ friend.display_label }}</strong> 的記分卡（唯讀）
+</div>
+
+{% set round_hero = '/static/img/' ~ (round.course_id ~ '.jpg' if round.course_id else 'hero.jpg') %}
+<section class="relative mb-6 overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10">
+  <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('{{ round_hero }}')"></div>
+  <div class="absolute inset-0 bg-gradient-to-r from-fairway-dark/95 via-fairway-dark/75 to-transparent"></div>
+  <div class="relative px-6 py-10 sm:px-10 sm:py-14">
+    <p class="mb-2 text-xs font-semibold uppercase tracking-widest text-gold-light">好友 Scorecard</p>
+    <h1 class="text-2xl font-bold text-white sm:text-3xl">{{ round.course }}</h1>
+    <p class="mt-2 text-green-100/80">{{ round.date }} · {{ round.time }}{% if round.note %} · {{ round.note }}{% endif %}</p>
+  </div>
+</section>
+
+<div class="mb-6 flex flex-wrap gap-3">
+  <a href="{{ url_for('friends.friend_rounds', user_id=friend.id) }}"
+     class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-green-100 no-underline hover:bg-white/10">
+    ← 返回 {{ friend.display_label }} 的戰績
+  </a>
+  <a href="{{ url_for('friends.friends_home') }}"
+     class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-green-100 no-underline hover:bg-white/10">
+    好友列表
+  </a>
+</div>
+
+<section class="mb-8 rounded-2xl bg-white/5 p-6 shadow-xl ring-1 ring-white/10 sm:p-8">
+  <h2 class="mb-6 text-xl font-bold text-white">本場排名</h2>
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    {% for p in ranked %}
+    <div class="rounded-xl border p-5 text-center transition
+                {% if loop.index == 1 %}border-gold/50 bg-gradient-to-b from-gold/15 to-transparent{% else %}border-white/10 bg-black/20{% endif %}">
+      <div class="text-2xl">{% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}</div>
+      <p class="mt-2 font-bold text-white">{{ p.name }}</p>
+      <p class="mt-1 text-4xl font-bold tabular-nums text-fairway-light">{{ p.total }}</p>
+      <p class="mt-1 text-sm text-green-200/70">{{ to_par_text(p.to_par) }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<div class="mb-6 flex flex-wrap gap-3 text-xs sm:text-sm text-green-200/80">
+  <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-blue-600"></span>Eagle</span>
+  <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-green-700"></span>Birdie</span>
+  <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded border border-green-200 bg-white"></span>Par</span>
+  <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-orange-500"></span>Bogey</span>
+  <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-red-600"></span>Double+</span>
+</div>
+
+{% for p in ranked %}
+<article class="mb-8 overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-green-900/10">
+  <div class="bg-fairway-dark px-6 py-5 sm:px-8">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h2 class="text-xl font-bold text-white sm:text-2xl">{{ p.name }}</h2>
+        <p class="mt-1 text-sm text-green-200/70">
+          Birdie {{ p.birdies }} · Par {{ p.pars }} · Bogey {{ p.bogeys }} · Double+ {{ p.double_plus }}
+        </p>
+      </div>
+      <div class="text-center border-l border-white/20 pl-6">
+        <p class="text-xs font-medium uppercase tracking-wider text-gold-light">總桿</p>
+        <p class="text-4xl font-bold tabular-nums text-gold-light">{{ p.total }}</p>
+        <p class="text-sm text-green-200/80">{{ to_par_text(p.to_par) }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="p-4 sm:p-6">
+    <p class="mb-3 text-xs font-bold uppercase tracking-widest text-fairway-dark">前九洞</p>
+    <div class="grid grid-cols-3 gap-2 sm:grid-cols-5 md:grid-cols-9 sm:gap-3">
+      {% for h in p.hole_results if h.hole <= 9 %}
+      <div class="rounded-lg p-2 text-center sm:p-3 {{ score_cell_class(h.diff) }}">
+        <p class="text-[10px] font-medium opacity-80 sm:text-xs">H{{ h.hole }}</p>
+        <p class="my-1 text-2xl font-bold tabular-nums sm:text-3xl">{{ h.score }}</p>
+        <p class="text-[10px] opacity-75 sm:text-xs">Par {{ h.par }}</p>
+        <p class="mt-0.5 text-[10px] font-semibold sm:text-xs">{{ score_name(h.diff) }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="mb-3 mt-6 text-xs font-bold uppercase tracking-widest text-fairway-dark">後九洞</p>
+    <div class="grid grid-cols-3 gap-2 sm:grid-cols-5 md:grid-cols-9 sm:gap-3">
+      {% for h in p.hole_results if h.hole > 9 %}
+      <div class="rounded-lg p-2 text-center sm:p-3 {{ score_cell_class(h.diff) }}">
+        <p class="text-[10px] font-medium opacity-80 sm:text-xs">H{{ h.hole }}</p>
+        <p class="my-1 text-2xl font-bold tabular-nums sm:text-3xl">{{ h.score }}</p>
+        <p class="text-[10px] opacity-75 sm:text-xs">Par {{ h.par }}</p>
+        <p class="mt-0.5 text-[10px] font-semibold sm:text-xs">{{ score_name(h.diff) }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</article>
+{% endfor %}
+
+{% endblock %}

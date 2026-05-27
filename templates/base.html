@@ -59,6 +59,7 @@
           <nav class="flex flex-1 gap-2 rounded-2xl bg-black/25 p-1.5 ring-1 ring-white/10 sm:flex-none" role="navigation" aria-label="主選單">
             {% from '_macros.html' import nav_link %}
             {{ nav_link(url_for('index'), '首頁', page == 'home') }}
+            {{ nav_link(url_for('friends.friends_home'), '好友', page == 'friends') }}
             {{ nav_link(url_for('score_entry'), '錄分', page == 'score', primary=true) }}
             {{ nav_link(url_for('stats'), '統計', page == 'stats') }}
           </nav>
