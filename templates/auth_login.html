@@ -4,9 +4,7 @@
 
 <section class="mx-auto max-w-md rounded-2xl bg-black/30 p-6 shadow-xl ring-1 ring-white/10 sm:p-8">
   <h1 class="text-xl font-bold text-white sm:text-2xl">登入 Maison Golf</h1>
-  <p class="mt-1 text-sm text-green-200/70">
-    {% if email_simulate %}模擬驗證模式：註冊後可直接登入。{% else %}請使用已驗證的帳號登入。{% endif %}
-  </p>
+  <p class="mt-1 text-sm text-green-200/70">使用球友名稱與密碼登入。</p>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -22,8 +20,8 @@
 
   <form method="post" class="mt-5 space-y-4">
     <div>
-      <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gold-light">Email</label>
-      <input type="email" name="email" required autocomplete="email"
+      <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gold-light">球友名稱</label>
+      <input type="text" name="username" required autocomplete="username"
              class="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-green-200/40 focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/40">
     </div>
     <div>
@@ -41,10 +39,6 @@
   <p class="mt-4 text-center text-xs text-green-200/70">
     還沒有帳號？
     <a href="{{ url_for('auth.register') }}" class="font-semibold text-gold-light hover:text-white">立即註冊</a>
-    {% if not email_simulate %}
-    <span class="mx-1 opacity-40">·</span>
-    <a href="{{ url_for('auth.resend_verification') }}" class="font-semibold text-gold-light/90 hover:text-white">重送驗證信</a>
-    {% endif %}
   </p>
 </section>
 

@@ -7,13 +7,15 @@ from flask_login import UserMixin
 
 db = SQLAlchemy()
 
+PLACEHOLDER_EMAIL_DOMAIN = "maison.local"
+
 
 class User(UserMixin, db.Model):
     """
-    基礎使用者：username、email、密碼；需完成 Email 驗證後才可登入使用功能。
+    測試版使用者：球友名稱 + 密碼登入。
+    email 欄位保留供舊資料相容，新帳號使用內部占位信箱。
 
     記分場次（Round）儲存於 rounds.json，每筆資料以 user_id 欄位關聯本表的 id。
-    查詢場次請一律透過 round_storage.load_rounds_for_user(user.id)。
     """
 
     __tablename__ = "users"
@@ -22,7 +24,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    email_verified = db.Column(db.Boolean, default=False, nullable=False)
+    email_verified = db.Column(db.Boolean, default=True, nullable=False)
     email_verify_token = db.Column(db.String(128), nullable=True, index=True)
     current_round_id = db.Column(db.String(64), nullable=True, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
@@ -32,8 +34,13 @@ class User(UserMixin, db.Model):
 
     @property
     def is_active(self) -> bool:
-        """Flask-Login：未驗證 Email 視為無法使用之帳號"""
-        return bool(self.email_verified)
+        return True
+
+    @staticmethod
+    def placeholder_email(username: str) -> str:
+        """新帳號內部信箱（滿足 DB unique / not null，不對外使用）"""
+        safe = (username or "user").strip().lower()
+        return f"{safe}@{PLACEHOLDER_EMAIL_DOMAIN}"
 
     def load_rounds(self):
         """僅載入屬於此使用者的記分場次"""
@@ -42,12 +49,7 @@ class User(UserMixin, db.Model):
 
     @property
     def display_label(self) -> str:
-        """列表顯示用（優先球友名稱）"""
-        if self.username:
-            return self.username
-        if self.email and "@" in self.email:
-            return self.email.split("@")[0]
-        return self.email or f"球友{self.id}"
+        return self.username or f"球友{self.id}"
 
 
 class FriendRequest(db.Model):

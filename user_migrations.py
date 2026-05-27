@@ -1,4 +1,4 @@
-"""SQLite 使用者表欄位補齊：username、email 驗證（相容既有 app.db）"""
+"""SQLite 使用者表欄位補齊（相容既有 app.db）"""
 
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ def backfill_existing_users_username_and_verified() -> None:
     """既有帳號：補 username、視為已驗證。"""
     for u in User.query.order_by(User.id).all():
         changed = False
-        if u.email_verified is None:
+        if not u.email_verified or u.email_verified is None:
             u.email_verified = True
             changed = True
         if not getattr(u, "username", None):

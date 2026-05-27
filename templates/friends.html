@@ -4,7 +4,7 @@
 
 <section class="mb-8 rounded-2xl bg-white/5 p-6 shadow-xl ring-1 ring-white/10 sm:p-8">
   <h1 class="text-xl font-bold text-white sm:text-2xl">好友</h1>
-  <p class="mt-1 text-sm text-green-200/60">搜尋球友 Email、發送邀請；成為好友後可查看對方歷史成績。</p>
+  <p class="mt-1 text-sm text-green-200/60">搜尋球友名稱、發送邀請；成為好友後可查看對方歷史成績。</p>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -20,7 +20,7 @@
 
   <form method="get" action="{{ url_for('friends.friends_home') }}" class="mt-6 flex flex-col gap-3 sm:flex-row">
     <input type="search" name="q" value="{{ search_q }}" minlength="2" required
-           placeholder="球友名稱或 Email（至少 2 字）"
+           placeholder="球友名稱（至少 2 字）"
            class="min-w-0 flex-1 rounded-xl border border-white/15 bg-black/40 px-4 py-3 text-sm text-white placeholder:text-green-200/40 focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/40">
     <button type="submit"
             class="rounded-xl bg-gold px-6 py-3 text-sm font-bold text-fairway-dark shadow-md transition hover:bg-gold-light">
@@ -37,7 +37,6 @@
         <li class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/25 px-4 py-3">
           <div>
             <p class="font-semibold text-white">{{ u.display_label }}</p>
-            <p class="text-xs text-green-200/50">{{ u.email }}</p>
           </div>
           <form method="post" action="{{ url_for('friends.friends_request', user_id=u.id) }}">
             <input type="hidden" name="q" value="{{ search_q }}">
@@ -65,7 +64,6 @@
     <li class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-black/30 px-4 py-4 ring-1 ring-white/10">
       <div>
         <p class="font-semibold text-white">{{ req.from_user.display_label }}</p>
-        <p class="text-xs text-green-200/50">{{ req.from_user.email }}</p>
       </div>
       <div class="flex gap-2">
         <form method="post" action="{{ url_for('friends.friends_accept', request_id=req.id) }}">
@@ -89,7 +87,6 @@
     {% for req in outgoing %}
     <li class="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-green-200/80">
       <span class="font-semibold text-white">{{ req.to_user.display_label }}</span>
-      <span class="text-green-200/50"> · {{ req.to_user.email }}</span>
       <span class="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-xs">等待中</span>
     </li>
     {% endfor %}
@@ -114,7 +111,6 @@
            class="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-gradient-to-r from-white/[0.06] to-black/30 px-5 py-4 no-underline transition hover:border-gold/40 hover:shadow-lg">
           <div>
             <p class="text-lg font-bold text-white">{{ f.display_label }}</p>
-            <p class="text-sm text-green-200/50">{{ f.email }}</p>
           </div>
           <span class="text-sm font-semibold text-gold-light">查看成績 →</span>
         </a>
@@ -122,7 +118,7 @@
       {% endfor %}
     </ul>
   {% else %}
-    <p class="py-8 text-center text-green-200/60">尚無好友。搜尋 Email 發送邀請吧！</p>
+    <p class="py-8 text-center text-green-200/60">尚無好友。搜尋球友名稱發送邀請吧！</p>
   {% endif %}
 </section>
 

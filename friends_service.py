@@ -47,10 +47,9 @@ def search_users(query: str, current_user_id: int, limit: int = 10) -> list[User
     return (
         User.query.filter(
             User.id != current_user_id,
-            User.email_verified.is_(True),
-            or_(User.email.ilike(pattern), User.username.ilike(pattern)),
+            User.username.ilike(pattern),
         )
-        .order_by(User.username, User.email)
+        .order_by(User.username)
         .limit(limit)
         .all()
     )
@@ -71,8 +70,6 @@ def send_friend_request(from_user_id: int, to_user_id: int) -> tuple[bool, str]:
     target = User.query.get(to_user_id)
     if target is None:
         return False, "找不到該使用者"
-    if not target.email_verified:
-        return False, "對方尚未完成 Email 驗證，無法加好友"
     if are_friends(from_user_id, to_user_id):
         return False, "你們已經是好友"
 
@@ -130,7 +127,7 @@ def list_friends(user_id: int) -> list[User]:
         friend_ids.append(fid)
     if not friend_ids:
         return []
-    return User.query.filter(User.id.in_(friend_ids)).order_by(User.username, User.email).all()
+    return User.query.filter(User.id.in_(friend_ids)).order_by(User.username).all()
 
 
 def pending_incoming(user_id: int) -> list[FriendRequest]:

@@ -12,7 +12,6 @@ from flask_login import (
     LoginManager,
     login_required,
     current_user,
-    logout_user,
 )
 
 from course_data import PAR_TOTAL, COURSE_NAME
@@ -55,9 +54,7 @@ from share_media import (
 from models import db, User
 from auth import auth_bp
 from friends import friends_bp
-from extensions import mail
 from user_migrations import migrate_users_auth_columns
-from email_verify import email_verification_is_simulated
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 85 * 1024 * 1024
@@ -65,49 +62,10 @@ app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(BASE_DIR, "app.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-_mail_server = os.environ.get("MAIL_SERVER", "").strip()
-app.config["MAIL_SERVER"] = _mail_server
-app.config["MAIL_PORT"] = int(os.environ.get("MAIL_PORT", "587"))
-app.config["MAIL_USE_TLS"] = os.environ.get("MAIL_USE_TLS", "true").lower() == "true"
-app.config["MAIL_USE_SSL"] = os.environ.get("MAIL_USE_SSL", "false").lower() == "true"
-app.config["MAIL_USERNAME"] = os.environ.get("MAIL_USERNAME", "")
-app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD", "")
-app.config["MAIL_DEFAULT_SENDER"] = (
-    os.environ.get("MAIL_DEFAULT_SENDER") or os.environ.get("MAIL_USERNAME")
-)
-app.config["MAIL_SUPPRESS_SEND"] = email_verification_is_simulated()
-
 db.init_app(app)
-mail.init_app(app)
 
 login_manager = LoginManager(app)
 login_manager.login_view = "auth.login"
-
-
-@app.before_request
-def _require_verified_account():
-    """未完成 Email 驗證時不可使用站內功能（模擬模式略過）"""
-    if email_verification_is_simulated():
-        return None
-    if not current_user.is_authenticated:
-        return None
-    if current_user.email_verified:
-        return None
-    ep = request.endpoint or ""
-    allowed = {
-        "auth.verify_email",
-        "auth.resend_verification",
-        "auth.login",
-        "auth.register",
-        "auth.register_sent",
-        "auth.logout",
-        "static",
-    }
-    if ep in allowed or ep.startswith("static"):
-        return None
-    logout_user()
-    flash("請先完成 Email 驗證後再使用本站功能。", "error")
-    return redirect(url_for("auth.login"))
 
 
 @login_manager.user_loader
