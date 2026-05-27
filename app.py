@@ -31,6 +31,9 @@ from round_storage import (
     get_round_for_user,
     migrate_legacy_round_user_ids,
     merge_rounds_by_id,
+    get_in_progress_round_for_user,
+    upsert_in_progress_round,
+    complete_in_progress_round,
 )
 from web_helpers import (
     get_player_stats_table,
@@ -39,6 +42,8 @@ from web_helpers import (
 )
 from web_score import validate_score_submission
 from ai_coach import generate_coach_analysis
+from courses import resolve_course_tee
+from ai_coach import build_next_hole_strategy
 from share_media import (
     build_share_meta,
     generate_photo_variants,
@@ -213,6 +218,7 @@ def score_entry():
     """網頁多人同組錄分（雲端需 SYNC_SECRET）"""
     secret_required = bool(os.environ.get("SYNC_SECRET", ""))
 
+    in_progress = get_in_progress_round_for_user(current_user.id)
     if request.method == "GET":
         return render_template(
             "score.html",
@@ -221,6 +227,7 @@ def score_entry():
             courses_by_country=list_courses_by_country(),
             courses_full=courses_catalog_full(),
             secret_required=secret_required,
+            resume_draft=in_progress,
         )
 
     if not _sync_secret_ok():
@@ -231,18 +238,76 @@ def score_entry():
     if err:
         return jsonify({"ok": False, "error": err}), 400
 
-    rid = add_round(
-        result["players_stats"],
-        result["note"],
-        course_id=result["course_id"],
-        tee_id=result["tee_id"],
-        user_id=current_user.id,
-    )
+    draft_round_id = data.get("round_id")
+    if draft_round_id:
+        done, done_err = complete_in_progress_round(draft_round_id, current_user.id, note=result["note"])
+        if done_err:
+            return jsonify({"ok": False, "error": done_err}), 400
+        rid = done["id"]
+    else:
+        rid = add_round(
+            result["players_stats"],
+            result["note"],
+            course_id=result["course_id"],
+            tee_id=result["tee_id"],
+            user_id=current_user.id,
+        )
+    current_user.current_round_id = None
+    db.session.commit()
     return jsonify({
         "ok": True,
         "id": rid,
         "redirect": request.url_root.rstrip("/") + f"/round/{rid}?ai=1&share=1",
     })
+
+
+@app.route("/score/progress", methods=["POST"])
+@login_required
+def score_progress():
+    data = request.get_json(force=True, silent=True) or {}
+    round_id = data.get("round_id")
+    course_id = data.get("course_id")
+    tee_id = data.get("tee_id")
+    players = data.get("players") or []
+    scores = data.get("scores") or []
+    hole_index = int(data.get("hole_index") or 0)
+    note = data.get("note") or ""
+    if not isinstance(players, list) or not isinstance(scores, list):
+        return jsonify({"ok": False, "error": "草稿格式錯誤"}), 400
+    draft = upsert_in_progress_round(
+        current_user.id,
+        round_id=round_id,
+        course_id=course_id,
+        tee_id=tee_id,
+        players=players,
+        scores=scores,
+        hole_index=hole_index,
+        note=note,
+    )
+    current_user.current_round_id = draft["id"]
+    db.session.commit()
+    return jsonify({"ok": True, "round_id": draft["id"]})
+
+
+@app.route("/score/next-hole-strategy", methods=["POST"])
+@login_required
+def score_next_hole_strategy():
+    data = request.get_json(force=True, silent=True) or {}
+    course_id = data.get("course_id")
+    tee_id = data.get("tee_id")
+    next_hole = int(data.get("next_hole") or 1)
+    scores = data.get("scores") or []
+    players = data.get("players") or []
+    tee, err = resolve_course_tee(course_id, tee_id)
+    if err:
+        return jsonify({"ok": False, "error": err}), 400
+    strategy = build_next_hole_strategy(
+        tee=tee,
+        next_hole=next_hole,
+        players=players,
+        scores=scores,
+    )
+    return jsonify({"ok": True, "strategy": strategy})
 
 
 @app.route("/ai_analysis", methods=["POST"])
