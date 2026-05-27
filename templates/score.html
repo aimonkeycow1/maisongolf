@@ -390,27 +390,40 @@ const SECRET_REQUIRED = {{ secret_required|tojson }};
 
     const container = el("hole-inputs");
     container.innerHTML = "";
+    function tapBtnClasses(selected) {
+      const base =
+        "tap-btn min-h-[48px] rounded-lg py-2.5 text-base font-bold shadow-md transition touch-manipulation active:scale-[0.97] ";
+      if (selected) {
+        return base + "bg-gold text-fairway-dark ring-2 ring-gold-light ring-offset-2 ring-offset-white";
+      }
+      return base + "bg-fairway-dark text-white hover:brightness-110 hover:ring-2 hover:ring-gold-light/60";
+    }
+
     players.forEach((name, pi) => {
       const val = scores[pi][holeIndex];
       const diff = val !== null ? val - par : null;
       const key = diff !== null ? scoreKey(diff) : "";
+      const q1 = Math.max(1, par - 1);
+      const q2 = par;
+      const q3 = par + 1;
+      const q4 = par + 2;
       const row = document.createElement("div");
       row.className = "border-b border-green-100 pb-5 last:border-0";
       row.innerHTML = `
         <p class="mb-3 font-bold text-fairway-dark">${name}</p>
         <div class="mb-3 grid grid-cols-4 gap-2">
-          <button type="button" data-pi="${pi}" data-val="${Math.max(1, par - 1)}"
-            class="tap-btn rounded-lg border border-green-200 py-2.5 text-sm font-semibold hover:bg-green-50">${Math.max(1, par - 1)}</button>
-          <button type="button" data-pi="${pi}" data-val="${par}"
-            class="tap-btn rounded-lg bg-fairway py-2.5 text-sm font-semibold text-white">${par}</button>
-          <button type="button" data-pi="${pi}" data-val="${par + 1}"
-            class="tap-btn rounded-lg border border-green-200 py-2.5 text-sm font-semibold hover:bg-green-50">${par + 1}</button>
-          <button type="button" data-pi="${pi}" data-val="${par + 2}"
-            class="tap-btn rounded-lg border border-green-200 py-2.5 text-sm font-semibold hover:bg-green-50">${par + 2}</button>
+          <button type="button" data-pi="${pi}" data-val="${q1}"
+            class="${tapBtnClasses(val !== null && val === q1)}">${q1}</button>
+          <button type="button" data-pi="${pi}" data-val="${q2}"
+            class="${tapBtnClasses(val !== null && val === q2)}">${q2}</button>
+          <button type="button" data-pi="${pi}" data-val="${q3}"
+            class="${tapBtnClasses(val !== null && val === q3)}">${q3}</button>
+          <button type="button" data-pi="${pi}" data-val="${q4}"
+            class="${tapBtnClasses(val !== null && val === q4)}">${q4}</button>
         </div>
         <div class="flex items-center gap-3">
           <input type="number" min="1" max="20" data-pi="${pi}" value="${val !== null ? val : ""}" placeholder="桿"
-            class="score-input w-20 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-center text-2xl font-bold focus:border-fairway focus:outline-none focus:ring-2 focus:ring-fairway/30">
+            class="score-input w-24 rounded-lg border-2 border-fairway-dark/30 bg-green-50 px-3 py-2 text-center text-2xl font-bold text-fairway-dark focus:border-fairway-dark focus:outline-none focus:ring-2 focus:ring-fairway-dark/35">
           <span data-hint="${pi}" class="score-hint rounded-full px-3 py-1 text-sm font-semibold ${diff !== null ? SCORE_TW[key] : "hidden"}">${diff !== null ? scoreLabel(diff) : ""}</span>
         </div>`;
       container.appendChild(row);
@@ -420,10 +433,12 @@ const SECRET_REQUIRED = {{ secret_required|tojson }};
       btn.addEventListener("click", () => setScore(+btn.dataset.pi, +btn.dataset.val));
     });
     container.querySelectorAll(".score-input").forEach((inp) => {
-      inp.addEventListener("change", () => {
+      function applyInput() {
         const v = parseInt(inp.value, 10);
-        if (v >= 1 && v <= 20) setScore(+inp.dataset.pi, v);
-      });
+        if (Number.isFinite(v) && v >= 1 && v <= 20) setScore(+inp.dataset.pi, v);
+      }
+      inp.addEventListener("change", applyInput);
+      inp.addEventListener("input", applyInput);
     });
 
     el("btn-prev").disabled = holeIndex === 0;
@@ -449,18 +464,30 @@ const SECRET_REQUIRED = {{ secret_required|tojson }};
     return scores.every((row) => row.every((s) => s !== null && s >= 1));
   }
 
+  /** 只檢查「目前這一洞」每位球友是否已有有效桿數（進入下一洞前用） */
+  function currentHoleFilled() {
+    return scores.every((row) => {
+      const s = row[holeIndex];
+      return s !== null && s !== undefined && !Number.isNaN(s) && s >= 1;
+    });
+  }
+
   function calcTotal(pi) {
     return scores[pi].reduce((a, b) => a + b, 0);
   }
 
   function showReview() {
-    if (!allFilled()) {
+    if (!currentHoleFilled()) {
       alert("請為每位球友填完本洞桿數");
       return;
     }
     if (holeIndex < HOLES - 1) {
       holeIndex++;
       renderHole();
+      return;
+    }
+    if (!allFilled()) {
+      alert("尚有洞次未完成，請逐洞檢查");
       return;
     }
     showStep("review");
