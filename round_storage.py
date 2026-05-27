@@ -186,6 +186,18 @@ def get_in_progress_round_for_user(user_id):
     return None
 
 
+def abandon_in_progress_rounds(user_id):
+    """放棄使用者所有進行中草稿（開始全新場次時用）"""
+    rounds = load_rounds()
+    changed = False
+    for r in rounds:
+        if round_belongs_to_user(r, user_id) and r.get("status") == "in_progress":
+            r["status"] = "abandoned"
+            changed = True
+    if changed:
+        save_rounds(rounds)
+
+
 def upsert_in_progress_round(
     user_id,
     *,
@@ -204,10 +216,16 @@ def upsert_in_progress_round(
 
     rounds = load_rounds()
     target = None
-    for r in rounds:
-        if r.get("id") == round_id and round_belongs_to_user(r, user_id):
-            target = r
-            break
+    if round_id:
+        for r in rounds:
+            if r.get("id") == round_id and round_belongs_to_user(r, user_id):
+                target = r
+                break
+    elif round_id is None:
+        for r in reversed(rounds):
+            if round_belongs_to_user(r, user_id) and r.get("status") == "in_progress":
+                target = r
+                break
     if target is None:
         target = {
             "id": round_id or _new_round_id("draft"),

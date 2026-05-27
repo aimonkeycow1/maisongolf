@@ -384,6 +384,7 @@ const RESUME_DRAFT = {{ resume_draft|tojson }};
     currentRoundId = null;
     showStep("holes");
     renderHole();
+    saveProgress(0, true).catch(() => {});
   }
 
   function showStrategyCard(strategy) {
@@ -402,7 +403,7 @@ const RESUME_DRAFT = {{ resume_draft|tojson }};
     card.classList.remove("hidden");
   }
 
-  async function saveProgress(nextHoleIndex = holeIndex) {
+  async function saveProgress(nextHoleIndex = holeIndex, forceNew = false) {
     const payload = {
       round_id: currentRoundId,
       course_id: courseId,
@@ -411,6 +412,7 @@ const RESUME_DRAFT = {{ resume_draft|tojson }};
       scores,
       hole_index: nextHoleIndex,
       note: el("round-note").value.trim(),
+      force_new: forceNew,
     };
     const res = await fetch("{{ url_for('score_progress') }}", {
       method: "POST",

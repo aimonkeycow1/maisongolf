@@ -33,6 +33,7 @@ from round_storage import (
     get_in_progress_round_for_user,
     upsert_in_progress_round,
     complete_in_progress_round,
+    abandon_in_progress_rounds,
 )
 from web_helpers import (
     get_player_stats_table,
@@ -199,7 +200,7 @@ def score_entry():
     if err:
         return jsonify({"ok": False, "error": err}), 400
 
-    draft_round_id = data.get("round_id")
+    draft_round_id = data.get("round_id") or current_user.current_round_id
     if draft_round_id:
         done, done_err = complete_in_progress_round(draft_round_id, current_user.id, note=result["note"])
         if done_err:
@@ -226,7 +227,7 @@ def score_entry():
 @login_required
 def score_progress():
     data = request.get_json(force=True, silent=True) or {}
-    round_id = data.get("round_id")
+    round_id = data.get("round_id") or current_user.current_round_id
     course_id = data.get("course_id")
     tee_id = data.get("tee_id")
     players = data.get("players") or []
@@ -235,6 +236,10 @@ def score_progress():
     note = data.get("note") or ""
     if not isinstance(players, list) or not isinstance(scores, list):
         return jsonify({"ok": False, "error": "草稿格式錯誤"}), 400
+    if data.get("force_new"):
+        abandon_in_progress_rounds(current_user.id)
+        round_id = None
+        current_user.current_round_id = None
     draft = upsert_in_progress_round(
         current_user.id,
         round_id=round_id,

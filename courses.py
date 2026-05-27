@@ -474,6 +474,8 @@ def courses_catalog_full():
         catalog[cid] = {
             "id": cid,
             "name": c["name"],
+            "country": c.get("country", ""),
+            "location": c.get("location", ""),
             "hero_image": c.get("hero_image", _HERO),
             "tees": {},
         }
