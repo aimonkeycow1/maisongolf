@@ -106,12 +106,13 @@ def get_global_round_stats(rounds):
 def get_player_stats_table(rounds):
     players = {}
     for r in rounds:
+        rp = _round_par_total(r)
         for p in r["players"]:
             name = p["name"]
             if name not in players:
                 players[name] = {"totals": [], "to_pars": [], "wins": 0}
             players[name]["totals"].append(p["total"])
-            players[name]["to_pars"].append(p["to_par"])
+            players[name]["to_pars"].append(_player_to_par(p, rp))
             if min(r["players"], key=lambda x: x["total"])["name"] == name:
                 players[name]["wins"] += 1
 

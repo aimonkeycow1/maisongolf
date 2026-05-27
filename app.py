@@ -125,7 +125,13 @@ def round_detail(round_id):
     r = get_round_for_user(round_id, current_user.id)
     if not r:
         abort(404)
-    ranked = sorted(r["players"], key=lambda p: p["total"])
+    rp = r.get("par_total") or PAR_TOTAL
+    ranked = []
+    for p in sorted(r["players"], key=lambda x: x["total"]):
+        row = dict(p)
+        if row.get("to_par") is None:
+            row["to_par"] = row.get("total", 0) - rp
+        ranked.append(row)
     return render_template(
         "round.html",
         page="home",
