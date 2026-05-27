@@ -8,6 +8,7 @@ import shutil
 import socket
 
 from flask import Flask, render_template, abort, request, jsonify, redirect, url_for
+import sqlite3
 from flask_login import (
     LoginManager,
     login_required,
@@ -82,6 +83,33 @@ app.register_blueprint(auth_bp)
 
 with app.app_context():
     db.create_all()
+
+    # 輕量 schema 補齊（因使用 create_all 沒有 migration）
+    # 確保既有 app.db 的 users 表有新增欄位：phone/auth_provider/oauth_provider/oauth_subject
+    db_path = os.path.join(BASE_DIR, "app.db")
+    try:
+        con = sqlite3.connect(db_path)
+        cur = con.cursor()
+        cur.execute("PRAGMA table_info(users)")
+        existing = {row[1] for row in cur.fetchall()}
+        alters = []
+        if "phone" not in existing:
+            alters.append("ALTER TABLE users ADD COLUMN phone VARCHAR(40)")
+        if "auth_provider" not in existing:
+            alters.append("ALTER TABLE users ADD COLUMN auth_provider VARCHAR(32) NOT NULL DEFAULT 'password'")
+        if "oauth_provider" not in existing:
+            alters.append("ALTER TABLE users ADD COLUMN oauth_provider VARCHAR(32)")
+        if "oauth_subject" not in existing:
+            alters.append("ALTER TABLE users ADD COLUMN oauth_subject VARCHAR(255)")
+        if alters:
+            for sql in alters:
+                cur.execute(sql)
+            con.commit()
+    finally:
+        try:
+            con.close()
+        except Exception:
+            pass
 
 
 @app.route("/admin/sync", methods=["POST"])
