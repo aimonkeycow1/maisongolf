@@ -72,7 +72,7 @@ def get_round_by_id(rounds, round_id):
 
 
 def get_round_for_user(round_id, user_id):
-    """取得單一場次，且必須屬於該 user_id"""
+    """取得單一場次，且必須屬於該 user_id（嚴格比對，他人資料不可見）"""
     for r in load_rounds():
         if r.get("id") == round_id and round_belongs_to_user(r, user_id):
             return r
@@ -80,11 +80,25 @@ def get_round_for_user(round_id, user_id):
 
 
 def get_round_for_user_account(round_id, user):
-    """取得單一場次，且必須屬於目前登入使用者"""
-    for r in load_rounds():
-        if r.get("id") == round_id and round_belongs_to_user_account(r, user):
-            return r
+    """取得單一場次；優先 user_id，啟動遷移前相容 user_email"""
+    if not user or getattr(user, "id", None) is None:
+        return None
+    r = get_round_for_user(round_id, user.id)
+    if r:
+        return r
+    for rec in load_rounds():
+        if rec.get("id") == round_id and round_belongs_to_user_account(rec, user):
+            return rec
     return None
+
+
+def merge_rounds_by_id(incoming_rounds):
+    """合併同步資料：依 id 覆寫/新增，不刪除其他使用者的場次"""
+    merged = {r["id"]: r for r in load_rounds() if r.get("id")}
+    for r in incoming_rounds:
+        if r.get("id"):
+            merged[r["id"]] = r
+    return list(merged.values())
 
 
 def migrate_legacy_round_user_ids():

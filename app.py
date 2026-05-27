@@ -23,13 +23,13 @@ from courses import (
 )
 from course_images import ensure_course_images
 from round_storage import (
-    load_rounds,
     save_rounds,
     add_round,
     BASE_DIR,
     load_rounds_for_user,
     get_round_for_user,
     migrate_legacy_round_user_ids,
+    merge_rounds_by_id,
 )
 from web_helpers import (
     get_player_stats_table,
@@ -68,6 +68,16 @@ def load_user(user_id):
     except (TypeError, ValueError):
         return None
 
+def _current_user_rounds():
+    """目前登入使用者的全部場次（資料隔離入口）"""
+    return load_rounds_for_user(current_user.id)
+
+
+def _current_user_round(round_id):
+    """取得屬於目前使用者的單場；否則 None（對外等同不存在）"""
+    return get_round_for_user(round_id, current_user.id)
+
+
 STATIC_IMG = os.path.join(BASE_DIR, "static", "img")
 HERO_SRC = os.path.join(BASE_DIR, "south_course_hole12.jpg")
 HERO_DST = os.path.join(STATIC_IMG, "hero.jpg")
@@ -101,14 +111,15 @@ def admin_sync():
     data = request.get_json(force=True, silent=True)
     if not isinstance(data, list):
         return jsonify({"ok": False, "error": "需要 JSON 陣列"}), 400
-    save_rounds(data)
-    return jsonify({"ok": True, "rounds": len(data)})
+    merged = merge_rounds_by_id(data)
+    save_rounds(merged)
+    return jsonify({"ok": True, "rounds": len(merged)})
 
 
 @app.route("/")
 @login_required
 def index():
-    rounds = load_rounds_for_user(current_user.id)
+    rounds = _current_user_rounds()
     return render_template(
         "index.html",
         page="home",
@@ -122,7 +133,7 @@ def index():
 @app.route("/round/<round_id>")
 @login_required
 def round_detail(round_id):
-    r = get_round_for_user(round_id, current_user.id)
+    r = _current_user_round(round_id)
     if not r:
         abort(404)
     rp = r.get("par_total") or PAR_TOTAL
@@ -202,7 +213,7 @@ def ai_analysis():
     if not round_id:
         return jsonify({"ok": False, "error": "缺少 round_id"}), 400
 
-    r = get_round_for_user(round_id, current_user.id)
+    r = _current_user_round(round_id)
     if not r:
         return jsonify({"ok": False, "error": "找不到該場次"}), 404
 
@@ -222,7 +233,7 @@ def ai_analysis():
 @login_required
 def share_meta(round_id):
     """分享疊字用場次中繼資料"""
-    r = get_round_for_user(round_id, current_user.id)
+    r = _current_user_round(round_id)
     if not r:
         return jsonify({"ok": False, "error": "找不到該場次"}), 404
 
@@ -249,7 +260,7 @@ def share_photo():
     if not round_id:
         return jsonify({"ok": False, "error": "缺少 round_id"}), 400
 
-    r = get_round_for_user(round_id, current_user.id)
+    r = _current_user_round(round_id)
     if not r:
         return jsonify({"ok": False, "error": "找不到該場次"}), 404
 
@@ -282,7 +293,7 @@ def share_video():
     if not round_id:
         return jsonify({"ok": False, "error": "缺少 round_id"}), 400
 
-    r = get_round_for_user(round_id, current_user.id)
+    r = _current_user_round(round_id)
     if not r:
         return jsonify({"ok": False, "error": "找不到該場次"}), 404
 
@@ -312,7 +323,7 @@ def share_video():
 @app.route("/stats")
 @login_required
 def stats():
-    rounds = load_rounds_for_user(current_user.id)
+    rounds = _current_user_rounds()
     return render_template(
         "stats.html",
         page="stats",
