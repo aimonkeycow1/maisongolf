@@ -195,7 +195,7 @@
           </button>
         </form>
       </div>
-      {% if user.avatar_path %}
+      {% if user.has_avatar %}
       <form method="post" class="mt-3">
         <input type="hidden" name="action" value="avatar_remove">
         <button type="submit"

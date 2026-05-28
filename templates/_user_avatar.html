@@ -13,8 +13,8 @@
 <span class="user-avatar inline-flex shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-fairway to-fairway-dark {{ dim }}
              {% if ring %} ring-2 ring-gold/45 shadow-md {% endif %}"
       title="{{ user.display_label }}">
-  {% if user.avatar_path %}
-  <img src="{{ url_for('auth.avatar_image', user_id=user.id) }}?v={{ user.avatar_revision or 0 }}"
+  {% if user.has_avatar and user.avatar_src() %}
+  <img src="{{ user.avatar_src() }}"
        alt="{{ user.display_label }} 的頭像"
        class="h-full w-full object-cover"
        loading="lazy"

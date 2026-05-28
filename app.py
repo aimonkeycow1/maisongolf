@@ -127,7 +127,7 @@ def ensure_hero_image():
         shutil.copy2(HERO_SRC, HERO_DST)
 
 
-from avatar_service import ensure_avatar_upload_dir
+from avatar_service import ensure_avatar_upload_dir, migrate_local_avatars_to_cloudinary
 
 ensure_hero_image()
 ensure_course_images()
@@ -144,6 +144,9 @@ def _init_database():
     migrate_legacy_round_user_ids()
     repair_stuck_in_progress_rounds()
     migrate_rounds_participant_fields()
+    n = migrate_local_avatars_to_cloudinary()
+    if n:
+        print(f"✅ 已將 {n} 個本機頭像遷移至 Cloudinary")
 
 
 with app.app_context():

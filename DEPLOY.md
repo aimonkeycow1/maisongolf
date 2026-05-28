@@ -99,4 +99,58 @@ Render **免費版 Web 服務的檔案系統是暫存的**：每次重新部署�
 
 - **免費版**約 15 分鐘沒人訪問會休眠，第一次打開可能要等 30～50 秒喚醒。
 - 雲端資料存在伺服器；本機 `rounds.json` 與雲端要以 `sync_rounds.py` 同步。
-- 上傳的**頭像檔**若放在容器本機，免費版部署後也可能遺失；長期可改雲端儲存或 Render 持久化磁碟（`INSTANCE_DATA_DIR`）。
+- **頭像**請使用 **Cloudinary**（見下方），勿只放在 `static/uploads/avatars/`。
+
+---
+
+## 頭像為什麼部署後會消失？
+
+頭像若存在容器內 `static/uploads/avatars/`，與 `app.db` 一樣屬於**暫存檔案系統**，每次 Render 重新部署都會被清空。
+
+### 方案 A（推薦）：Cloudinary
+
+業界標準做法：圖片存在 Cloudinary，資料庫只存 URL 與 `public_id`，經 CDN 載入快、部署後不消失。
+
+#### 1. 註冊 Cloudinary
+
+1. 前往 https://cloudinary.com 註冊（免費額度足夠個人／小團隊）
+2. Dashboard → **API Keys** 記下：
+   - **Cloud name**
+   - **API Key**
+   - **API Secret**
+
+#### 2. Render 環境變數
+
+Web 服務 → **Environment** → **Add Environment Variable**：
+
+| 變數名稱 | 說明 |
+|----------|------|
+| `CLOUDINARY_CLOUD_NAME` | Dashboard 的 Cloud name |
+| `CLOUDINARY_API_KEY` | API Key |
+| `CLOUDINARY_API_SECRET` | API Secret（勿公開、勿 commit） |
+
+儲存後 **Manual Deploy** 一次。
+
+#### 3. 行為說明
+
+- 會員在「個人設定」上傳頭像 → 壓縮為 256×256 JPEG → 上傳至 Cloudinary 資料夾 `maisongolf/avatars/user_{id}`
+- 資料庫欄位：`avatar_url`（CDN 網址）、`avatar_public_id`、`avatar_revision`（快取破壞）
+- 未設定 Cloudinary 時，本機開發仍寫入 `static/uploads/avatars/`（僅供本機測試）
+- 若線上曾用本機頭像、DB 仍有 `avatar_path` 但無 `avatar_url`，**下次啟動**會嘗試自動上傳至 Cloudinary（需三個環境變數已設定）
+
+#### 4. 舊本機頭像手動遷移（可選）
+
+已部署且頭像已遺失的帳號，只能請使用者**重新上傳**。若容器內檔案還在、DB 仍有 `avatar_path`，重啟應用會自動遷移。
+
+---
+
+### 方案 B（備選）：Render Persistent Disk
+
+若不想用外部服務，可為 Web 服務掛載**持久化磁碟**：
+
+1. Render Dashboard → 你的 **Web 服務** → **Disks** → **Add Disk**
+2. 例如掛載路徑 `/var/data`、大小 1GB（依方案）
+3. **Environment** 新增：`INSTANCE_DATA_DIR` = `/var/data`
+4. 程式會把頭像寫到 `/var/data/avatars/`（見 `avatar_service.py`），重啟後保留
+
+注意：磁碟與服務綁定、免費方案可能需付費；多實例／擴展時不如 Cloudinary 單純。正式環境仍建議 **方案 A**。

@@ -31,6 +31,8 @@ class User(UserMixin, db.Model):
     handedness = db.Column(db.String(10), nullable=True)
     home_course = db.Column(db.String(120), nullable=True)
     avatar_path = db.Column(db.String(255), nullable=True)
+    avatar_url = db.Column(db.String(512), nullable=True)
+    avatar_public_id = db.Column(db.String(255), nullable=True, index=True)
     avatar_revision = db.Column(db.Integer, default=0, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
@@ -63,7 +65,15 @@ class User(UserMixin, db.Model):
 
     @property
     def has_avatar(self) -> bool:
-        return bool(self.avatar_path)
+        from avatar_service import user_has_avatar
+
+        return user_has_avatar(self)
+
+    def avatar_src(self) -> str | None:
+        """模板用：Cloudinary CDN 或本機 /avatar 路由。"""
+        from avatar_service import resolve_avatar_url
+
+        return resolve_avatar_url(self)
 
     @property
     def public_email(self) -> str | None:

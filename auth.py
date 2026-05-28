@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 import unicodedata
 
@@ -17,6 +18,7 @@ from avatar_service import (
     remove_user_avatar,
     avatar_disk_path,
     avatar_exists_on_disk,
+    user_has_avatar,
 )
 
 auth_bp = Blueprint("auth", __name__)
@@ -175,17 +177,35 @@ def _parse_handicap(raw: str) -> float | None:
 
 @auth_bp.route("/avatar/<int:user_id>")
 def avatar_image(user_id: int):
-    """提供頭像圖片（不依賴 static 快取，支援 Render 與快取破壞）。"""
+    """本機備援頭像（未使用 Cloudinary 或舊資料）。"""
     user = db.session.get(User, user_id)
-    if not user or not user.avatar_path:
+    if not user or not user_has_avatar(user):
         abort(404)
+    if (user.avatar_url or "").strip().startswith("http"):
+        from flask import redirect
+
+        src = user.avatar_src()
+        if not src:
+            abort(404)
+        return redirect(src)
     disk = avatar_disk_path(user_id)
     if not avatar_exists_on_disk(user_id):
-        abort(404)
+        legacy = None
+        path = (user.avatar_path or "").strip()
+        if path and not path.startswith("http"):
+            legacy = os.path.join(
+                os.path.dirname(os.path.dirname(__file__)),
+                "static",
+                path,
+            )
+        if legacy and os.path.isfile(legacy):
+            disk = legacy
+        else:
+            abort(404)
     return send_file(
         disk,
         mimetype="image/jpeg",
-        max_age=300,
+        max_age=86400,
         conditional=True,
     )
 
@@ -206,19 +226,27 @@ def profile():
             if not upload or not (upload.filename or "").strip():
                 flash("請選擇要上傳的圖片", "error")
             else:
-                path, err = save_user_avatar(current_user.id, upload)
+                meta, err = save_user_avatar(current_user.id, upload)
                 if err:
                     flash(err, "error")
-                elif not path:
+                elif not meta:
                     flash("頭像儲存失敗，請再試一次", "error")
                 else:
-                    current_user.avatar_path = path
+                    current_user.avatar_url = meta.get("avatar_url")
+                    current_user.avatar_public_id = meta.get("avatar_public_id")
+                    current_user.avatar_path = meta.get("avatar_path")
                     current_user.avatar_revision = (current_user.avatar_revision or 0) + 1
                     db.session.commit()
                     db.session.refresh(current_user)
                     flash("頭像已更新", "ok")
         elif action == "avatar_remove":
-            remove_user_avatar(current_user.id, current_user.avatar_path)
+            remove_user_avatar(
+                current_user.id,
+                avatar_public_id=current_user.avatar_public_id,
+                current_path=current_user.avatar_path,
+            )
+            current_user.avatar_url = None
+            current_user.avatar_public_id = None
             current_user.avatar_path = None
             current_user.avatar_revision = (current_user.avatar_revision or 0) + 1
             db.session.commit()
