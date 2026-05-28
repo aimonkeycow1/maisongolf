@@ -9,7 +9,7 @@ from sqlalchemy import func
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from models import db, User
-from round_storage import load_rounds_for_user, get_in_progress_round_for_user
+from round_storage import load_rounds_visible_to_user, get_in_progress_round_for_user
 from web_helpers import get_global_round_stats, get_player_stats_table
 from friends_service import list_friends
 from avatar_service import (
@@ -193,7 +193,7 @@ def avatar_image(user_id: int):
 @auth_bp.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
-    rounds = load_rounds_for_user(current_user.id)
+    rounds = load_rounds_visible_to_user(current_user)
     global_stats = get_global_round_stats(rounds)
     player_rows = get_player_stats_table(rounds)[:5]
     friends_count = len(list_friends(current_user.id))

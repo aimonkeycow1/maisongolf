@@ -24,19 +24,19 @@ def get_round_by_id(rounds, round_id):
 
 
 def user_owns_round(round_dict, user) -> bool:
-    """判斷場次是否屬於目前登入使用者（嚴格 user_id）"""
-    from round_storage import round_belongs_to_user
+    """判斷場次是否可由使用者查看（建立或參與）"""
+    from round_storage import round_visible_to_user
     if not user or getattr(user, "id", None) is None:
         return False
-    return round_belongs_to_user(round_dict, user.id)
+    return round_visible_to_user(round_dict, user)
 
 
 def filter_rounds_for_user(rounds, user):
-    """從列表中篩選屬於該使用者的場次"""
-    from round_storage import round_belongs_to_user
+    """從列表中篩選該使用者建立或參與的場次"""
+    from round_storage import round_visible_to_user
     if not user or getattr(user, "id", None) is None:
         return []
-    return [r for r in rounds if round_belongs_to_user(r, user.id)]
+    return [r for r in rounds if round_visible_to_user(r, user)]
 
 
 def _player_to_par(player, round_par):

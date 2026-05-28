@@ -26,9 +26,11 @@ from round_storage import (
     save_rounds,
     add_round,
     BASE_DIR,
-    load_rounds_for_user,
-    get_round_for_user,
+    load_rounds_visible_to_user,
+    get_round_visible_to_user,
     migrate_legacy_round_user_ids,
+    migrate_rounds_participant_fields,
+    repair_stuck_in_progress_rounds,
     merge_rounds_by_id,
     get_in_progress_round_for_user,
     upsert_in_progress_round,
@@ -100,13 +102,13 @@ def _prevent_cached_private_pages(response):
 
 
 def _current_user_rounds():
-    """目前登入使用者的全部場次（資料隔離入口）"""
-    return load_rounds_for_user(current_user.id)
+    """目前登入使用者建立或參與的已完成場次"""
+    return load_rounds_visible_to_user(current_user)
 
 
 def _current_user_round(round_id):
-    """取得屬於目前使用者的單場；否則 None（對外等同不存在）"""
-    return get_round_for_user(round_id, current_user.id)
+    """取得使用者可查看的單場（建立者或參與者）"""
+    return get_round_visible_to_user(round_id, current_user)
 
 
 STATIC_IMG = os.path.join(BASE_DIR, "static", "img")
@@ -137,6 +139,8 @@ def _init_database():
     db.create_all()
     migrate_users_auth_columns()
     migrate_legacy_round_user_ids()
+    repair_stuck_in_progress_rounds()
+    migrate_rounds_participant_fields()
 
 
 with app.app_context():
@@ -253,8 +257,15 @@ def score_entry():
             players_stats=result["players_stats"],
         )
         if done_err:
-            return jsonify({"ok": False, "error": done_err}), 400
-        rid = done["id"]
+            rid = add_round(
+                result["players_stats"],
+                result["note"],
+                course_id=result["course_id"],
+                tee_id=result["tee_id"],
+                user_id=current_user.id,
+            )
+        else:
+            rid = done["id"]
     else:
         rid = add_round(
             result["players_stats"],

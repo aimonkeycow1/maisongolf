@@ -17,8 +17,8 @@ from friends_service import (
     can_view_user_data,
 )
 from round_storage import (
-    load_rounds_involving_user,
-    get_round_for_user,
+    load_rounds_visible_to_user,
+    get_round_visible_to_user,
     get_player_in_round_for_user,
 )
 from course_data import PAR_TOTAL
@@ -78,7 +78,7 @@ def friend_rounds(user_id):
     if user_id == current_user.id:
         return redirect(url_for("index"))
 
-    rounds = load_rounds_involving_user(friend)
+    rounds = load_rounds_visible_to_user(friend)
     return render_template(
         "friend_rounds.html",
         page="friends",
@@ -101,7 +101,7 @@ def friend_round_detail(user_id, round_id):
     if not can_view_user_data(current_user.id, user_id):
         abort(403)
 
-    r = get_round_for_user(round_id, user_id, include_participation=True)
+    r = get_round_visible_to_user(round_id, friend)
     if not r:
         abort(404)
 

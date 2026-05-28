@@ -48,9 +48,9 @@ class User(UserMixin, db.Model):
         return f"{safe}@{PLACEHOLDER_EMAIL_DOMAIN}"
 
     def load_rounds(self):
-        """僅載入屬於此使用者的記分場次"""
-        from round_storage import load_rounds_for_user
-        return load_rounds_for_user(self.id)
+        """載入建立或參與的記分場次"""
+        from round_storage import load_rounds_visible_to_user
+        return load_rounds_visible_to_user(self)
 
     @property
     def display_label(self) -> str:
