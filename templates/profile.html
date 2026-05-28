@@ -65,18 +65,6 @@
   <a href="#settings" class="rounded-xl px-4 py-2 text-sm font-semibold text-green-100 no-underline hover:bg-white/10">個人設置</a>
 </nav>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <div class="mb-6 space-y-2">
-      {% for category, msg in messages %}
-        <p class="rounded-lg border px-3 py-2 text-sm
-                  {% if category == 'ok' %}border-emerald-500/40 bg-emerald-900/30 text-emerald-100
-                  {% else %}border-red-500/40 bg-red-900/30 text-red-100{% endif %}">{{ msg }}</p>
-      {% endfor %}
-    </div>
-  {% endif %}
-{% endwith %}
-
 {# 數據總覽 #}
 <section id="stats" class="mb-10 scroll-mt-24">
   <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
@@ -175,6 +163,18 @@
 <section id="settings" class="scroll-mt-24">
   <h2 class="mb-4 text-lg font-bold text-white">個人設置</h2>
 
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mb-4 space-y-2">
+        {% for category, msg in messages %}
+          <p class="rounded-lg border px-3 py-2 text-sm
+                    {% if category == 'ok' %}border-emerald-500/40 bg-emerald-900/30 text-emerald-100
+                    {% else %}border-red-500/40 bg-red-900/30 text-red-100{% endif %}">{{ msg }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
   <div class="grid gap-6 lg:grid-cols-2">
     <div class="space-y-6">
     <div class="rounded-2xl bg-black/30 p-6 ring-1 ring-white/10 sm:p-8">
@@ -182,9 +182,12 @@
       <p class="mt-1 text-xs text-green-200/55">JPG / PNG / WEBP，最大 2MB。頭像會顯示在導覽列與好友列表。</p>
       <div class="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
         {{ user_avatar(user, 'xl') }}
-        <form method="post" enctype="multipart/form-data" class="min-w-0 flex-1 space-y-3">
+        <form method="post"
+              action="{{ url_for('auth.profile') }}#settings"
+              enctype="multipart/form-data"
+              class="min-w-0 flex-1 space-y-3">
           <input type="hidden" name="action" value="avatar">
-          <input type="file" name="avatar" accept="image/jpeg,image/png,image/webp" required
+          <input type="file" name="avatar" accept="image/jpeg,image/png,image/webp,image/*" required
                  class="block w-full text-sm text-green-200/80 file:mr-3 file:rounded-lg file:border-0 file:bg-gold file:px-3 file:py-2 file:text-sm file:font-bold file:text-fairway-dark">
           <button type="submit"
                   class="w-full rounded-xl bg-gradient-to-r from-gold to-gold-light py-2.5 text-sm font-bold text-fairway-dark shadow hover:brightness-110">

@@ -14,10 +14,12 @@
              {% if ring %} ring-2 ring-gold/45 shadow-md {% endif %}"
       title="{{ user.display_label }}">
   {% if user.avatar_path %}
-  <img src="{{ url_for('static', filename=user.avatar_path) }}"
+  <img src="{{ url_for('auth.avatar_image', user_id=user.id) }}?v={{ user.avatar_revision or 0 }}"
        alt="{{ user.display_label }} 的頭像"
        class="h-full w-full object-cover"
-       loading="lazy">
+       loading="lazy"
+       width="256"
+       height="256">
   {% else %}
   <span class="flex h-full w-full items-center justify-center font-bold text-gold-light">
     {{ user.avatar_initial }}

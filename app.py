@@ -123,8 +123,11 @@ def ensure_hero_image():
         shutil.copy2(HERO_SRC, HERO_DST)
 
 
+from avatar_service import ensure_avatar_upload_dir
+
 ensure_hero_image()
 ensure_course_images()
+ensure_avatar_upload_dir()
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(friends_bp)

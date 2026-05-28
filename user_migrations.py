@@ -44,6 +44,8 @@ def migrate_users_auth_columns() -> None:
         statements.append("ALTER TABLE users ADD COLUMN home_course VARCHAR(120)")
     if "avatar_path" not in cols:
         statements.append("ALTER TABLE users ADD COLUMN avatar_path VARCHAR(255)")
+    if "avatar_revision" not in cols:
+        statements.append("ALTER TABLE users ADD COLUMN avatar_revision INTEGER DEFAULT 0")
     for stmt in statements:
         _exec(stmt)
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import unicodedata
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, send_file, abort
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import func
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -12,7 +12,12 @@ from models import db, User
 from round_storage import load_rounds_for_user, get_in_progress_round_for_user
 from web_helpers import get_global_round_stats, get_player_stats_table
 from friends_service import list_friends
-from avatar_service import save_user_avatar, remove_user_avatar
+from avatar_service import (
+    save_user_avatar,
+    remove_user_avatar,
+    avatar_disk_path,
+    avatar_exists_on_disk,
+)
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -168,6 +173,23 @@ def _parse_handicap(raw: str) -> float | None:
     return round(val, 1)
 
 
+@auth_bp.route("/avatar/<int:user_id>")
+def avatar_image(user_id: int):
+    """提供頭像圖片（不依賴 static 快取，支援 Render 與快取破壞）。"""
+    user = db.session.get(User, user_id)
+    if not user or not user.avatar_path:
+        abort(404)
+    disk = avatar_disk_path(user_id)
+    if not avatar_exists_on_disk(user_id):
+        abort(404)
+    return send_file(
+        disk,
+        mimetype="image/jpeg",
+        max_age=300,
+        conditional=True,
+    )
+
+
 @auth_bp.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
@@ -180,16 +202,25 @@ def profile():
         action = (request.form.get("action") or "settings").strip()
 
         if action == "avatar":
-            path, err = save_user_avatar(current_user.id, request.files.get("avatar"))
-            if err:
-                flash(err, "error")
+            upload = request.files.get("avatar")
+            if not upload or not (upload.filename or "").strip():
+                flash("請選擇要上傳的圖片", "error")
             else:
-                current_user.avatar_path = path
-                db.session.commit()
-                flash("頭像已更新", "ok")
+                path, err = save_user_avatar(current_user.id, upload)
+                if err:
+                    flash(err, "error")
+                elif not path:
+                    flash("頭像儲存失敗，請再試一次", "error")
+                else:
+                    current_user.avatar_path = path
+                    current_user.avatar_revision = (current_user.avatar_revision or 0) + 1
+                    db.session.commit()
+                    db.session.refresh(current_user)
+                    flash("頭像已更新", "ok")
         elif action == "avatar_remove":
             remove_user_avatar(current_user.id, current_user.avatar_path)
             current_user.avatar_path = None
+            current_user.avatar_revision = (current_user.avatar_revision or 0) + 1
             db.session.commit()
             flash("已移除頭像", "ok")
         elif action == "password":

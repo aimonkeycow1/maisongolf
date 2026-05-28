@@ -31,6 +31,7 @@ class User(UserMixin, db.Model):
     handedness = db.Column(db.String(10), nullable=True)
     home_course = db.Column(db.String(120), nullable=True)
     avatar_path = db.Column(db.String(255), nullable=True)
+    avatar_revision = db.Column(db.Integer, default=0, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     def get_id(self) -> str:  # type: ignore[override]
