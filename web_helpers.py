@@ -49,15 +49,24 @@ def _round_par_total(r):
     return r.get("par_total") or DEFAULT_PAR_TOTAL
 
 
-def get_global_round_stats(rounds):
-    """全站統計摘要（統計頁卡片與趨勢圖）"""
+def get_global_round_stats(rounds, *, focus_user=None):
+    """全站統計摘要（統計頁卡片與趨勢圖）。focus_user 時只統計該使用者在各場的成績。"""
     if not rounds:
         return None
+
+    from round_storage import get_player_in_round_for_user
 
     entries = []
     for r in rounds:
         rp = _round_par_total(r)
-        for p in r["players"]:
+        if focus_user is not None:
+            p = get_player_in_round_for_user(r, focus_user)
+            if not p:
+                continue
+            players_iter = [p]
+        else:
+            players_iter = r["players"]
+        for p in players_iter:
             entries.append({
                 "total": p["total"],
                 "to_par": _player_to_par(p, rp),
@@ -67,6 +76,9 @@ def get_global_round_stats(rounds):
                 "player": p.get("name", ""),
                 "round_id": r.get("id", ""),
             })
+
+    if not entries:
+        return None
 
     totals = [e["total"] for e in entries]
     to_pars = [e["to_par"] for e in entries]
@@ -79,7 +91,12 @@ def get_global_round_stats(rounds):
     recent = []
     for r in sorted_rounds[-5:]:
         rp = _round_par_total(r)
-        champ = min(r["players"], key=lambda x: x["total"])
+        if focus_user is not None:
+            champ = get_player_in_round_for_user(r, focus_user)
+            if not champ:
+                continue
+        else:
+            champ = min(r["players"], key=lambda x: x["total"])
         tp = _player_to_par(champ, rp)
         date = r.get("date", "")
         recent.append({
@@ -108,11 +125,20 @@ def get_global_round_stats(rounds):
         "trend_max": trend_max,
     }
 
-def get_player_stats_table(rounds):
+def get_player_stats_table(rounds, *, focus_user=None):
+    from round_storage import get_player_in_round_for_user
+
     players = {}
     for r in rounds:
         rp = _round_par_total(r)
-        for p in r["players"]:
+        if focus_user is not None:
+            p = get_player_in_round_for_user(r, focus_user)
+            if not p:
+                continue
+            player_rows = [p]
+        else:
+            player_rows = r["players"]
+        for p in player_rows:
             name = p["name"]
             if name not in players:
                 players[name] = {"totals": [], "to_pars": [], "wins": 0}

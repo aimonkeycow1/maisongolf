@@ -16,7 +16,11 @@ from friends_service import (
     pending_outgoing,
     can_view_user_data,
 )
-from round_storage import load_rounds_for_user, get_round_for_user
+from round_storage import (
+    load_rounds_involving_user,
+    get_round_for_user,
+    get_player_in_round_for_user,
+)
 from course_data import PAR_TOTAL
 from web_helpers import get_global_round_stats, get_player_stats_table
 
@@ -74,7 +78,7 @@ def friend_rounds(user_id):
     if user_id == current_user.id:
         return redirect(url_for("index"))
 
-    rounds = load_rounds_for_user(user_id)
+    rounds = load_rounds_involving_user(friend)
     return render_template(
         "friend_rounds.html",
         page="friends",
@@ -82,8 +86,9 @@ def friend_rounds(user_id):
         rounds_rev=list(reversed(rounds)),
         par_total=PAR_TOTAL,
         is_self=False,
-        global_stats=get_global_round_stats(rounds),
-        player_rows=get_player_stats_table(rounds)[:5],
+        global_stats=get_global_round_stats(rounds, focus_user=friend),
+        player_rows=get_player_stats_table(rounds, focus_user=friend)[:5],
+        get_friend_player=get_player_in_round_for_user,
     )
 
 
@@ -96,7 +101,7 @@ def friend_round_detail(user_id, round_id):
     if not can_view_user_data(current_user.id, user_id):
         abort(403)
 
-    r = get_round_for_user(round_id, user_id)
+    r = get_round_for_user(round_id, user_id, include_participation=True)
     if not r:
         abort(404)
 

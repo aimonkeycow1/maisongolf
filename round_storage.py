@@ -5,6 +5,7 @@
 
 import json
 import os
+import unicodedata
 from datetime import datetime
 
 from courses import DEFAULT_COURSE_ID, DEFAULT_TEE_ID, course_meta_for_round
@@ -31,6 +32,110 @@ def save_rounds(rounds):
         json.dump(rounds, file, ensure_ascii=False, indent=2)
 
 
+def normalize_player_name(name: str) -> str:
+    """比對球友名稱用（與登入 username 比對，忽略大小寫與全半形）。"""
+    return unicodedata.normalize("NFKC", (name or "").strip()).lower()
+
+
+def user_match_names(user) -> set[str]:
+    """使用者可能被記在場次裡的名稱集合（username、顯示名、Email 本地段）。"""
+    names: set[str] = set()
+    if not user:
+        return names
+    for raw in (
+        getattr(user, "username", None),
+        getattr(user, "display_label", None),
+    ):
+        n = normalize_player_name(str(raw or ""))
+        if n:
+            names.add(n)
+    email = getattr(user, "email", None) or ""
+    if "@" in email:
+        local = normalize_player_name(email.split("@", 1)[0])
+        if local:
+            names.add(local)
+    return names
+
+
+def _round_player_names(round_dict) -> set[str]:
+    names: set[str] = set()
+    for p in round_dict.get("players") or []:
+        if isinstance(p, dict):
+            n = normalize_player_name(p.get("name", ""))
+            if n:
+                names.add(n)
+    for raw in round_dict.get("draft_players") or []:
+        n = normalize_player_name(str(raw))
+        if n:
+            names.add(n)
+    return names
+
+
+def _player_linked_user_id(player: dict) -> int | None:
+    raw = player.get("participant_user_id")
+    if raw is None:
+        return None
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
+
+
+def enrich_players_with_user_ids(players_stats: list) -> list:
+    """若球友名稱對應已註冊帳號，寫入 participant_user_id 供好友戰績查詢。"""
+    if not players_stats:
+        return players_stats
+    try:
+        from models import User
+    except Exception:
+        return players_stats
+
+    name_to_uid: dict[str, int] = {}
+    for u in User.query.all():
+        for n in user_match_names(u):
+            name_to_uid[n] = int(u.id)
+
+    for row in players_stats:
+        if not isinstance(row, dict):
+            continue
+        key = normalize_player_name(row.get("name", ""))
+        if key and key in name_to_uid:
+            row["participant_user_id"] = name_to_uid[key]
+    return players_stats
+
+
+def user_participated_in_round(round_dict, user) -> bool:
+    """使用者是否參與場次：建立者，或 players 內有名稱／participant_user_id 相符。"""
+    if not user or getattr(user, "id", None) is None:
+        return False
+    uid = int(user.id)
+    if round_belongs_to_user(round_dict, uid):
+        return True
+    for p in round_dict.get("players") or []:
+        if isinstance(p, dict) and _player_linked_user_id(p) == uid:
+            return True
+    match_names = user_match_names(user)
+    if not match_names:
+        return False
+    return bool(_round_player_names(round_dict) & match_names)
+
+
+def get_player_in_round_for_user(round_dict, user):
+    """取得該使用者在單場中的成績列（players 內 dict），無則 None。"""
+    if not user or getattr(user, "id", None) is None:
+        return None
+    uid = int(user.id)
+    match_names = user_match_names(user)
+    for p in round_dict.get("players") or []:
+        if not isinstance(p, dict):
+            continue
+        if _player_linked_user_id(p) == uid:
+            return p
+        if match_names and normalize_player_name(p.get("name", "")) in match_names:
+            return p
+    return None
+
+
 def round_belongs_to_user(round_dict, user_id) -> bool:
     """場次是否屬於指定 user_id（嚴格：無 user_id 的舊資料不算任何人的）"""
     if user_id is None:
@@ -53,13 +158,38 @@ def round_belongs_to_user_account(round_dict, user) -> bool:
     return False
 
 
-def load_rounds_for_user(user_id):
-    """只載入屬於該使用者的場次"""
-    return [
-        r
-        for r in load_rounds()
-        if round_belongs_to_user(r, user_id) and r.get("status", "completed") == "completed"
-    ]
+def load_rounds_for_user(user_id, *, include_participation: bool = False):
+    """
+    載入使用者的已完成場次。
+    include_participation=False：僅 user_id 為本人的場次（個人頁、首頁）。
+    include_participation=True：含本人建立或 players 內有其名稱的場次（好友戰績）。
+    """
+    user = None
+    if include_participation:
+        try:
+            from models import User
+
+            user = User.query.get(int(user_id))
+        except Exception:
+            user = None
+
+    out = []
+    for r in load_rounds():
+        if r.get("status", "completed") != "completed":
+            continue
+        if include_participation and user:
+            if user_participated_in_round(r, user):
+                out.append(r)
+        elif round_belongs_to_user(r, user_id):
+            out.append(r)
+    return out
+
+
+def load_rounds_involving_user(user):
+    """載入使用者建立或參與過的已完成場次（好友戰績、公開統計用）。"""
+    if not user or getattr(user, "id", None) is None:
+        return []
+    return load_rounds_for_user(user.id, include_participation=True)
 
 
 def load_rounds_for_user_account(user):
@@ -76,8 +206,22 @@ def get_round_by_id(rounds, round_id):
     return None
 
 
-def get_round_for_user(round_id, user_id):
-    """取得單一場次，且必須屬於該 user_id（嚴格比對，他人資料不可見）"""
+def get_round_for_user(round_id, user_id, *, include_participation: bool = False):
+    """取得單一場次；預設僅建立者。include_participation 時含參與場次。"""
+    if include_participation:
+        try:
+            from models import User
+
+            user = User.query.get(int(user_id))
+        except Exception:
+            user = None
+        if not user:
+            return None
+        for r in load_rounds():
+            if r.get("id") == round_id and user_participated_in_round(r, user):
+                return r
+        return None
+
     for r in load_rounds():
         if r.get("id") == round_id and round_belongs_to_user(r, user_id):
             return r
@@ -165,7 +309,11 @@ def add_round(players_stats, note="", course_id=None, tee_id=None, user_id=None)
     """新增場次（強制綁定 user_id）"""
     rounds = load_rounds()
     record = build_round_record(
-        players_stats, note, course_id, tee_id, user_id=user_id
+        enrich_players_with_user_ids(players_stats),
+        note,
+        course_id,
+        tee_id,
+        user_id=user_id,
     )
     rounds.append(record)
     save_rounds(rounds)
@@ -287,7 +435,7 @@ def complete_in_progress_round(round_id, user_id, note="", players_stats=None):
             if not isinstance(row, dict):
                 return None, f"第 {i + 1} 位球友成績格式錯誤"
             final_stats.append(row)
-        target["players"] = final_stats
+        target["players"] = enrich_players_with_user_ids(final_stats)
     else:
         players = target.get("draft_players") or []
         draft_scores = target.get("draft_scores") or []
@@ -307,7 +455,7 @@ def complete_in_progress_round(round_id, user_id, note="", players_stats=None):
             stats = calc_player_stats(scores_int, pars=pars)
             stats["name"] = pname
             built_stats.append(stats)
-        target["players"] = built_stats
+        target["players"] = enrich_players_with_user_ids(built_stats)
     target["note"] = (note or target.get("note") or "").strip()
     target["status"] = "completed"
     target.pop("draft_players", None)
