@@ -4,11 +4,14 @@ import re
 import unicodedata
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_user, logout_user, current_user
+from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import func
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from models import db, User
+from round_storage import load_rounds_for_user, get_in_progress_round_for_user
+from web_helpers import get_global_round_stats, get_player_stats_table
+from friends_service import list_friends
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -133,6 +136,75 @@ def login():
         "auth_login.html",
         page="auth",
         login_identifier=login_identifier,
+    )
+
+
+def _parse_handicap(raw: str) -> float | None:
+    s = (raw or "").strip()
+    if not s:
+        return None
+    try:
+        val = float(s)
+    except ValueError:
+        return None
+    if val < 0 or val > 54:
+        return None
+    return round(val, 1)
+
+
+@auth_bp.route("/profile", methods=["GET", "POST"])
+@login_required
+def profile():
+    rounds = load_rounds_for_user(current_user.id)
+    global_stats = get_global_round_stats(rounds)
+    player_rows = get_player_stats_table(rounds)[:5]
+    friends_count = len(list_friends(current_user.id))
+
+    if request.method == "POST":
+        action = (request.form.get("action") or "settings").strip()
+
+        if action == "password":
+            current_pw = request.form.get("current_password") or ""
+            new_pw = request.form.get("new_password") or ""
+            new_pw2 = request.form.get("new_password2") or ""
+
+            if not check_password_hash(current_user.password_hash, current_pw):
+                flash("目前密碼不正確", "error")
+            elif len(new_pw) < 6:
+                flash("新密碼至少 6 碼", "error")
+            elif new_pw != new_pw2:
+                flash("兩次輸入的新密碼不一致", "error")
+            else:
+                current_user.password_hash = generate_password_hash(new_pw)
+                db.session.commit()
+                flash("密碼已更新", "ok")
+        else:
+            handicap = _parse_handicap(request.form.get("handicap") or "")
+            if request.form.get("handicap", "").strip() and handicap is None:
+                flash("差點請填 0–54 之間的數字", "error")
+            else:
+                handedness = (request.form.get("handedness") or "").strip()
+                if handedness and handedness not in ("right", "left"):
+                    handedness = current_user.handedness
+                current_user.handicap = handicap
+                current_user.handedness = handedness or None
+                current_user.home_course = (request.form.get("home_course") or "").strip()[:120] or None
+                db.session.commit()
+                flash("個人設置已儲存", "ok")
+
+        return redirect(url_for("auth.profile") + "#settings")
+
+    in_progress = get_in_progress_round_for_user(current_user.id)
+
+    return render_template(
+        "profile.html",
+        page="profile",
+        user=current_user,
+        rounds_rev=list(reversed(rounds)),
+        global_stats=global_stats,
+        player_rows=player_rows,
+        friends_count=friends_count,
+        in_progress=in_progress,
     )
 
 

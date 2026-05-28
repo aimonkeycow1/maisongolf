@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+{% from '_macros.html' import stat_card, par_trend_badge, trophy_icon, cta_button %}
+{% block title %}我的 · {{ user.display_label }}{% endblock %}
+{% block content %}
+
+{# 頂部個人卡 #}
+<section class="mb-8 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-fairway-dark/90 via-black/40 to-black/50 p-6 shadow-xl ring-1 ring-white/10 sm:p-8">
+  <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex items-center gap-4">
+      <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-fairway to-fairway-dark text-2xl font-bold text-gold-light ring-2 ring-gold/50 shadow-lg">
+        {{ (user.display_label | first) | upper }}
+      </div>
+      <div class="min-w-0">
+        <p class="text-xs font-bold uppercase tracking-widest text-gold-light/80">My Profile</p>
+        <h1 class="truncate text-2xl font-bold text-white">{{ user.display_label }}</h1>
+        {% if user.public_email %}
+        <p class="mt-0.5 truncate text-sm text-green-200/65">{{ user.public_email }}</p>
+        {% endif %}
+        <p class="mt-1 text-xs text-green-200/50">加入於 {{ user.created_at.strftime('%Y-%m-%d') }}</p>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a href="{{ url_for('score_entry') }}"
+         class="rounded-xl bg-gold px-4 py-2.5 text-sm font-bold text-fairway-dark shadow no-underline hover:brightness-110">
+        立即錄分
+      </a>
+      <a href="{{ url_for('auth.logout') }}"
+         class="rounded-xl border border-red-500/35 bg-red-900/25 px-4 py-2.5 text-sm font-semibold text-red-200 no-underline hover:bg-red-900/40">
+        登出
+      </a>
+    </div>
+  </div>
+
+  <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div class="rounded-xl bg-black/30 px-4 py-3 ring-1 ring-white/10">
+      <p class="text-[10px] font-bold uppercase tracking-wider text-green-200/50">完成場次</p>
+      <p class="mt-1 text-2xl font-black tabular-nums text-white">{{ rounds_rev|length }}</p>
+    </div>
+    <div class="rounded-xl bg-black/30 px-4 py-3 ring-1 ring-white/10">
+      <p class="text-[10px] font-bold uppercase tracking-wider text-green-200/50">好友</p>
+      <p class="mt-1 text-2xl font-black tabular-nums text-white">{{ friends_count }}</p>
+    </div>
+    {% if user.handicap is not none %}
+    <div class="rounded-xl bg-black/30 px-4 py-3 ring-1 ring-white/10">
+      <p class="text-[10px] font-bold uppercase tracking-wider text-green-200/50">差點</p>
+      <p class="mt-1 text-2xl font-black tabular-nums text-gold-light">{{ user.handicap }}</p>
+    </div>
+    {% endif %}
+    {% if in_progress %}
+    <div class="rounded-xl border border-amber-500/30 bg-amber-900/20 px-4 py-3 ring-1 ring-amber-500/20 sm:col-span-1 col-span-2">
+      <p class="text-[10px] font-bold uppercase tracking-wider text-amber-200/70">進行中</p>
+      <a href="{{ url_for('score_entry') }}" class="mt-1 block text-sm font-semibold text-amber-100 no-underline hover:text-white">
+        繼續錄分 →
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{# 區塊導覽 #}
+<nav class="mb-6 flex flex-wrap gap-2 rounded-2xl bg-black/25 p-1.5 ring-1 ring-white/10" aria-label="個人頁區塊">
+  <a href="#stats" class="rounded-xl px-4 py-2 text-sm font-semibold text-green-100 no-underline hover:bg-white/10">數據總覽</a>
+  <a href="#rounds" class="rounded-xl px-4 py-2 text-sm font-semibold text-green-100 no-underline hover:bg-white/10">打球紀錄</a>
+  <a href="#settings" class="rounded-xl px-4 py-2 text-sm font-semibold text-green-100 no-underline hover:bg-white/10">個人設置</a>
+</nav>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="mb-6 space-y-2">
+      {% for category, msg in messages %}
+        <p class="rounded-lg border px-3 py-2 text-sm
+                  {% if category == 'ok' %}border-emerald-500/40 bg-emerald-900/30 text-emerald-100
+                  {% else %}border-red-500/40 bg-red-900/30 text-red-100{% endif %}">{{ msg }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+{# 數據總覽 #}
+<section id="stats" class="mb-10 scroll-mt-24">
+  <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h2 class="text-lg font-bold text-white">數據總覽</h2>
+      <p class="mt-1 text-sm text-green-200/60">僅統計您帳號下的場次</p>
+    </div>
+    <a href="{{ url_for('stats') }}" class="text-sm font-semibold text-gold-light no-underline hover:text-white">完整統計 →</a>
+  </div>
+
+  {% if global_stats %}
+  <div class="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {{ stat_card('總場次', global_stats.total_rounds, global_stats.player_rounds ~ ' 人次紀錄', 'fairway') }}
+    {{ stat_card('平均桿數', global_stats.avg_score, '所有球員場次', 'blue') }}
+    {{ stat_card('平均比 Par', global_stats.avg_to_par, '全場次平均', 'fairway') }}
+  </div>
+  <div class="grid gap-4 md:grid-cols-2">
+    <div class="rounded-2xl border border-emerald-500/25 bg-emerald-900/15 p-5 ring-1 ring-emerald-500/20">
+      <p class="text-xs font-bold uppercase tracking-wider text-emerald-300/80">最佳成績</p>
+      <div class="mt-2 flex items-end gap-3">
+        <p class="text-4xl font-black text-emerald-100">{{ global_stats.best.total }}</p>
+        {{ par_trend_badge(global_stats.best.to_par, 'sm') }}
+      </div>
+      <p class="mt-2 text-sm text-emerald-100/80">{{ global_stats.best.player }} · {{ global_stats.best.date }}</p>
+      <p class="text-xs text-emerald-200/55">{{ global_stats.best.course }}</p>
+    </div>
+    <div class="rounded-2xl border border-red-500/20 bg-red-900/10 p-5 ring-1 ring-red-500/15">
+      <p class="text-xs font-bold uppercase tracking-wider text-red-300/80">最高桿數</p>
+      <div class="mt-2 flex items-end gap-3">
+        <p class="text-4xl font-black text-red-100">{{ global_stats.worst.total }}</p>
+        {{ par_trend_badge(global_stats.worst.to_par, 'sm') }}
+      </div>
+      <p class="mt-2 text-sm text-red-100/80">{{ global_stats.worst.player }} · {{ global_stats.worst.date }}</p>
+      <p class="text-xs text-red-200/55">{{ global_stats.worst.course }}</p>
+    </div>
+  </div>
+  {% if player_rows %}
+  <div class="mt-4 rounded-2xl bg-white/5 p-5 ring-1 ring-white/10">
+    <h3 class="text-sm font-bold text-white">球員排行榜（前 5）</h3>
+    <ul class="mt-3 divide-y divide-white/10">
+      {% for row in player_rows %}
+      <li class="flex items-center justify-between py-2.5 text-sm">
+        <span class="font-semibold text-white">{{ row.name }}</span>
+        <span class="text-green-200/70">{{ row.rounds }} 場 · 均 {{ row.avg_total }} 桿</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+  {% else %}
+  <p class="rounded-2xl bg-white/5 px-5 py-8 text-center text-green-200/60 ring-1 ring-white/10">尚無數據，完成一場比賽後會顯示統計。</p>
+  {% endif %}
+</section>
+
+{# 打球紀錄 #}
+<section id="rounds" class="mb-10 scroll-mt-24">
+  <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h2 class="text-lg font-bold text-white">打球紀錄</h2>
+      <p class="mt-1 text-sm text-green-200/60">共 {{ rounds_rev|length }} 場</p>
+    </div>
+    <a href="{{ url_for('index') }}" class="text-sm font-semibold text-gold-light no-underline hover:text-white">首頁戰績 →</a>
+  </div>
+
+  {% if rounds_rev %}
+  <ul class="space-y-3">
+    {% for r in rounds_rev %}
+    {% set best = r.players | sort(attribute='total') | first %}
+    {% set round_par = r.par_total or 69 %}
+    {% set to_par = best.to_par if best.to_par is not none else (best.total - round_par) %}
+    <li>
+      <a href="{{ url_for('round_detail', round_id=r.id) }}"
+         class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 px-5 py-4 no-underline transition hover:border-gold/35 hover:bg-white/[0.08]">
+        <div class="min-w-0 flex-1">
+          <p class="font-semibold text-white">{{ r.date }} · {{ r.time }}</p>
+          <p class="mt-0.5 truncate text-sm text-green-200/65">{{ r.course or '球場' }}{% if r.tee %} · {{ r.tee }}{% endif %}</p>
+          <p class="mt-1 text-xs text-green-200/45">冠軍 {{ best.name }} · {{ r.players|length }} 位球手</p>
+        </div>
+        <div class="flex items-center gap-3">
+          {{ par_trend_badge(to_par, 'sm') }}
+          <span class="text-3xl font-black tabular-nums text-gold-light">{{ best.total }}</span>
+        </div>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="rounded-2xl bg-white/5 px-5 py-10 text-center ring-1 ring-white/10">
+    <p class="text-green-200/60">尚無打球紀錄</p>
+    <div class="mt-4">{{ cta_button(url_for('score_entry'), '開始第一場', full=false) }}</div>
+  </div>
+  {% endif %}
+</section>
+
+{# 個人設置 #}
+<section id="settings" class="scroll-mt-24">
+  <h2 class="mb-4 text-lg font-bold text-white">個人設置</h2>
+
+  <div class="grid gap-6 lg:grid-cols-2">
+    <div class="rounded-2xl bg-black/30 p-6 ring-1 ring-white/10 sm:p-8">
+      <h3 class="text-sm font-bold uppercase tracking-wider text-gold-light">打球資料</h3>
+      <form method="post" class="mt-5 space-y-4">
+        <input type="hidden" name="action" value="settings">
+
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold text-green-200/70">差點</label>
+          <input type="number" name="handicap" min="0" max="54" step="0.1"
+                 value="{{ user.handicap if user.handicap is not none else '' }}"
+                 placeholder="0 – 54，可留空"
+                 class="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-green-200/35 focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/30">
+        </div>
+
+        <div>
+          <label class="mb-2 block text-xs font-semibold text-green-200/70">慣用手</label>
+          <div class="grid grid-cols-2 gap-2">
+            {% for val, label in [('right', '右手'), ('left', '左手')] %}
+            <label class="flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 text-sm transition
+                           {% if user.handedness == val %}border-gold/50 bg-gold/15 text-gold-light{% else %}border-white/15 bg-black/20 text-green-200/70{% endif %}">
+              <input type="radio" name="handedness" value="{{ val }}" {% if user.handedness == val %}checked{% endif %} class="accent-gold">
+              {{ label }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold text-green-200/70">常用球場</label>
+          <input type="text" name="home_course" maxlength="120"
+                 value="{{ user.home_course or '' }}"
+                 placeholder="例如：滘西洲南場"
+                 class="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-green-200/35 focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/30">
+        </div>
+
+        <button type="submit"
+                class="w-full rounded-xl bg-gradient-to-r from-gold to-gold-light py-3 text-sm font-bold text-fairway-dark shadow hover:brightness-110">
+          儲存設置
+        </button>
+      </form>
+    </div>
+
+    <div class="space-y-6">
+      <div class="rounded-2xl bg-black/30 p-6 ring-1 ring-white/10 sm:p-8">
+        <h3 class="text-sm font-bold uppercase tracking-wider text-gold-light">變更密碼</h3>
+        <form method="post" class="mt-5 space-y-4">
+          <input type="hidden" name="action" value="password">
+          <div>
+            <label class="mb-1.5 block text-xs font-semibold text-green-200/70">目前密碼</label>
+            <input type="password" name="current_password" required autocomplete="current-password"
+                   class="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/30">
+          </div>
+          <div>
+            <label class="mb-1.5 block text-xs font-semibold text-green-200/70">新密碼</label>
+            <input type="password" name="new_password" required minlength="6" autocomplete="new-password"
+                   class="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/30">
+          </div>
+          <div>
+            <label class="mb-1.5 block text-xs font-semibold text-green-200/70">確認新密碼</label>
+            <input type="password" name="new_password2" required minlength="6" autocomplete="new-password"
+                   class="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/30">
+          </div>
+          <button type="submit"
+                  class="w-full rounded-xl border border-white/20 bg-white/5 py-3 text-sm font-semibold text-white hover:bg-white/10">
+            更新密碼
+          </button>
+        </form>
+      </div>
+
+      <div class="rounded-2xl bg-black/30 p-6 ring-1 ring-white/10 sm:p-8">
+        <h3 class="text-sm font-bold uppercase tracking-wider text-green-200/50">帳號資訊</h3>
+        <dl class="mt-4 space-y-3 text-sm">
+          <div class="flex justify-between gap-4">
+            <dt class="text-green-200/55">球友名稱</dt>
+            <dd class="font-semibold text-white">{{ user.username }}</dd>
+          </div>
+          {% if user.public_email %}
+          <div class="flex justify-between gap-4">
+            <dt class="text-green-200/55">Email</dt>
+            <dd class="truncate text-white">{{ user.public_email }}</dd>
+          </div>
+          {% endif %}
+          <div class="flex justify-between gap-4">
+            <dt class="text-green-200/55">建立日期</dt>
+            <dd class="text-white">{{ user.created_at.strftime('%Y-%m-%d') }}</dd>
+          </div>
+        </dl>
+        <a href="{{ url_for('friends.friends_home') }}"
+           class="mt-5 block text-center text-sm font-semibold text-gold-light no-underline hover:text-white">
+          管理好友 →
+        </a>
+      </div>
+
+      <a href="{{ url_for('auth.logout') }}"
+         class="block w-full rounded-xl border border-red-500/35 bg-red-900/25 py-3.5 text-center text-sm font-bold text-red-200 no-underline transition hover:bg-red-900/40">
+        登出帳號
+      </a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

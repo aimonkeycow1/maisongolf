@@ -27,6 +27,9 @@ class User(UserMixin, db.Model):
     email_verified = db.Column(db.Boolean, default=True, nullable=False)
     email_verify_token = db.Column(db.String(128), nullable=True, index=True)
     current_round_id = db.Column(db.String(64), nullable=True, index=True)
+    handicap = db.Column(db.Float, nullable=True)
+    handedness = db.Column(db.String(10), nullable=True)
+    home_course = db.Column(db.String(120), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     def get_id(self) -> str:  # type: ignore[override]
@@ -50,6 +53,13 @@ class User(UserMixin, db.Model):
     @property
     def display_label(self) -> str:
         return self.username or f"球友{self.id}"
+
+    @property
+    def public_email(self) -> str | None:
+        """對外顯示用 Email（隱藏內部占位信箱）。"""
+        if not self.email or self.email.endswith(f"@{PLACEHOLDER_EMAIL_DOMAIN}"):
+            return None
+        return self.email
 
 
 class FriendRequest(db.Model):

@@ -36,6 +36,12 @@ def migrate_users_auth_columns() -> None:
         )
     if "current_round_id" not in cols:
         statements.append("ALTER TABLE users ADD COLUMN current_round_id VARCHAR(64)")
+    if "handicap" not in cols:
+        statements.append("ALTER TABLE users ADD COLUMN handicap FLOAT")
+    if "handedness" not in cols:
+        statements.append("ALTER TABLE users ADD COLUMN handedness VARCHAR(10)")
+    if "home_course" not in cols:
+        statements.append("ALTER TABLE users ADD COLUMN home_course VARCHAR(120)")
     for stmt in statements:
         _exec(stmt)
 
