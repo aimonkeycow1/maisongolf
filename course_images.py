@@ -36,6 +36,13 @@ _REMOTE_HERO_URLS = {
     "th-thana.jpg": "https://www.golfdd.com/u/course-photo/3_2420.jpg",
     "th-summit.jpg": "https://www.golfdd.com/u/course-photo/10_1786.jpg",
     "th-panya.jpg": "https://www.panyagolf.com/wp-content/uploads/2021/03/DJI_0743.jpg",
+    # 吉隆坡球場（Unsplash placeholder，可之後換成球會授權圖）
+    "kl-gcc-west.jpg": "https://images.unsplash.com/photo-1535131749006-b7f58c990b8e?auto=format&fit=crop&w=1600&q=80",
+    "kl-gcc-east.jpg": "https://images.unsplash.com/photo-1587174482993-4eccc5aa6169?auto=format&fit=crop&w=1600&q=80",
+    "kl-mines.jpg": "https://images.unsplash.com/photo-1596727147705-61a532a659b9?auto=format&fit=crop&w=1600&q=80",
+    "kl-saujana-palm.jpg": "https://images.unsplash.com/photo-1592919505780-763a58753d32?auto=format&fit=crop&w=1600&q=80",
+    "kl-glenmarie-valley.jpg": "https://images.unsplash.com/photo-1593111778420-763a58753d32?auto=format&fit=crop&w=1600&q=80",
+    "kl-tropicana-east.jpg": "https://images.unsplash.com/photo-1596727147705-61a532a659b9?auto=format&fit=crop&w=1600&q=80",
 }
 
 _MAX_WIDTH = 1920

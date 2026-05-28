@@ -4,6 +4,8 @@
 數據來源：球會官網 / GolfPass 公開記分卡（白梯 White Tee）
 """
 
+from kl_courses import KL_COURSES
+
 DEFAULT_COURSE_ID = "ksc-south"
 DEFAULT_TEE_ID = "white"
 
@@ -118,7 +120,7 @@ _PANYA_WHITE = [
 COUNTRY_ORDER = ["香港", "馬來西亞", "泰國"]
 COUNTRY_META = {
     "香港": {"flag": "🇭🇰", "subtitle": "Hong Kong SAR"},
-    "馬來西亞": {"flag": "🇲🇾", "subtitle": "Malaysia"},
+    "馬來西亞": {"flag": "🇲🇾", "subtitle": "Malaysia · KL & Klang Valley"},
     "泰國": {"flag": "🇹🇭", "subtitle": "Thailand · Bangkok"},
 }
 
@@ -361,6 +363,7 @@ COURSES = {
             },
         },
     },
+    **KL_COURSES,
 }
 
 
@@ -396,20 +399,31 @@ def list_courses_for_web():
         tees = []
         for t in c["tees"].values():
             totals = _tee_totals(t)
-            tees.append({
+            tee_row = {
                 "id": t["id"],
                 "name": t["name"],
                 "name_en": t.get("name_en", ""),
                 "par_total": totals["par_total"],
                 "yardage_total": totals["yardage_total"],
-            })
+            }
+            if t.get("course_rating") is not None:
+                tee_row["course_rating"] = t["course_rating"]
+            if t.get("slope_rating") is not None:
+                tee_row["slope_rating"] = t["slope_rating"]
+            tees.append(tee_row)
         out.append({
             "id": c["id"],
             "name": c["name"],
             "name_en": c.get("name_en", ""),
             "description": c.get("description", ""),
             "location": c.get("location", ""),
+            "city": c.get("city", ""),
+            "address": c.get("address", ""),
             "country": c.get("country", ""),
+            "architect": c.get("architect", ""),
+            "visitor_policy": c.get("visitor_policy", ""),
+            "features": c.get("features", []),
+            "photos": c.get("photos", []),
             "hero_image": c.get("hero_image", _HERO),
             "tees": tees,
         })
@@ -474,9 +488,14 @@ def courses_catalog_full():
         catalog[cid] = {
             "id": cid,
             "name": c["name"],
+            "name_en": c.get("name_en", ""),
+            "description": c.get("description", ""),
             "country": c.get("country", ""),
             "location": c.get("location", ""),
+            "city": c.get("city", ""),
+            "address": c.get("address", ""),
             "hero_image": c.get("hero_image", _HERO),
+            "photos": c.get("photos", []),
             "tees": {},
         }
         for tid, t in c["tees"].items():
@@ -489,6 +508,8 @@ def courses_catalog_full():
                 "handicap": t["handicap"],
                 "par_total": totals["par_total"],
                 "yardage_total": totals["yardage_total"],
+                "course_rating": t.get("course_rating"),
+                "slope_rating": t.get("slope_rating"),
             }
     return catalog
 
