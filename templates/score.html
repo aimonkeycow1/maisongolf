@@ -98,6 +98,17 @@
       </select>
     </label>
 
+    <div id="friend-quick-wrap" class="mb-4 hidden rounded-xl border border-green-100 bg-green-50/60 p-4">
+      <span class="mb-1 block text-sm font-medium text-green-800">快捷選擇好友</span>
+      <p class="mb-3 text-xs text-green-600">點一下填入目前欄位；若未點任何欄位，則填入第一個空白名稱。</p>
+      <div id="friend-chips" class="flex flex-wrap gap-2"></div>
+    </div>
+    <p id="friend-quick-empty" class="mb-4 hidden text-xs text-green-600">
+      尚無好友可選。
+      <a href="{{ url_for('friends.friends_home') }}" class="font-semibold text-fairway underline hover:text-fairway-light">前往好友</a>
+      新增後即可在此快捷填入。
+    </p>
+
     <div id="player-names" class="mb-4 space-y-3"></div>
 
     <label class="mb-4 block">
@@ -182,6 +193,8 @@ const CATALOG = {{ courses_full|tojson }};
 const COUNTRIES = {{ courses_by_country|tojson }};
 const SECRET_REQUIRED = {{ secret_required|tojson }};
 const RESUME_DRAFT = {{ resume_draft|tojson }};
+const FRIENDS = {{ friends|tojson }};
+const MY_USERNAME = {{ current_username|tojson }};
 
 (function () {
   const HOLES = 18;
@@ -353,20 +366,103 @@ const RESUME_DRAFT = {{ resume_draft|tojson }};
     updateBanner();
   }
 
+  function fillPlayerName(name) {
+    if (!name) return;
+    const inputs = [...document.querySelectorAll(".player-name-input")];
+    const active = document.activeElement;
+    if (active && active.classList.contains("player-name-input")) {
+      active.value = name;
+      return;
+    }
+    const empty = inputs.find((inp) => !inp.value.trim());
+    if (empty) empty.value = name;
+    else if (inputs.length) inputs[inputs.length - 1].value = name;
+  }
+
+  function attachFriendSelect(sel, input) {
+    FRIENDS.forEach((f) => {
+      const opt = document.createElement("option");
+      opt.value = f.username;
+      opt.textContent = f.label || f.username;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener("change", () => {
+      if (sel.value) {
+        input.value = sel.value;
+        sel.value = "";
+      }
+    });
+  }
+
+  function initFriendQuickPick() {
+    const wrap = el("friend-quick-wrap");
+    const emptyHint = el("friend-quick-empty");
+    const chips = el("friend-chips");
+    if (!wrap || !chips) return;
+
+    const hasFriends = FRIENDS.length > 0;
+    wrap.classList.toggle("hidden", !hasFriends);
+    if (emptyHint) emptyHint.classList.toggle("hidden", hasFriends);
+
+    if (!hasFriends) return;
+
+    chips.innerHTML = "";
+    const addChip = (label, username) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.dataset.username = username;
+      btn.className =
+        "friend-chip rounded-full border border-fairway/30 bg-white px-3 py-1.5 text-sm font-medium text-fairway-dark shadow-sm transition hover:border-fairway hover:bg-fairway/10";
+      btn.textContent = label;
+      chips.appendChild(btn);
+    };
+
+    if (MY_USERNAME) addChip(`我（${MY_USERNAME}）`, MY_USERNAME);
+    FRIENDS.forEach((f) => addChip(f.label || f.username, f.username));
+
+    chips.onclick = (e) => {
+      const btn = e.target.closest(".friend-chip");
+      if (btn) fillPlayerName(btn.dataset.username);
+    };
+  }
+
   function buildPlayerNames() {
     const n = parseInt(el("player-count").value, 10);
     const box = el("player-names");
+    const prev = [...box.querySelectorAll(".player-name-input")].map((inp) => inp.value);
     box.innerHTML = "";
+    const hasFriendPick = FRIENDS.length > 0;
     for (let i = 0; i < n; i++) {
       const wrap = document.createElement("label");
       wrap.className = "block";
-      wrap.innerHTML = `<span class="mb-1 block text-sm font-medium text-green-800">第 ${i + 1} 位</span>`;
+      const title = document.createElement("span");
+      title.className = "mb-1 block text-sm font-medium text-green-800";
+      title.textContent = `第 ${i + 1} 位`;
+      wrap.appendChild(title);
+
+      const row = document.createElement("div");
+      row.className = "flex gap-2";
       const input = document.createElement("input");
       input.type = "text";
       input.className =
-        "player-name-input w-full rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-900 focus:border-fairway focus:outline-none focus:ring-2 focus:ring-fairway/30";
+        "player-name-input min-w-0 flex-1 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-900 focus:border-fairway focus:outline-none focus:ring-2 focus:ring-fairway/30";
       input.placeholder = `球友 ${i + 1}`;
-      wrap.appendChild(input);
+      input.value = prev[i] || (i === 0 && MY_USERNAME ? MY_USERNAME : "");
+      row.appendChild(input);
+
+      if (hasFriendPick) {
+        const sel = document.createElement("select");
+        sel.className =
+          "friend-pick-select w-[7.5rem] shrink-0 rounded-lg border border-green-200 bg-white px-2 py-3 text-sm text-green-900 focus:border-fairway focus:outline-none focus:ring-2 focus:ring-fairway/30";
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "從好友選";
+        sel.appendChild(placeholder);
+        attachFriendSelect(sel, input);
+        row.appendChild(sel);
+      }
+
+      wrap.appendChild(row);
       box.appendChild(wrap);
     }
   }
@@ -686,6 +782,7 @@ const RESUME_DRAFT = {{ resume_draft|tojson }};
     return true;
   }
 
+  initFriendQuickPick();
   buildPlayerNames();
   if (!resumeFromDraft(RESUME_DRAFT)) {
     showStep("country");

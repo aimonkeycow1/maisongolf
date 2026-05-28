@@ -41,6 +41,7 @@ from web_helpers import (
     get_global_round_stats,
 )
 from web_score import validate_score_submission
+from friends_service import list_friends
 from ai_coach import generate_coach_analysis
 from courses import resolve_course_tee
 from ai_coach import build_next_hole_strategy
@@ -182,6 +183,7 @@ def score_entry():
 
     in_progress = get_in_progress_round_for_user(current_user.id)
     if request.method == "GET":
+        friend_users = list_friends(current_user.id)
         return render_template(
             "score.html",
             page="score",
@@ -190,6 +192,11 @@ def score_entry():
             courses_full=courses_catalog_full(),
             secret_required=secret_required,
             resume_draft=in_progress,
+            friends=[
+                {"username": u.username, "label": u.display_label}
+                for u in friend_users
+            ],
+            current_username=current_user.username or "",
         )
 
     if not _sync_secret_ok():
