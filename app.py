@@ -222,7 +222,12 @@ def score_entry():
 
     draft_round_id = data.get("round_id") or current_user.current_round_id
     if draft_round_id:
-        done, done_err = complete_in_progress_round(draft_round_id, current_user.id, note=result["note"])
+        done, done_err = complete_in_progress_round(
+            draft_round_id,
+            current_user.id,
+            note=result["note"],
+            players_stats=result["players_stats"],
+        )
         if done_err:
             return jsonify({"ok": False, "error": done_err}), 400
         rid = done["id"]

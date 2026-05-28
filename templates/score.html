@@ -636,7 +636,34 @@ const MY_USERNAME = {{ current_username|tojson }};
   }
 
   function calcTotal(pi) {
-    return scores[pi].reduce((a, b) => a + b, 0);
+    return scores[pi].reduce((a, b) => a + (Number(b) || 0), 0);
+  }
+
+  /** 送出存檔前：18 洞皆轉為整數 1–20 */
+  function normalizeScoreRow(row, playerName) {
+    if (!Array.isArray(row) || row.length !== HOLES) {
+      throw new Error(`${playerName} 的桿數資料不完整`);
+    }
+    return row.map((s, hi) => {
+      if (s === null || s === undefined || (typeof s === "string" && !s.trim())) {
+        throw new Error(`${playerName} 第 ${hi + 1} 洞尚未填寫`);
+      }
+      const n =
+        typeof s === "number" && Number.isFinite(s)
+          ? Math.trunc(s)
+          : parseInt(String(s).trim(), 10);
+      if (!Number.isFinite(n) || n < 1 || n > 20) {
+        throw new Error(`${playerName} 第 ${hi + 1} 洞桿數需在 1～20 之間`);
+      }
+      return n;
+    });
+  }
+
+  function buildPlayersPayload() {
+    return players.map((name, i) => {
+      const label = (name || `球友${i + 1}`).trim();
+      return { name: label, scores: normalizeScoreRow(scores[i], label) };
+    });
   }
 
   async function showReview() {
@@ -658,6 +685,12 @@ const MY_USERNAME = {{ current_username|tojson }};
     }
     if (!allFilled()) {
       alert("尚有洞次未完成，請逐洞檢查");
+      return;
+    }
+    try {
+      await saveProgress(HOLES, false);
+    } catch (e) {
+      alert(e.message || "保存進度失敗，請稍後再試");
       return;
     }
     showStep("review");
@@ -685,12 +718,20 @@ const MY_USERNAME = {{ current_username|tojson }};
   async function saveRound() {
     const errEl = el("submit-error");
     errEl.classList.add("hidden");
+    let playersPayload;
+    try {
+      playersPayload = buildPlayersPayload();
+    } catch (e) {
+      errEl.textContent = e.message || "桿數格式錯誤";
+      errEl.classList.remove("hidden");
+      return;
+    }
     const payload = {
       round_id: currentRoundId,
       course_id: courseId,
       tee_id: teeId,
       note: el("round-note").value.trim(),
-      players: players.map((name, i) => ({ name, scores: scores[i] })),
+      players: playersPayload,
     };
     if (SECRET_REQUIRED) {
       payload.sync_key = el("sync-key").value.trim();

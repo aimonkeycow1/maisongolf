@@ -259,7 +259,13 @@ def upsert_in_progress_round(
     return target
 
 
-def complete_in_progress_round(round_id, user_id, note=""):
+def complete_in_progress_round(round_id, user_id, note="", players_stats=None):
+    """
+    完成進行中場次。
+    players_stats：若前端已驗證並傳入（建議），優先使用，避免草稿缺最後一洞。
+    """
+    from web_score import normalize_scores_list
+
     rounds = load_rounds()
     target = None
     for r in rounds:
@@ -271,28 +277,37 @@ def complete_in_progress_round(round_id, user_id, note=""):
     if target.get("status") != "in_progress":
         return None, "此場次已完成或不可編輯"
 
-    players = target.get("draft_players") or []
-    draft_scores = target.get("draft_scores") or []
     pars = target.get("pars") or []
-    if not players or not draft_scores:
-        return None, "草稿資料不完整"
 
-    players_stats = []
-    for i, name in enumerate(players):
-        scores = draft_scores[i] if i < len(draft_scores) else []
-        if not isinstance(scores, list) or len(scores) != 18:
-            return None, f"{name} 的草稿資料不完整"
-        try:
-            scores_int = [int(s) for s in scores]
-        except (TypeError, ValueError):
-            return None, f"{name} 的桿數格式錯誤"
-        if any(s < 1 or s > 20 for s in scores_int):
-            return None, f"{name} 的桿數超出範圍"
-        stats = calc_player_stats(scores_int, pars=pars)
-        stats["name"] = name
-        players_stats.append(stats)
+    if players_stats is not None:
+        if not players_stats:
+            return None, "成績資料不完整"
+        final_stats = []
+        for i, row in enumerate(players_stats):
+            if not isinstance(row, dict):
+                return None, f"第 {i + 1} 位球友成績格式錯誤"
+            final_stats.append(row)
+        target["players"] = final_stats
+    else:
+        players = target.get("draft_players") or []
+        draft_scores = target.get("draft_scores") or []
+        if not players or not draft_scores:
+            return None, "草稿資料不完整"
 
-    target["players"] = players_stats
+        if len(draft_scores) < len(players):
+            return None, "草稿球友分數列數不一致"
+
+        built_stats = []
+        for i, name in enumerate(players):
+            pname = str(name).strip() or f"球友{i + 1}"
+            row = draft_scores[i] if i < len(draft_scores) else []
+            scores_int, err = normalize_scores_list(row, player_name=pname)
+            if err:
+                return None, err
+            stats = calc_player_stats(scores_int, pars=pars)
+            stats["name"] = pname
+            built_stats.append(stats)
+        target["players"] = built_stats
     target["note"] = (note or target.get("note") or "").strip()
     target["status"] = "completed"
     target.pop("draft_players", None)
