@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from sqlalchemy import or_, and_
+import unicodedata
+
+from sqlalchemy import or_, and_, func
 
 from models import db, User, FriendRequest
 
@@ -39,15 +41,24 @@ def can_view_user_data(viewer_id: int, owner_id: int) -> bool:
     return are_friends(viewer_id, owner_id)
 
 
+def _normalize_search_query(query: str) -> str:
+    return unicodedata.normalize("NFKC", (query or "").strip())
+
+
 def search_users(query: str, current_user_id: int, limit: int = 10) -> list[User]:
-    q = (query or "").strip()
+    """依球友名稱或 Email 搜尋（忽略大小寫，部分符合）。"""
+    q = _normalize_search_query(query)
     if len(q) < 2:
         return []
-    pattern = f"%{q}%"
+    pattern = f"%{q.lower()}%"
+
     return (
         User.query.filter(
             User.id != current_user_id,
-            User.username.ilike(pattern),
+            or_(
+                func.lower(User.username).like(pattern),
+                func.lower(User.email).like(pattern),
+            ),
         )
         .order_by(User.username)
         .limit(limit)
