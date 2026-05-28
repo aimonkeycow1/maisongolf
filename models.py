@@ -30,6 +30,7 @@ class User(UserMixin, db.Model):
     handicap = db.Column(db.Float, nullable=True)
     handedness = db.Column(db.String(10), nullable=True)
     home_course = db.Column(db.String(120), nullable=True)
+    avatar_path = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     def get_id(self) -> str:  # type: ignore[override]
@@ -53,6 +54,15 @@ class User(UserMixin, db.Model):
     @property
     def display_label(self) -> str:
         return self.username or f"球友{self.id}"
+
+    @property
+    def avatar_initial(self) -> str:
+        label = self.display_label
+        return (label[0] if label else "?").upper()
+
+    @property
+    def has_avatar(self) -> bool:
+        return bool(self.avatar_path)
 
     @property
     def public_email(self) -> str | None:

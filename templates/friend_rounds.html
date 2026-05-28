@@ -1,5 +1,6 @@
 {% extends "base.html" %}
-{% from '_macros.html' import trophy_icon, par_trend_badge %}
+{% from '_macros.html' import trophy_icon, par_trend_badge, stat_card %}
+{% from '_user_avatar.html' import user_avatar, user_name_with_avatar %}
 {% block title %}{{ friend.display_label }} 的戰績 · Maison Golf{% endblock %}
 {% block content %}
 
@@ -10,15 +11,67 @@
   </a>
 </div>
 
-<section class="mb-8 rounded-2xl bg-white/5 p-6 ring-1 ring-white/10 sm:p-8">
+<section class="mb-8 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-fairway-dark/80 via-black/40 to-black/50 p-6 ring-1 ring-white/10 sm:p-8">
   <p class="text-xs font-bold uppercase tracking-widest text-gold-light/80">好友戰績</p>
-  <h1 class="mt-1 text-2xl font-bold text-white">{{ friend.display_label }}</h1>
-  <p class="mt-1 text-sm text-green-200/60">僅好友可見</p>
+  <div class="mt-3 flex flex-wrap items-center gap-4">
+    {{ user_avatar(friend, '2xl') }}
+    <div>
+      <h1 class="text-2xl font-bold text-white">{{ friend.display_label }}</h1>
+      <p class="mt-1 text-sm text-green-200/60">好友專屬 · 可查看歷史場次與統計（唯讀）</p>
+      {% if friend.handicap is not none %}
+      <p class="mt-2 text-xs text-gold-light/80">差點 {{ friend.handicap }}</p>
+      {% endif %}
+    </div>
+  </div>
 </section>
+
+{% if global_stats %}
+<section class="mb-8">
+  <h2 class="mb-4 text-lg font-bold text-white">成績數據</h2>
+  <div class="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {{ stat_card('總場次', global_stats.total_rounds, global_stats.player_rounds ~ ' 人次紀錄', 'fairway') }}
+    {{ stat_card('平均桿數', global_stats.avg_score, '所有球員場次', 'blue') }}
+    {{ stat_card('平均比 Par', global_stats.avg_to_par, '全場次平均', 'fairway') }}
+  </div>
+  <div class="grid gap-4 md:grid-cols-2">
+    <div class="rounded-2xl border border-emerald-500/25 bg-emerald-900/15 p-5 ring-1 ring-emerald-500/20">
+      <p class="text-xs font-bold uppercase tracking-wider text-emerald-300/80">最佳成績</p>
+      <div class="mt-2 flex items-end gap-3">
+        <p class="text-4xl font-black text-emerald-100">{{ global_stats.best.total }}</p>
+        {{ par_trend_badge(global_stats.best.to_par, 'sm') }}
+      </div>
+      <p class="mt-2 text-sm text-emerald-100/80">{{ global_stats.best.player }} · {{ global_stats.best.date }}</p>
+      <p class="text-xs text-emerald-200/55">{{ global_stats.best.course }}</p>
+    </div>
+    <div class="rounded-2xl border border-red-500/20 bg-red-900/10 p-5 ring-1 ring-red-500/15">
+      <p class="text-xs font-bold uppercase tracking-wider text-red-300/80">最高桿數</p>
+      <div class="mt-2 flex items-end gap-3">
+        <p class="text-4xl font-black text-red-100">{{ global_stats.worst.total }}</p>
+        {{ par_trend_badge(global_stats.worst.to_par, 'sm') }}
+      </div>
+      <p class="mt-2 text-sm text-red-100/80">{{ global_stats.worst.player }} · {{ global_stats.worst.date }}</p>
+      <p class="text-xs text-red-200/55">{{ global_stats.worst.course }}</p>
+    </div>
+  </div>
+  {% if player_rows %}
+  <div class="mt-4 rounded-2xl bg-white/5 p-5 ring-1 ring-white/10">
+    <h3 class="text-sm font-bold text-white">球員排行榜（前 5）</h3>
+    <ul class="mt-3 divide-y divide-white/10">
+      {% for row in player_rows %}
+      <li class="flex items-center justify-between py-2.5 text-sm">
+        <span class="font-semibold text-white">{{ row.name }}</span>
+        <span class="text-green-200/70">{{ row.rounds }} 場 · 均 {{ row.avg_total }} 桿</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+</section>
+{% endif %}
 
 <section class="rounded-2xl bg-white/5 p-6 shadow-xl ring-1 ring-white/10 sm:p-8">
   <div class="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-white/10 pb-5">
-    <h2 class="text-xl font-bold text-white">歷史場次</h2>
+    <h2 class="text-xl font-bold text-white">打球紀錄</h2>
     <span class="rounded-full bg-fairway px-4 py-1.5 text-sm font-bold text-white">{{ rounds_rev|length }} 場</span>
   </div>
 
@@ -53,7 +106,7 @@
   {% else %}
     <div class="py-12 text-center text-green-200/60">
       {{ trophy_icon('mx-auto h-10 w-10 text-gold-light/50 mb-3') }}
-      <p>好友尚無公開的場次紀錄。</p>
+      <p>好友尚無已完成的場次紀錄。</p>
     </div>
   {% endif %}
 </section>

@@ -1,10 +1,12 @@
 {% extends "base.html" %}
 {% from '_macros.html' import score_cell_class, diff_text, to_par_text, score_name %}
+{% from '_user_avatar.html' import user_avatar, user_name_with_avatar %}
 {% block title %}{{ friend.display_label }} · {{ round.date }} 記分卡{% endblock %}
 {% block content %}
 
-<div class="mb-4 rounded-xl border border-amber-500/30 bg-amber-900/20 px-4 py-3 text-sm text-amber-100/90">
-  正在查看好友 <strong class="text-gold-light">{{ friend.display_label }}</strong> 的記分卡（唯讀）
+<div class="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-900/20 px-4 py-3 text-sm text-amber-100/90">
+  {{ user_avatar(friend, 'sm') }}
+  <span>正在查看好友 <strong class="text-gold-light">{{ friend.display_label }}</strong> 的記分卡（唯讀）</span>
 </div>
 
 {% set round_hero = '/static/img/' ~ (round.course_id ~ '.jpg' if round.course_id else 'hero.jpg') %}

@@ -18,6 +18,7 @@ from friends_service import (
 )
 from round_storage import load_rounds_for_user, get_round_for_user
 from course_data import PAR_TOTAL
+from web_helpers import get_global_round_stats, get_player_stats_table
 
 friends_bp = Blueprint("friends", __name__, url_prefix="/friends")
 
@@ -81,6 +82,8 @@ def friend_rounds(user_id):
         rounds_rev=list(reversed(rounds)),
         par_total=PAR_TOTAL,
         is_self=False,
+        global_stats=get_global_round_stats(rounds),
+        player_rows=get_player_stats_table(rounds)[:5],
     )
 
 

@@ -6,5 +6,7 @@ __pycache__/
 course_aerial.jpg
 static/uploads/share/*
 !static/uploads/share/.gitkeep
+static/uploads/avatars/*
+!static/uploads/avatars/.gitkeep
 static/fonts/NotoSansTC-Regular.otf
 app.db

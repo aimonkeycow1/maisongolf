@@ -1,0 +1,37 @@
+{# 使用者頭像：有上傳則顯示圖片，否則顯示名稱首字 #}
+{% macro user_avatar(user, size='md', ring=true) %}
+{% if user %}
+{% set sizes = {
+  'xs': 'h-7 w-7 text-xs',
+  'sm': 'h-9 w-9 text-sm',
+  'md': 'h-10 w-10 text-base',
+  'lg': 'h-14 w-14 text-lg',
+  'xl': 'h-16 w-16 text-2xl',
+  '2xl': 'h-20 w-20 text-3xl'
+} %}
+{% set dim = sizes.get(size, sizes.md) %}
+<span class="user-avatar inline-flex shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-fairway to-fairway-dark {{ dim }}
+             {% if ring %} ring-2 ring-gold/45 shadow-md {% endif %}"
+      title="{{ user.display_label }}">
+  {% if user.avatar_path %}
+  <img src="{{ url_for('static', filename=user.avatar_path) }}"
+       alt="{{ user.display_label }} 的頭像"
+       class="h-full w-full object-cover"
+       loading="lazy">
+  {% else %}
+  <span class="flex h-full w-full items-center justify-center font-bold text-gold-light">
+    {{ user.avatar_initial }}
+  </span>
+  {% endif %}
+</span>
+{% endif %}
+{% endmacro %}
+
+{% macro user_name_with_avatar(user, size='sm', name_class='font-semibold text-white') %}
+{% if user %}
+<span class="inline-flex min-w-0 items-center gap-2.5">
+  {{ user_avatar(user, size) }}
+  <span class="truncate {{ name_class }}">{{ user.display_label }}</span>
+</span>
+{% endif %}
+{% endmacro %}

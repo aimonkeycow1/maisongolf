@@ -1,10 +1,11 @@
 {% extends "base.html" %}
+{% from '_user_avatar.html' import user_avatar, user_name_with_avatar %}
 {% block title %}好友 · Maison Golf{% endblock %}
 {% block content %}
 
 <section class="mb-8 rounded-2xl bg-white/5 p-6 shadow-xl ring-1 ring-white/10 sm:p-8">
   <h1 class="text-xl font-bold text-white sm:text-2xl">好友</h1>
-  <p class="mt-1 text-sm text-green-200/60">搜尋球友名稱或 Email 發送邀請；成為好友後可查看對方歷史成績。</p>
+  <p class="mt-1 text-sm text-green-200/60">搜尋球友名稱或 Email 發送邀請；成為好友後可查看對方歷史場次與成績數據。</p>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -35,9 +36,7 @@
       <ul class="mt-3 space-y-2">
         {% for u in search_results %}
         <li class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/25 px-4 py-3">
-          <div>
-            <p class="font-semibold text-white">{{ u.display_label }}</p>
-          </div>
+          {{ user_name_with_avatar(u, 'md') }}
           <form method="post" action="{{ url_for('friends.friends_request', user_id=u.id) }}">
             <input type="hidden" name="q" value="{{ search_q }}">
             <button type="submit"
@@ -62,9 +61,7 @@
   <ul class="mt-4 space-y-3">
     {% for req in incoming %}
     <li class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-black/30 px-4 py-4 ring-1 ring-white/10">
-      <div>
-        <p class="font-semibold text-white">{{ req.from_user.display_label }}</p>
-      </div>
+      {{ user_name_with_avatar(req.from_user, 'md') }}
       <div class="flex gap-2">
         <form method="post" action="{{ url_for('friends.friends_accept', request_id=req.id) }}">
           <button type="submit" class="rounded-lg bg-fairway px-4 py-2 text-xs font-bold text-white hover:bg-fairway-light">接受</button>
@@ -85,9 +82,9 @@
   <p class="mt-1 text-sm text-green-200/60">等待對方回應</p>
   <ul class="mt-4 space-y-2">
     {% for req in outgoing %}
-    <li class="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-green-200/80">
-      <span class="font-semibold text-white">{{ req.to_user.display_label }}</span>
-      <span class="ml-2 rounded-full bg-white/10 px-2 py-0.5 text-xs">等待中</span>
+    <li class="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-green-200/80">
+      {{ user_name_with_avatar(req.to_user, 'sm') }}
+      <span class="rounded-full bg-white/10 px-2 py-0.5 text-xs">等待中</span>
     </li>
     {% endfor %}
   </ul>
@@ -98,7 +95,7 @@
   <div class="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-white/10 pb-5">
     <div>
       <h2 class="text-xl font-bold text-white">我的好友</h2>
-      <p class="mt-1 text-sm text-green-200/60">點擊查看好友的歷史成績</p>
+      <p class="mt-1 text-sm text-green-200/60">點擊查看好友的打球紀錄與成績</p>
     </div>
     <span class="rounded-full bg-fairway px-4 py-1.5 text-sm font-bold text-white">{{ friends|length }} 位</span>
   </div>
@@ -109,10 +106,8 @@
       <li>
         <a href="{{ url_for('friends.friend_rounds', user_id=f.id) }}"
            class="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-gradient-to-r from-white/[0.06] to-black/30 px-5 py-4 no-underline transition hover:border-gold/40 hover:shadow-lg">
-          <div>
-            <p class="text-lg font-bold text-white">{{ f.display_label }}</p>
-          </div>
-          <span class="text-sm font-semibold text-gold-light">查看成績 →</span>
+          {{ user_name_with_avatar(f, 'lg', 'text-lg font-bold text-white') }}
+          <span class="shrink-0 text-sm font-semibold text-gold-light">查看紀錄與成績 →</span>
         </a>
       </li>
       {% endfor %}

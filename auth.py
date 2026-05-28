@@ -12,6 +12,7 @@ from models import db, User
 from round_storage import load_rounds_for_user, get_in_progress_round_for_user
 from web_helpers import get_global_round_stats, get_player_stats_table
 from friends_service import list_friends
+from avatar_service import save_user_avatar, remove_user_avatar
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -178,7 +179,20 @@ def profile():
     if request.method == "POST":
         action = (request.form.get("action") or "settings").strip()
 
-        if action == "password":
+        if action == "avatar":
+            path, err = save_user_avatar(current_user.id, request.files.get("avatar"))
+            if err:
+                flash(err, "error")
+            else:
+                current_user.avatar_path = path
+                db.session.commit()
+                flash("頭像已更新", "ok")
+        elif action == "avatar_remove":
+            remove_user_avatar(current_user.id, current_user.avatar_path)
+            current_user.avatar_path = None
+            db.session.commit()
+            flash("已移除頭像", "ok")
+        elif action == "password":
             current_pw = request.form.get("current_password") or ""
             new_pw = request.form.get("new_password") or ""
             new_pw2 = request.form.get("new_password2") or ""
