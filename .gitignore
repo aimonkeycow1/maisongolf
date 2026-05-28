@@ -10,3 +10,5 @@ static/uploads/avatars/*
 !static/uploads/avatars/.gitkeep
 static/fonts/NotoSansTC-Regular.otf
 app.db
+data/
+*.db-journal

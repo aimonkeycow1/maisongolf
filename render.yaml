@@ -1,4 +1,14 @@
-# Render 一鍵部署設定：https://render.com
+# Render 部署：https://render.com
+#
+# 重要：帳號資料必須存在「持久化資料庫」，不可只靠容器內 app.db（每次部署會清空）。
+# 本設定已綁定 PostgreSQL；首次部署後請在 Dashboard 確認 SECRET_KEY 已固定、勿刪除資料庫。
+
+databases:
+  - name: maisongolf-db
+    plan: free
+    databaseName: maisongolf
+    user: maisongolf
+
 services:
   - type: web
     name: kau-sai-golf
@@ -9,7 +19,15 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.7"
+      # 從連結的 PostgreSQL 注入，勿寫死 value，以免覆蓋 Dashboard 手動設定的 DATABASE_URL
+      - key: DATABASE_URL
+        fromDatabase:
+          name: maisongolf-db
+          property: connectionString
+      # 僅在「第一次」建立服務時自動產生；之後請在 Dashboard 固定同一組值，勿隨部署刪除
       - key: SECRET_KEY
         generateValue: true
       - key: SYNC_SECRET
         generateValue: true
+      - key: RENDER
+        value: "true"

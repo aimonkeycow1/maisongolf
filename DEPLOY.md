@@ -62,7 +62,31 @@ python3 sync_rounds.py
 
 ---
 
+## 會員帳號為什麼會「每次更新就消失」？
+
+Render **免費版 Web 服務的檔案系統是暫存的**：每次重新部署或重啟，容器內的 `app.db` 會被清空。  
+`app.db` 又在 `.gitignore` 裡，**不會跟著 Git 上傳**，所以線上每次都是「空資料庫」→ 舊帳號不存在，只能重新註冊。
+
+**解法（已寫入 `render.yaml`）**：使用 **Render PostgreSQL**，透過環境變數 `DATABASE_URL` 存會員資料。資料庫與 Web 服務分開，部署程式碼**不會**刪除使用者。
+
+### 若你早已部署過（沒有 Postgres）
+
+1. Render Dashboard → **New +** → **PostgreSQL**（免費方案即可）
+2. 建立後，複製 **Internal Database URL** 或 **External Database URL**
+3. 打開你的 **Web 服務** → **Environment** → 新增：
+   - `DATABASE_URL` = 剛才的連線字串
+   - 確認 `SECRET_KEY` 已存在且**不要**每次部署都刪掉重產（否則已登入 cookie 會失效，但帳號仍在）
+4. **Manual Deploy** 一次，讓程式安裝 `psycopg2-binary` 並連到新庫
+5. **第一次接上 Postgres 後資料庫是空的**，球友需再註冊一次；之後每次更新程式碼，帳號都會保留
+
+### 本機開發
+
+不設 `DATABASE_URL` 時仍使用專案目錄的 `app.db`，與線上資料庫**分開**。
+
+---
+
 ## 注意
 
 - **免費版**約 15 分鐘沒人訪問會休眠，第一次打開可能要等 30～50 秒喚醒。
 - 雲端資料存在伺服器；本機 `rounds.json` 與雲端要以 `sync_rounds.py` 同步。
+- 上傳的**頭像檔**若放在容器本機，免費版部署後也可能遺失；長期可改雲端儲存或 Render 持久化磁碟（`INSTANCE_DATA_DIR`）。

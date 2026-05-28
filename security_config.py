@@ -9,10 +9,9 @@ DEFAULT_DEV_SECRET = "dev-secret-change-me"
 
 
 def is_production_hosting() -> bool:
-    return bool(
-        os.environ.get("RENDER")
-        or os.environ.get("FLASK_ENV", "").lower() == "production"
-    )
+    from database_config import is_production_hosting as _prod
+
+    return _prod()
 
 
 def resolve_secret_key() -> str:

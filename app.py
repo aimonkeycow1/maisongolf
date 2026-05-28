@@ -58,10 +58,18 @@ from auth import auth_bp
 from friends import friends_bp
 from user_migrations import migrate_users_auth_columns
 from security_config import apply_security_config
+from database_config import resolve_database_uri, is_render_hosting
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 85 * 1024 * 1024
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(BASE_DIR, "app.db")
+
+# 正式環境：Render 注入 DATABASE_URL → PostgreSQL；本機開發：sqlite:///.../app.db
+_database_url = (os.environ.get("DATABASE_URL") or "").strip()
+if _database_url:
+    app.config["SQLALCHEMY_DATABASE_URI"] = resolve_database_uri(BASE_DIR)
+else:
+    _sqlite_path = os.path.join(BASE_DIR, "app.db").replace("\\", "/")
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{_sqlite_path}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 apply_security_config(app)
 
@@ -69,7 +77,8 @@ db.init_app(app)
 
 login_manager = LoginManager(app)
 login_manager.login_view = "auth.login"
-login_manager.session_protection = "strong"
+# basic：避免手機網路切換導致 cookie 失效；帳號安全仍靠密碼與 HTTPS
+login_manager.session_protection = "basic"
 
 
 @login_manager.user_loader
@@ -120,10 +129,22 @@ ensure_course_images()
 app.register_blueprint(auth_bp)
 app.register_blueprint(friends_bp)
 
-with app.app_context():
+def _init_database():
+    """僅建立缺少的資料表與欄位，絕不 drop 或清空既有資料。"""
     db.create_all()
     migrate_users_auth_columns()
     migrate_legacy_round_user_ids()
+
+
+with app.app_context():
+    _init_database()
+    if is_render_hosting() and not _database_url:
+        import logging
+
+        logging.warning(
+            "Render 未設定 DATABASE_URL：帳號使用容器內 SQLite，部署後會清空。"
+            "請建立 PostgreSQL 並在 Environment 設定 DATABASE_URL。"
+        )
 
 
 @app.route("/admin/sync", methods=["POST"])
