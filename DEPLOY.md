@@ -62,6 +62,16 @@ python3 sync_rounds.py
 
 ---
 
+## 打球紀錄存在哪裡？
+
+**Render 正式環境**：所有場次寫入 **PostgreSQL**（`golf_rounds`、`round_participants`、`hole_scores` 表），重新部署後紀錄**不會消失**。請確認 Web 服務已設定 `DATABASE_URL`。
+
+**本機開發**：無 `DATABASE_URL` 時，帳號在 `app.db`、打球紀錄也在同一 SQLite 檔。首次啟動若專案內有 `rounds.json`，會自動匯入資料庫一次。
+
+`rounds.json` 僅作本機備份／CLI 相容，**不再作為正式儲存**。
+
+---
+
 ## 會員帳號為什麼會「每次更新就消失」？
 
 Render **免費版 Web 服務的檔案系統是暫存的**：每次重新部署或重啟，容器內的 `app.db` 會被清空。  

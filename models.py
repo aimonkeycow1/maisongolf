@@ -15,7 +15,7 @@ class User(UserMixin, db.Model):
     測試版使用者：球友名稱 + 密碼登入。
     email 欄位保留供舊資料相容，新帳號使用內部占位信箱。
 
-    記分場次（Round）儲存於 rounds.json，每筆資料以 user_id 欄位關聯本表的 id。
+    記分場次儲存於 PostgreSQL（golf_rounds 等表）；本機無 DATABASE_URL 時用 SQLite。
     """
 
     __tablename__ = "users"

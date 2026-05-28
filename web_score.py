@@ -1,4 +1,4 @@
-"""網頁錄分：驗證與寫入 rounds.json"""
+"""網頁錄分：驗證與寫入資料庫（round_storage）"""
 
 from courses import resolve_course_tee
 from golf_utils import calc_player_stats

@@ -36,6 +36,7 @@ from round_storage import (
     upsert_in_progress_round,
     complete_in_progress_round,
     abandon_in_progress_rounds,
+    init_round_storage,
 )
 from web_helpers import (
     get_player_stats_table,
@@ -56,6 +57,7 @@ from share_media import (
     PHOTO_STYLES,
 )
 from models import db, User
+import round_models  # noqa: F401 — 註冊 golf_rounds 資料表
 from auth import auth_bp
 from friends import friends_bp
 from user_migrations import migrate_users_auth_columns
@@ -138,6 +140,7 @@ def _init_database():
     """僅建立缺少的資料表與欄位，絕不 drop 或清空既有資料。"""
     db.create_all()
     migrate_users_auth_columns()
+    init_round_storage()
     migrate_legacy_round_user_ids()
     repair_stuck_in_progress_rounds()
     migrate_rounds_participant_fields()
@@ -163,9 +166,8 @@ def admin_sync():
     data = request.get_json(force=True, silent=True)
     if not isinstance(data, list):
         return jsonify({"ok": False, "error": "需要 JSON 陣列"}), 400
-    merged = merge_rounds_by_id(data)
-    save_rounds(merged)
-    return jsonify({"ok": True, "rounds": len(merged)})
+    merge_rounds_by_id(data)
+    return jsonify({"ok": True, "rounds": len(data)})
 
 
 @app.route("/")

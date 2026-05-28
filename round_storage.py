@@ -1,7 +1,9 @@
 """
-記分場次儲存（rounds.json）
-查詢以 user_id / participant_user_ids / 球友名稱 判斷可見性。
+記分場次儲存 — 優先 PostgreSQL（Render DATABASE_URL），本機可用 SQLite。
+對外 API 與舊版 rounds.json dict 格式相容。
 """
+
+from __future__ import annotations
 
 import json
 import os
@@ -11,34 +13,34 @@ from datetime import datetime
 from courses import DEFAULT_COURSE_ID, DEFAULT_TEE_ID, course_meta_for_round
 from golf_utils import calc_player_stats
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FILE = os.path.join(BASE_DIR, "rounds.json")
-
+from round_db import (
+    BASE_DIR,
+    JSON_FILE as FILE,
+    load_all_round_dicts,
+    load_round_dict_by_external_id,
+    upsert_round_dict,
+    migrate_rounds_json_to_database,
+    merge_rounds_by_id_db,
+    query_rounds_for_user_broad,
+)
 
 def load_rounds():
-    """載入全部場次（僅內部或管理同步使用）"""
-    try:
-        with open(FILE, "r", encoding="utf-8") as file:
-            return json.load(file)
-    except FileNotFoundError:
-        return []
-    except json.JSONDecodeError:
-        print("⚠️ 紀錄檔損壞，將從空白開始。")
-        return []
+    """載入全部場次 dict 列表（從資料庫）。"""
+    return load_all_round_dicts()
 
 
 def save_rounds(rounds):
-    with open(FILE, "w", encoding="utf-8") as file:
-        json.dump(rounds, file, ensure_ascii=False, indent=2)
+    """將多筆場次寫入資料庫（依 id upsert）。不再寫入 rounds.json。"""
+    for item in rounds:
+        if isinstance(item, dict) and item.get("id"):
+            upsert_round_dict(item)
 
 
 def normalize_player_name(name: str) -> str:
-    """比對球友名稱用（與登入 username 比對，忽略大小寫與全半形）。"""
     return unicodedata.normalize("NFKC", (name or "").strip()).lower()
 
 
 def user_match_names(user) -> set[str]:
-    """使用者可能被記在場次裡的名稱集合（username、顯示名、Email 本地段）。"""
     names: set[str] = set()
     if not user:
         return names
@@ -82,7 +84,6 @@ def _player_linked_user_id(player: dict) -> int | None:
 
 
 def is_round_listable(round_dict) -> bool:
-    """是否為可顯示在「打球紀錄」的已完成場次。"""
     if not round_dict.get("players"):
         return False
     st = round_dict.get("status")
@@ -96,7 +97,6 @@ def is_round_listable(round_dict) -> bool:
 
 
 def collect_participant_user_ids(round_dict, creator_user_id=None) -> list[int]:
-    """彙總場次所有參與者 user id（建立者 + players 內 participant_user_id）。"""
     ids: set[int] = set()
     for raw in (
         creator_user_id,
@@ -121,12 +121,7 @@ def collect_participant_user_ids(round_dict, creator_user_id=None) -> list[int]:
     return sorted(ids)
 
 
-def enrich_players_with_user_ids(
-    players_stats: list,
-    *,
-    creator_user_id=None,
-) -> list:
-    """依名稱對應已註冊帳號寫入 participant_user_id；建立者必被標記。"""
+def enrich_players_with_user_ids(players_stats: list, *, creator_user_id=None) -> list:
     if not players_stats:
         return players_stats
     try:
@@ -176,12 +171,10 @@ def enrich_players_with_user_ids(
                 if key and key in creator_names:
                     row["participant_user_id"] = cid
                     break
-
     return players_stats
 
 
 def sync_round_participant_fields(round_dict, creator_user_id=None) -> None:
-    """完成場次後同步 creator_user_id / participant_user_ids。"""
     cid = creator_user_id
     if cid is None:
         cid = round_dict.get("creator_user_id") or round_dict.get("user_id")
@@ -198,7 +191,6 @@ def sync_round_participant_fields(round_dict, creator_user_id=None) -> None:
 
 
 def user_participated_in_round(round_dict, user) -> bool:
-    """使用者是否參與場次（名稱或 participant_user_id）。"""
     if not user or getattr(user, "id", None) is None:
         return False
     uid = int(user.id)
@@ -218,7 +210,6 @@ def user_participated_in_round(round_dict, user) -> bool:
 
 
 def round_belongs_to_user(round_dict, user_id) -> bool:
-    """場次建立者 user_id（嚴格）。"""
     if user_id is None:
         return False
     uid = round_dict.get("user_id") or round_dict.get("creator_user_id")
@@ -228,7 +219,6 @@ def round_belongs_to_user(round_dict, user_id) -> bool:
 
 
 def round_belongs_to_user_account(round_dict, user) -> bool:
-    """場次是否為該帳號建立（含舊版 user_email）。"""
     if not user or getattr(user, "id", None) is None:
         return False
     if round_belongs_to_user(round_dict, user.id):
@@ -240,7 +230,6 @@ def round_belongs_to_user_account(round_dict, user) -> bool:
 
 
 def round_visible_to_user(round_dict, user) -> bool:
-    """使用者是否可查看此場（建立者或參與者）。"""
     if not user or getattr(user, "id", None) is None:
         return False
     if not is_round_listable(round_dict):
@@ -253,7 +242,6 @@ def round_visible_to_user(round_dict, user) -> bool:
 
 
 def get_player_in_round_for_user(round_dict, user):
-    """取得該使用者在單場中的成績列（players 內 dict），無則 None。"""
     if not user or getattr(user, "id", None) is None:
         return None
     uid = int(user.id)
@@ -269,17 +257,23 @@ def get_player_in_round_for_user(round_dict, user):
 
 
 def load_rounds_visible_to_user(user):
-    """載入使用者建立或參與過、且已完成的場次。"""
     if not user or getattr(user, "id", None) is None:
         return []
-    return [r for r in load_rounds() if round_visible_to_user(r, user)]
+    try:
+        from round_db import round_orm_to_dict
+
+        broad = query_rounds_for_user_broad(user)
+        out = []
+        for gr in broad:
+            d = round_orm_to_dict(gr)
+            if round_visible_to_user(d, user):
+                out.append(d)
+        return out
+    except Exception:
+        return [r for r in load_rounds() if round_visible_to_user(r, user)]
 
 
 def load_rounds_for_user(user_id, *, include_participation: bool = True):
-    """
-    載入使用者的已完成場次。
-    預設 include_participation=True：含建立與參與的場次。
-    """
     try:
         from models import User
 
@@ -298,12 +292,10 @@ def load_rounds_for_user(user_id, *, include_participation: bool = True):
 
 
 def load_rounds_involving_user(user):
-    """同 load_rounds_visible_to_user（好友戰績）。"""
     return load_rounds_visible_to_user(user)
 
 
 def load_rounds_for_user_account(user):
-    """依 Flask-Login 使用者物件過濾場次（含參與）。"""
     return load_rounds_visible_to_user(user)
 
 
@@ -315,17 +307,15 @@ def get_round_by_id(rounds, round_id):
 
 
 def get_round_visible_to_user(round_id, user):
-    """取得單一場次，使用者須為建立者或參與者。"""
     if not user:
         return None
-    for r in load_rounds():
-        if r.get("id") == round_id and round_visible_to_user(r, user):
-            return r
+    d = load_round_dict_by_external_id(round_id)
+    if d and round_visible_to_user(d, user):
+        return d
     return None
 
 
 def get_round_for_user(round_id, user_id, *, include_participation: bool = True):
-    """依 user_id 取得場次；預設含參與場次。"""
     try:
         from models import User
 
@@ -336,28 +326,22 @@ def get_round_for_user(round_id, user_id, *, include_participation: bool = True)
         return None
     if include_participation:
         return get_round_visible_to_user(round_id, user)
-    for r in load_rounds():
-        if r.get("id") == round_id and round_belongs_to_user(r, user_id):
-            return r
+    d = load_round_dict_by_external_id(round_id)
+    if d and round_belongs_to_user(d, user_id):
+        return d
     return None
 
 
 def get_round_for_user_account(round_id, user):
-    """取得單一場次（建立或參與）。"""
     return get_round_visible_to_user(round_id, user)
 
 
 def merge_rounds_by_id(incoming_rounds):
-    """合併同步資料：依 id 覆寫/新增，不刪除其他使用者的場次"""
-    merged = {r["id"]: r for r in load_rounds() if r.get("id")}
-    for r in incoming_rounds:
-        if r.get("id"):
-            merged[r["id"]] = r
-    return list(merged.values())
+    merge_rounds_by_id_db(incoming_rounds)
+    return load_rounds()
 
 
 def migrate_legacy_round_user_ids():
-    """將舊資料（仅有 user_email）回填 user_id。"""
     try:
         from models import User
 
@@ -366,26 +350,22 @@ def migrate_legacy_round_user_ids():
         return 0
 
     email_to_id = {u.email: u.id for u in users if u.email}
-    rounds = load_rounds()
     changed = 0
-    for r in rounds:
+    for r in load_rounds():
         if r.get("user_id") is not None:
             continue
         email = r.get("user_email")
         if email and email in email_to_id:
             r["user_id"] = int(email_to_id[email])
             r["creator_user_id"] = int(email_to_id[email])
+            upsert_round_dict(r)
             changed += 1
-    if changed:
-        save_rounds(rounds)
     return changed
 
 
 def migrate_rounds_participant_fields():
-    """為既有已完成場次補齊 participant_user_ids / creator_user_id。"""
-    rounds = load_rounds()
     changed = 0
-    for r in rounds:
+    for r in load_rounds():
         if not is_round_listable(r):
             continue
         before = json.dumps(
@@ -400,9 +380,8 @@ def migrate_rounds_participant_fields():
             default=str,
         )
         if before != after:
+            upsert_round_dict(r)
             changed += 1
-    if changed:
-        save_rounds(rounds)
     return changed
 
 
@@ -421,14 +400,10 @@ def _draft_scores_complete(draft_scores, num_players: int) -> bool:
 
 
 def repair_stuck_in_progress_rounds():
-    """
-    修復：18 洞已填完但仍停在 in_progress 的草稿（存檔中斷時）。
-    """
     from web_score import normalize_scores_list
 
-    rounds = load_rounds()
     changed = 0
-    for r in rounds:
+    for r in load_rounds():
         if r.get("status") != "in_progress":
             continue
         uid = r.get("user_id") or r.get("creator_user_id")
@@ -458,9 +433,8 @@ def repair_stuck_in_progress_rounds():
         r.pop("draft_scores", None)
         r.pop("draft_hole_index", None)
         sync_round_participant_fields(r, uid)
+        upsert_round_dict(r)
         changed += 1
-    if changed:
-        save_rounds(rounds)
     return changed
 
 
@@ -475,10 +449,7 @@ def build_round_record(players_stats, note="", course_id=None, tee_id=None, user
     if not meta:
         meta = course_meta_for_round(DEFAULT_COURSE_ID, DEFAULT_TEE_ID)
 
-    players_stats = enrich_players_with_user_ids(
-        players_stats,
-        creator_user_id=user_id,
-    )
+    players_stats = enrich_players_with_user_ids(players_stats, creator_user_id=user_id)
     record = {
         "id": now.strftime("%Y%m%d_%H%M%S"),
         "date": now.strftime("%Y-%m-%d"),
@@ -501,17 +472,10 @@ def build_round_record(players_stats, note="", course_id=None, tee_id=None, user
 
 
 def add_round(players_stats, note="", course_id=None, tee_id=None, user_id=None):
-    """新增場次（強制綁定 user_id）"""
-    rounds = load_rounds()
     record = build_round_record(
-        players_stats,
-        note,
-        course_id,
-        tee_id,
-        user_id=user_id,
+        players_stats, note, course_id, tee_id, user_id=user_id
     )
-    rounds.append(record)
-    save_rounds(rounds)
+    upsert_round_dict(record)
     return record["id"]
 
 
@@ -520,25 +484,41 @@ def _new_round_id(prefix="round"):
 
 
 def get_in_progress_round_for_user(user_id):
-    for r in reversed(load_rounds()):
-        if (
-            round_belongs_to_user(r, user_id)
-            and r.get("status") == "in_progress"
-        ):
-            return r
-    return None
+    try:
+        from round_db import round_orm_to_dict
+        from round_models import GolfRound
+
+        gr = (
+            GolfRound.query.filter_by(creator_user_id=int(user_id), status="in_progress")
+            .order_by(GolfRound.updated_at.desc())
+            .first()
+        )
+        return round_orm_to_dict(gr) if gr else None
+    except Exception:
+        for r in reversed(load_rounds()):
+            if round_belongs_to_user(r, user_id) and r.get("status") == "in_progress":
+                return r
+        return None
 
 
 def abandon_in_progress_rounds(user_id):
-    """放棄使用者所有進行中草稿（開始全新場次時用）"""
-    rounds = load_rounds()
-    changed = False
-    for r in rounds:
-        if round_belongs_to_user(r, user_id) and r.get("status") == "in_progress":
-            r["status"] = "abandoned"
-            changed = True
-    if changed:
-        save_rounds(rounds)
+    from models import db
+
+    try:
+        from round_models import GolfRound
+
+        rows = GolfRound.query.filter_by(
+            creator_user_id=int(user_id), status="in_progress"
+        ).all()
+        for gr in rows:
+            gr.status = "abandoned"
+        if rows:
+            db.session.commit()
+    except Exception:
+        for r in load_rounds():
+            if round_belongs_to_user(r, user_id) and r.get("status") == "in_progress":
+                r["status"] = "abandoned"
+                upsert_round_dict(r)
 
 
 def upsert_in_progress_round(
@@ -552,38 +532,35 @@ def upsert_in_progress_round(
     hole_index=0,
     note="",
 ):
+    from models import db
+
     if user_id is None:
         raise ValueError("保存草稿必須提供 user_id")
     if not course_id or not tee_id:
         raise ValueError("保存草稿需要 course_id 與 tee_id")
 
-    rounds = load_rounds()
-    target = None
+    meta = course_meta_for_round(course_id, tee_id)
+    if not meta:
+        raise ValueError("找不到球場/發球台資料")
+
+    target_dict = None
     if round_id:
-        for r in rounds:
-            if r.get("id") == round_id and round_belongs_to_user(r, user_id):
-                target = r
-                break
-    elif round_id is None:
-        for r in reversed(rounds):
-            if round_belongs_to_user(r, user_id) and r.get("status") == "in_progress":
-                target = r
-                break
-    if target is None:
-        target = {
+        target_dict = load_round_dict_by_external_id(round_id)
+        if target_dict and not round_belongs_to_user(target_dict, user_id):
+            target_dict = None
+    if target_dict is None:
+        target_dict = get_in_progress_round_for_user(user_id)
+
+    now = datetime.now()
+    if target_dict is None:
+        target_dict = {
             "id": round_id or _new_round_id("draft"),
             "status": "in_progress",
             "user_id": int(user_id),
             "creator_user_id": int(user_id),
         }
-        rounds.append(target)
 
-    meta = course_meta_for_round(course_id, tee_id)
-    if not meta:
-        raise ValueError("找不到球場/發球台資料")
-
-    now = datetime.now()
-    target.update({
+    target_dict.update({
         "date": now.strftime("%Y-%m-%d"),
         "time": now.strftime("%H:%M"),
         "course_id": meta["course_id"],
@@ -601,28 +578,19 @@ def upsert_in_progress_round(
         "user_id": int(user_id),
         "creator_user_id": int(user_id),
     })
-    save_rounds(rounds)
-    return target
+    upsert_round_dict(target_dict)
+    return target_dict
 
 
 def complete_in_progress_round(round_id, user_id, note="", players_stats=None):
-    """
-    完成進行中場次。
-    players_stats：若前端已驗證並傳入（建議），優先使用，避免草稿缺最後一洞。
-    """
     from web_score import normalize_scores_list
 
-    rounds = load_rounds()
-    target = None
-    for r in rounds:
-        if r.get("id") == round_id and round_belongs_to_user(r, user_id):
-            target = r
-            break
-    if not target:
+    target = load_round_dict_by_external_id(round_id)
+    if not target or not round_belongs_to_user(target, user_id):
         return None, "找不到進行中的場次"
     if target.get("status") == "completed" and target.get("players"):
         sync_round_participant_fields(target, user_id)
-        save_rounds(rounds)
+        upsert_round_dict(target)
         return target, None
     if target.get("status") != "in_progress":
         return None, "此場次已完成或不可編輯"
@@ -638,18 +606,15 @@ def complete_in_progress_round(round_id, user_id, note="", players_stats=None):
                 return None, f"第 {i + 1} 位球友成績格式錯誤"
             final_stats.append(row)
         target["players"] = enrich_players_with_user_ids(
-            final_stats,
-            creator_user_id=user_id,
+            final_stats, creator_user_id=user_id
         )
     else:
         players = target.get("draft_players") or []
         draft_scores = target.get("draft_scores") or []
         if not players or not draft_scores:
             return None, "草稿資料不完整"
-
         if len(draft_scores) < len(players):
             return None, "草稿球友分數列數不一致"
-
         built_stats = []
         for i, name in enumerate(players):
             pname = str(name).strip() or f"球友{i + 1}"
@@ -661,14 +626,21 @@ def complete_in_progress_round(round_id, user_id, note="", players_stats=None):
             stats["name"] = pname
             built_stats.append(stats)
         target["players"] = enrich_players_with_user_ids(
-            built_stats,
-            creator_user_id=user_id,
+            built_stats, creator_user_id=user_id
         )
+
     target["note"] = (note or target.get("note") or "").strip()
     target["status"] = "completed"
     target.pop("draft_players", None)
     target.pop("draft_scores", None)
     target.pop("draft_hole_index", None)
     sync_round_participant_fields(target, user_id)
-    save_rounds(rounds)
+    upsert_round_dict(target)
     return target, None
+
+
+def init_round_storage():
+    """啟動時：從 rounds.json 遷移至資料庫（若存在且尚未匯入）。"""
+    n = migrate_rounds_json_to_database()
+    if n:
+        print(f"✅ 已將 {n} 場次從 rounds.json 遷移至資料庫")
