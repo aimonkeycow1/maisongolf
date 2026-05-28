@@ -24,10 +24,12 @@
          class="rounded-xl bg-gold px-4 py-2.5 text-sm font-bold text-fairway-dark shadow no-underline hover:brightness-110">
         立即錄分
       </a>
-      <a href="{{ url_for('auth.logout') }}"
-         class="rounded-xl border border-red-500/35 bg-red-900/25 px-4 py-2.5 text-sm font-semibold text-red-200 no-underline hover:bg-red-900/40">
-        登出
-      </a>
+      <form method="post" action="{{ url_for('auth.logout') }}" class="inline">
+        <button type="submit"
+                class="rounded-xl border border-red-500/35 bg-red-900/25 px-4 py-2.5 text-sm font-semibold text-red-200 hover:bg-red-900/40">
+          登出
+        </button>
+      </form>
     </div>
   </div>
 
@@ -267,10 +269,13 @@
         </a>
       </div>
 
-      <a href="{{ url_for('auth.logout') }}"
-         class="block w-full rounded-xl border border-red-500/35 bg-red-900/25 py-3.5 text-center text-sm font-bold text-red-200 no-underline transition hover:bg-red-900/40">
-        登出帳號
-      </a>
+      <form method="post" action="{{ url_for('auth.logout') }}">
+        <button type="submit"
+                class="block w-full rounded-xl border border-red-500/35 bg-red-900/25 py-3.5 text-center text-sm font-bold text-red-200 transition hover:bg-red-900/40">
+          登出帳號
+        </button>
+      </form>
+      <p class="mt-2 text-center text-[11px] text-green-200/50">在公用或他人手機使用後請務必登出。</p>
     </div>
   </div>
 </section>

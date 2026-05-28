@@ -57,17 +57,19 @@ from models import db, User
 from auth import auth_bp
 from friends import friends_bp
 from user_migrations import migrate_users_auth_columns
+from security_config import apply_security_config
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 85 * 1024 * 1024
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(BASE_DIR, "app.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+apply_security_config(app)
 
 db.init_app(app)
 
 login_manager = LoginManager(app)
 login_manager.login_view = "auth.login"
+login_manager.session_protection = "strong"
 
 
 @login_manager.user_loader
@@ -76,6 +78,17 @@ def load_user(user_id):
         return User.query.get(int(user_id))
     except (TypeError, ValueError):
         return None
+
+
+@app.after_request
+def _prevent_cached_private_pages(response):
+    """避免代理/瀏覽器快取已登入頁面，減少他人裝置看到舊畫面。"""
+    if current_user.is_authenticated:
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Vary"] = "Cookie"
+    return response
+
 
 def _current_user_rounds():
     """目前登入使用者的全部場次（資料隔離入口）"""
@@ -433,7 +446,7 @@ if __name__ == "__main__":
     print("=" * 50)
     print(f"  本機打開：  http://127.0.0.1:{port}")
     print(f"  手機同 WiFi： http://{ip}:{port}")
-    print("  把第二條網址貼到 WhatsApp 群即可分享")
+    print("  把第二條網址貼到 WhatsApp 群即可分享（訪客需各自登入，不會共用帳號）")
     print("  按 Ctrl+C 停止伺服器")
     print("=" * 50 + "\n")
     app.run(host="0.0.0.0", port=port, debug=False)

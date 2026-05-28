@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import unicodedata
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import func
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -52,6 +52,21 @@ def _username_taken(norm_username: str, exclude_id: int | None = None) -> bool:
     return q.first() is not None
 
 
+def _remember_from_form() -> bool:
+    return (request.form.get("remember") or "").strip().lower() in (
+        "1",
+        "on",
+        "true",
+        "yes",
+    )
+
+
+def _login_secure(user: User, *, remember: bool = False) -> None:
+    """登入前清空舊 Session，降低共用裝置／Session 固定風險。"""
+    session.clear()
+    login_user(user, remember=remember)
+
+
 def _find_user_for_login(identifier: str) -> User | None:
     """球友名稱登入；舊帳號仍可用 Email 登入。"""
     u = _normalize_username(identifier)
@@ -96,7 +111,7 @@ def register():
             )
             db.session.add(user)
             db.session.commit()
-            login_user(user, remember=True)
+            _login_secure(user, remember=False)
             flash(f"歡迎加入，{nu}！", "ok")
             return redirect(url_for("index"))
 
@@ -126,7 +141,7 @@ def login():
                 user.email_verified = True
                 user.email_verify_token = None
                 db.session.commit()
-            login_user(user, remember=True)
+            _login_secure(user, remember=_remember_from_form())
             next_url = (request.args.get("next") or "").strip()
             if next_url.startswith("/") and not next_url.startswith("//"):
                 return redirect(next_url)
@@ -208,8 +223,9 @@ def profile():
     )
 
 
-@auth_bp.route("/logout")
+@auth_bp.route("/logout", methods=["GET", "POST"])
 def logout():
     if current_user.is_authenticated:
         logout_user()
+    session.clear()
     return redirect(url_for("auth.login"))
