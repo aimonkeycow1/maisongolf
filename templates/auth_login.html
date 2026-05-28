@@ -4,7 +4,7 @@
 
 <section class="mx-auto max-w-md rounded-2xl bg-black/30 p-6 shadow-xl ring-1 ring-white/10 sm:p-8">
   <h1 class="text-xl font-bold text-white sm:text-2xl">登入 Maison Golf</h1>
-  <p class="mt-1 text-sm text-green-200/70">使用球友名稱與密碼登入。</p>
+  <p class="mt-1 text-sm text-green-200/70">使用球友名稱與密碼登入；舊帳號也可用註冊 Email。</p>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -22,7 +22,9 @@
     <div>
       <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gold-light">球友名稱</label>
       <input type="text" name="username" required autocomplete="username"
-             class="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-green-200/40 focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/40">
+             value="{{ login_identifier or '' }}"
+             class="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-green-200/40 focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/40"
+             placeholder="球友名稱或 Email">
     </div>
     <div>
       <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gold-light">密碼</label>

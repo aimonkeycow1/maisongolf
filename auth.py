@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, current_user
@@ -15,7 +16,16 @@ USERNAME_RE = re.compile(r"^[\w.\-]{2,32}$", re.UNICODE)
 
 
 def _normalize_username(raw: str) -> str:
-    return (raw or "").strip()
+    return unicodedata.normalize("NFKC", (raw or "").strip())
+
+
+def _login_identifier_from_form() -> str:
+    """相容舊版登入表單的 email 欄位與密碼管理器自動填入。"""
+    for key in ("username", "email", "identifier"):
+        val = _normalize_username(request.form.get(key) or "")
+        if val:
+            return val
+    return ""
 
 
 def _validate_username(username: str) -> tuple[str | None, str | None]:
@@ -95,21 +105,35 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for("index"))
 
+    login_identifier = ""
+
     if request.method == "POST":
-        username = request.form.get("username") or ""
+        login_identifier = _login_identifier_from_form()
         password = request.form.get("password") or ""
 
-        user = _find_user_for_login(username)
-        if not user or not check_password_hash(user.password_hash, password):
-            flash("球友名稱或密碼錯誤", "error")
+        user = _find_user_for_login(login_identifier)
+        if not user:
+            flash("找不到此球友名稱或 Email，請確認後再試", "error")
+        elif not (user.password_hash or "").strip():
+            flash("此帳號無法使用密碼登入，請聯絡管理員", "error")
+        elif not check_password_hash(user.password_hash, password):
+            flash("密碼錯誤，請再試一次", "error")
         else:
+            if not user.email_verified:
+                user.email_verified = True
+                user.email_verify_token = None
+                db.session.commit()
             login_user(user, remember=True)
             next_url = (request.args.get("next") or "").strip()
             if next_url.startswith("/") and not next_url.startswith("//"):
                 return redirect(next_url)
             return redirect(url_for("index"))
 
-    return render_template("auth_login.html", page="auth")
+    return render_template(
+        "auth_login.html",
+        page="auth",
+        login_identifier=login_identifier,
+    )
 
 
 @auth_bp.route("/logout")
