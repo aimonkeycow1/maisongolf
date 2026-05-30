@@ -20,12 +20,22 @@ SIM_PASSWORD = "golf1234"
 
 
 def dev_tools_enabled() -> bool:
-    """本機預設開啟；Render 僅在明確設定 DEV_TEST_MODE=1 時開啟。"""
-    if os.environ.get("DEV_TEST_MODE", "").strip() == "0":
-        return False
-    if os.environ.get("DEV_TEST_MODE", "").strip() == "1":
+    """
+    安全策略：預設關閉。
+    - 本機開發：設定 DEV_TEST_MODE=1 開啟（或不設 DATABASE_URL 時自動開啟）
+    - 線上環境：永遠關閉，除非明確設 DEV_TEST_MODE=1
+    """
+    explicit = os.environ.get("DEV_TEST_MODE", "").strip()
+    if explicit == "1":
         return True
-    return not is_production_hosting()
+    if explicit == "0":
+        return False
+    # 未設 DEV_TEST_MODE：只有在本機（無 DATABASE_URL 且無 RENDER）才自動開啟
+    if is_production_hosting():
+        return False
+    if os.environ.get("DATABASE_URL"):   # 設了外部 DB → 視為生產
+        return False
+    return True  # 純本機開發（無 DB_URL、無 RENDER）
 
 
 def _require_dev():
