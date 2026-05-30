@@ -142,12 +142,13 @@ ensure_avatar_upload_dir()
 app.register_blueprint(auth_bp)
 app.register_blueprint(friends_bp)
 app.register_blueprint(challenges_bp)
-app.register_blueprint(dev_bp)
+if dev_tools_enabled():
+    app.register_blueprint(dev_bp)
 
 
 @app.context_processor
 def inject_dev_tools():
-    return {"dev_tools_enabled": dev_tools_enabled}
+    return {"dev_tools_enabled": dev_tools_enabled()}
 
 def _init_database():
     """僅建立缺少的資料表與欄位，絕不 drop 或清空既有資料。"""
