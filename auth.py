@@ -310,15 +310,27 @@ def profile():
 
 @auth_bp.route("/logout", methods=["GET", "POST"])
 def logout():
-    """登出並清除 Session /「記住我」Cookie，避免無法切換測試帳戶。"""
+    """
+    登出並徹底清除 Session /「記住我」Cookie。
+    支援 GET（直接訪問 /logout 網址即可登出），方便在任何裝置強制清除登入狀態。
+    """
     if current_user.is_authenticated:
         logout_user()
     session.clear()
     resp = make_response(redirect(url_for("auth.login")))
-    # 明確刪除 Cookie（部分瀏覽器在 remember 開啟時僅 logout_user 仍會自動登回）
-    for key in (
+    # 明確清除所有已知 Session/Remember Cookie（路徑 / 和 /auth 都清）
+    cookie_names = [
         current_app.config.get("SESSION_COOKIE_NAME", "session"),
         current_app.config.get("REMEMBER_COOKIE_NAME", "remember_token"),
-    ):
-        resp.set_cookie(key, "", expires=0, max_age=0)
+        "session",
+        "remember_token",
+    ]
+    for key in set(cookie_names):
+        for path in ("/", "/auth"):
+            resp.set_cookie(
+                key, "", expires=0, max_age=0, path=path,
+                httponly=True,
+                samesite=current_app.config.get("SESSION_COOKIE_SAMESITE", "Lax"),
+            )
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
     return resp

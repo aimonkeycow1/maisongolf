@@ -101,11 +101,21 @@ def load_user(user_id):
 
 @app.after_request
 def _prevent_cached_private_pages(response):
-    """避免代理/瀏覽器快取已登入頁面，減少他人裝置看到舊畫面。"""
+    """
+    所有回應都加 Vary: Cookie，確保 Render/CDN 代理依 Cookie 分別快取，
+    不會把已登入用戶的 HTML 送給下一個訪客。
+    已登入頁面進一步加 no-store 防止任何形式的快取。
+    """
+    response.headers["Vary"] = "Cookie"
     if current_user.is_authenticated:
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
         response.headers["Pragma"] = "no-cache"
-        response.headers["Vary"] = "Cookie"
+    else:
+        # 未登入頁面（登入頁、Landing）也不快取，確保跳轉後是新鮮狀態
+        existing_cc = response.headers.get("Cache-Control", "")
+        if "no-store" not in existing_cc:
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
     return response
 
 

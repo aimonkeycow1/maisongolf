@@ -3,6 +3,35 @@
 {% block title %}首頁 · Maison Golf{% endblock %}
 {% block content %}
 
+{# ── 非本人提示條（訪客/公用裝置防護）── #}
+<div id="not-you-bar"
+     class="mb-4 hidden items-center justify-between gap-3 rounded-xl bg-amber-900/60 px-4 py-2.5 ring-1 ring-amber-400/30 text-sm text-amber-200">
+  <span>⚠️ 這不是你的帳戶？</span>
+  <a href="/logout"
+     class="rounded-lg bg-amber-500/80 px-3 py-1 font-semibold text-white hover:bg-amber-400 active:scale-95 transition">
+    立即登出
+  </a>
+</div>
+<script>
+  /* 首次載入：顯示「不是你？」提示條 3 秒，讓用戶確認帳戶 */
+  (function () {
+    var key = "mg_seen_{{ current_user.id }}";
+    if (!sessionStorage.getItem(key)) {
+      sessionStorage.setItem(key, "1");
+      var bar = document.getElementById("not-you-bar");
+      if (bar) {
+        bar.classList.remove("hidden");
+        bar.classList.add("flex");
+        setTimeout(function () {
+          bar.style.transition = "opacity 0.5s";
+          bar.style.opacity = "0";
+          setTimeout(function () { bar.classList.add("hidden"); }, 500);
+        }, 6000);
+      }
+    }
+  })();
+</script>
+
 {# ── 歡迎區 ── #}
 <section class="mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-fairway/30 via-black/30 to-black/50 p-5 ring-1 ring-white/10 sm:p-7">
   <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

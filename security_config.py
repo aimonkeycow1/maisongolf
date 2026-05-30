@@ -40,6 +40,6 @@ def apply_security_config(app) -> None:
         REMEMBER_COOKIE_HTTPONLY=True,
         REMEMBER_COOKIE_SAMESITE="Lax",
         REMEMBER_COOKIE_SECURE=use_secure_cookies,
-        REMEMBER_COOKIE_DURATION=timedelta(days=14),
-        PERMANENT_SESSION_LIFETIME=timedelta(hours=12),
+        REMEMBER_COOKIE_DURATION=timedelta(days=1),   # 僅 1 天，防止公用設備長期留存他人登入
+        PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
     )
