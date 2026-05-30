@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}測試控制台 · Maison Golf{% endblock %}
+{% block content %}
+
+<section class="reveal mb-6">
+  <p class="text-xs font-bold uppercase tracking-[0.25em] text-champ-light/70">Dev · Local Only</p>
+  <h1 class="mt-1 font-brand text-3xl font-bold text-white">帳戶測試控制台</h1>
+  <p class="mt-2 text-sm text-green-200/65">
+    本機專用。可切換<strong class="text-champ-light">訪客（不登入）</strong>，或一鍵登入 sim01–sim50 做手動測試。
+    密碼統一：<code class="rounded bg-black/40 px-1.5 py-0.5 text-champ-light">{{ sim_password }}</code>
+  </p>
+  {% if current_username %}
+  <p class="mt-3 rounded-xl border border-gold/35 bg-gold/10 px-4 py-3 text-sm text-gold-light">
+    目前登入：<strong>{{ current_username }}</strong>
+  </p>
+  {% else %}
+  <p class="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-100">
+    目前狀態：<strong>訪客（未登入）</strong>
+  </p>
+  {% endif %}
+</section>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="mb-4 space-y-2">
+  {% for category, message in messages %}
+  <p class="rounded-xl px-4 py-3 text-sm {% if category == 'error' %}bg-red-900/40 text-red-100{% else %}bg-emerald-900/40 text-emerald-100{% endif %}">{{ message }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<div class="mb-8 flex flex-wrap gap-3">
+  <a href="{{ url_for('dev.guest_mode') }}"
+     class="inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-900/30 px-5 py-3 text-sm font-bold text-emerald-100 no-underline transition hover:bg-emerald-800/40">
+    🌐 訪客模式（不登入）
+  </a>
+  <a href="{{ url_for('auth.logout') }}"
+     class="inline-flex items-center gap-2 rounded-xl border border-red-500/35 bg-red-900/25 px-5 py-3 text-sm font-bold text-red-200 no-underline transition hover:bg-red-900/40">
+    登出並清除 Cookie
+  </a>
+  <a href="{{ url_for('index') }}"
+     class="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-green-100 no-underline hover:bg-white/10">
+    前往首頁
+  </a>
+</div>
+
+<section class="reveal mb-8">
+  <h2 class="mb-4 text-lg font-bold text-white">模擬帳戶 sim01 – sim50（一鍵登入）</h2>
+  <div class="grid grid-cols-5 gap-2 sm:grid-cols-10">
+    {% for u in sim_users %}
+    <a href="{{ url_for('dev.login_as', username=u.username) }}"
+       class="rounded-lg border px-2 py-2 text-center text-xs font-bold no-underline transition
+              {% if current_username == u.username %}border-gold/60 bg-gold/25 text-gold-light{% else %}border-white/10 bg-black/25 text-green-100 hover:border-champ/40 hover:bg-champ/10{% endif %}">
+      {{ u.username }}
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+{% if other_users %}
+<section class="reveal rounded-2xl border border-white/10 bg-black/25 p-5 ring-1 ring-white/10">
+  <h2 class="mb-3 text-sm font-bold text-green-200/80">其他本機帳戶（含 高爾夫刀 等）</h2>
+  <div class="flex flex-wrap gap-2">
+    {% for u in other_users %}
+    <a href="{{ url_for('dev.login_as', username=u.username) }}"
+       class="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-green-200/90 no-underline hover:border-champ/35 hover:text-champ-light">
+      {{ u.username }}
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<p class="mt-8 text-center text-xs text-green-200/45">
+  正式上線環境預設關閉此頁。關閉方式：設定環境變數 <code>DEV_TEST_MODE=0</code>
+</p>
+
+{% endblock %}

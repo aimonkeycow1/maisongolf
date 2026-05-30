@@ -155,6 +155,12 @@
       </ul>
     </article>
     <div id="hole-inputs" class="mt-4 space-y-6"></div>
+    {# 實時對決板：顯示各球手目前總桿 #}
+    <div id="live-standings" class="mt-5 hidden">
+      <p class="mb-2 text-[11px] font-bold uppercase tracking-widest text-fairway">⚔️ 目前比分</p>
+      <div id="live-standings-rows" class="grid gap-2"></div>
+    </div>
+
     <div class="mt-6 flex flex-wrap gap-3">
       <button type="button" id="btn-prev" disabled
               class="flex-1 min-w-[120px] rounded-xl border border-green-200 bg-green-50 py-3 font-semibold text-fairway-dark disabled:opacity-40">
@@ -606,6 +612,7 @@ const MY_USERNAME = {{ current_username|tojson }};
 
     el("btn-prev").disabled = holeIndex === 0;
     el("btn-next").textContent = holeIndex === HOLES - 1 ? "查看總成績 →" : "下一洞 →";
+    updateLiveStandings();
   }
 
   function setScore(pi, val) {
@@ -621,6 +628,61 @@ const MY_USERNAME = {{ current_username|tojson }};
       hint.textContent = scoreLabel(diff);
       hint.className = `score-hint rounded-full px-3 py-1 text-sm font-semibold ${SCORE_TW[key]}`;
     }
+    updateLiveStandings();
+  }
+
+  function updateLiveStandings() {
+    const container = document.getElementById("live-standings");
+    const rows = document.getElementById("live-standings-rows");
+    if (!container || !rows || !players || !activeTee) return;
+
+    // 計算各球手：已填洞數 + 目前總桿 + to-par
+    const entries = players.map((name, pi) => {
+      let total = 0, filled = 0;
+      scores[pi].forEach((s, hi) => {
+        if (s !== null && s >= 1) { total += s; filled++; }
+      });
+      const parSoFar = activeTee.pars.slice(0, filled).reduce((a, b) => a + b, 0);
+      const toPar = filled > 0 ? total - parSoFar : null;
+      return { name, total, filled, toPar, pi };
+    });
+
+    // 只有至少一人有成績才顯示
+    if (entries.every(e => e.filled === 0)) { container.classList.add("hidden"); return; }
+    container.classList.remove("hidden");
+
+    // 排序：已打洞者按 to-par 排；未打者排末
+    const sorted = [...entries].sort((a, b) => {
+      if (a.filled === 0 && b.filled === 0) return 0;
+      if (a.filled === 0) return 1;
+      if (b.filled === 0) return -1;
+      return a.toPar - b.toPar;
+    });
+
+    rows.innerHTML = sorted.map((e, rank) => {
+      const toParStr = e.toPar === null ? "—"
+        : e.toPar === 0 ? "E"
+        : e.toPar > 0 ? `+${e.toPar}`
+        : String(e.toPar);
+      const toParColor = e.toPar === null ? "text-green-700/50"
+        : e.toPar <= -2 ? "text-blue-700 font-black"
+        : e.toPar === -1 ? "text-green-700 font-bold"
+        : e.toPar === 0 ? "text-green-800 font-semibold"
+        : e.toPar === 1 ? "text-orange-600"
+        : "text-red-600";
+      const crown = rank === 0 && e.filled > 0 ? "👑 " : "";
+      const holesLabel = e.filled > 0 ? `${e.filled}洞` : "未開始";
+      const bg = rank === 0 && e.filled > 0
+        ? "bg-gradient-to-r from-gold/20 to-transparent border-gold/40"
+        : "bg-green-50 border-green-100";
+      return `<div class="flex items-center gap-3 rounded-xl border ${bg} px-4 py-2.5">
+        <span class="w-5 text-sm font-bold text-fairway-dark text-center">${rank + 1}</span>
+        <span class="flex-1 truncate text-sm font-bold text-fairway-dark">${crown}${e.name}</span>
+        <span class="text-xs text-green-600/70">${holesLabel}</span>
+        <span class="w-14 text-right text-sm font-bold text-fairway-dark">${e.filled > 0 ? e.total : "—"}</span>
+        <span class="w-10 text-right text-sm ${toParColor}">${toParStr}</span>
+      </div>`;
+    }).join("");
   }
 
   function allFilled() {

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maison Golf — B+ · 香檳金 · 為你的客群特化</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Playfair+Display:wght@600;700&family=Noto+Serif+TC:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = { theme: { extend: {
+  colors: {
+    night:'#07150e', moss:'#102a1d',
+    champ:{DEFAULT:'#d9b78c', light:'#f6e7c5', bright:'#fffaf0'},
+    rose:'#e3b7a0', gold:{DEFAULT:'#ca8a04', light:'#eab308'}
+  },
+  fontFamily: { display:['"Playfair Display"','"Cormorant Garamond"','serif'], serif:['"Noto Serif TC"','serif'], sans:['"Noto Sans TC"','sans-serif'] },
+}}};
+</script>
+<style>
+  body{background:#07150e}
+  .shimmer{background:linear-gradient(110deg,#d9b78c 18%,#f6e7c5 46%,#fffaf0 52%,#f6e7c5 58%,#d9b78c 82%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sh 6s linear infinite}
+  @keyframes sh{to{background-position:-140% 0}}
+  .glass{background:linear-gradient(135deg,rgba(255,250,240,.10),rgba(255,255,255,.03));backdrop-filter:blur(18px) saturate(135%);-webkit-backdrop-filter:blur(18px) saturate(135%);border:1px solid rgba(233,212,173,.22);box-shadow:0 34px 80px -34px rgba(0,0,0,.72),inset 0 1px 0 rgba(255,250,240,.10)}
+  .grain:after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.045;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .reveal{opacity:0;transform:translateY(26px) scale(.985);animation:rv 1s cubic-bezier(.16,1,.3,1) forwards}
+  .reveal.d1{animation-delay:.14s}.reveal.d2{animation-delay:.28s}.reveal.d3{animation-delay:.42s}
+  @keyframes rv{to{opacity:1;transform:none}}
+  .hairline{height:1px;background:linear-gradient(90deg,transparent,rgba(233,212,173,.5),transparent)}
+  .glow-cta{animation:gl 3s ease-in-out infinite}
+  @keyframes gl{0%,100%{box-shadow:0 10px 34px -8px rgba(217,183,140,.35)}50%{box-shadow:0 10px 34px -8px rgba(217,183,140,.35),0 0 30px 4px rgba(246,231,197,.35)}}
+  .tilt{transition:transform .5s cubic-bezier(.16,1,.3,1)}
+  .tilt:hover{transform:translateY(-6px) rotate(-.6deg)}
+  .hero-aura{animation:aura 24s ease-in-out infinite alternate}
+  @keyframes aura{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(-1.5%,1%,0) scale(1.06)}}
+  @media(prefers-reduced-motion:reduce){.shimmer,.reveal,.glow-cta,.hero-aura{animation:none}.reveal{opacity:1;transform:none}}
+</style>
+</head>
+<body class="grain font-sans text-champ-light antialiased">
+
+<!-- Hero：簡約高級感背景（深綠漸層 + 柔和香檳光暈 + 細顆粒） -->
+<section class="relative min-h-[92vh] overflow-hidden" style="background:linear-gradient(180deg,#0a2317 0%,#08190f 55%,#07150e 100%)">
+  <!-- 柔和香檳光暈（緩慢漂移，營造高級氛圍） -->
+  <div class="absolute inset-0 hero-aura" style="background:radial-gradient(46rem 32rem at 74% 14%,rgba(227,183,160,.20),transparent 62%),radial-gradient(40rem 30rem at 18% 86%,rgba(34,99,64,.30),transparent 65%)"></div>
+  <!-- 極細金線地平線，點到為止的精緻 -->
+  <div class="absolute left-1/2 top-[58%] h-px w-[78%] max-w-3xl -translate-x-1/2" style="background:linear-gradient(90deg,transparent,rgba(233,212,173,.35),transparent)"></div>
+  <!-- 底部柔暈 -->
+  <div class="absolute inset-x-0 bottom-0 h-40" style="background:linear-gradient(180deg,transparent,#07150e)"></div>
+
+  <header class="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-6 py-7">
+    <p class="font-display text-2xl font-700 tracking-wide text-champ-light">Maison Golf</p>
+    <a href="#" class="rounded-full border border-champ/30 bg-black/25 px-5 py-2 text-sm font-600 text-champ-light backdrop-blur hover:bg-white/10">登入</a>
+  </header>
+
+  <div class="relative z-10 mx-auto flex max-w-6xl flex-col items-center px-6 pt-[9vh] text-center sm:pt-[12vh]">
+    <p class="reveal mb-5 inline-flex rounded-full border border-champ/40 bg-black/35 px-4 py-1.5 text-[11px] font-600 uppercase tracking-[.28em] text-champ backdrop-blur">A Round Worth Sharing</p>
+    <h1 class="reveal d1 max-w-4xl font-display text-5xl font-700 leading-[1.06] text-white drop-shadow-2xl sm:text-7xl">
+      讓每一場球，<br><span class="shimmer">都美得值得被看見。</span>
+    </h1>
+    <p class="reveal d2 mx-auto mt-6 max-w-xl font-serif text-lg leading-relaxed text-champ-light/90 sm:text-xl">
+      優雅記分、AI 教練講評，<br class="hidden sm:block">
+      再為你生成一張捨不得不發的戰報。
+    </p>
+    <div class="reveal d3 mt-9 flex flex-col items-center gap-4 sm:flex-row">
+      <a href="#" class="glow-cta rounded-full bg-gradient-to-r from-champ to-champ-light px-10 py-4 text-lg font-700 text-night transition hover:brightness-105">免費加入 · 開始記分</a>
+      <a href="#share" class="text-base font-600 text-champ-light underline decoration-champ/50 underline-offset-4 hover:text-white">看看戰報長怎樣 ↓</a>
+    </div>
+  </div>
+</section>
+
+<!-- 第二屏（前置）：分享戰報 — 直擊分享慾 -->
+<section id="share" class="mx-auto max-w-6xl px-6 py-20 sm:py-24">
+  <div class="grid items-center gap-12 lg:grid-cols-2">
+    <!-- 手機戰報 mockup -->
+    <div class="reveal order-2 flex justify-center lg:order-1">
+      <div class="tilt relative w-[16.5rem] overflow-hidden rounded-[2.2rem] border-[6px] border-black/60 bg-night shadow-2xl sm:w-[18rem]">
+        <div class="relative h-[34rem]">
+          <div class="absolute inset-0 bg-cover bg-center" style="background-image:url('/static/img/kl-gcc-east.jpg')"></div>
+          <div class="absolute inset-0" style="background:linear-gradient(180deg,rgba(7,21,14,.15),rgba(7,21,14,.85))"></div>
+          <!-- 疊字戰報 -->
+          <div class="absolute inset-x-0 top-0 flex items-center justify-between px-5 pt-5">
+            <span class="font-display text-base text-champ-light">Maison Golf</span>
+            <span class="rounded-full bg-black/40 px-2.5 py-0.5 text-[10px] font-600 tracking-wide text-champ backdrop-blur">2026.05.30</span>
+          </div>
+          <div class="absolute inset-x-0 bottom-0 p-6">
+            <p class="text-[11px] font-600 uppercase tracking-[.2em] text-champ/90">Today's Round</p>
+            <p class="mt-1 font-display text-7xl font-700 leading-none text-white drop-shadow-lg">78</p>
+            <p class="mt-1 text-sm font-600 text-champ-light">+6 · 個人最佳 · 1 birdie</p>
+            <div class="mt-4 h-px w-full bg-white/15"></div>
+            <p class="mt-3 text-xs leading-relaxed text-white/85">「第 7 洞驚險救 par，後九找回節奏。」</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 文案 + 分享渠道 -->
+    <div class="reveal d1 order-1 lg:order-2">
+      <p class="text-xs font-600 uppercase tracking-[.25em] text-champ">One Tap · Share</p>
+      <h2 class="mt-3 font-display text-3xl font-700 leading-tight text-white sm:text-5xl">打完最後一洞，<br>戰報已經幫你<span class="shimmer">剪好</span>。</h2>
+      <p class="mt-5 max-w-md font-serif text-base leading-relaxed text-champ-light/85">
+        自動套版的精美戰報與短片，總桿、比 Par、個人最佳一目了然。
+        一鍵就能發到你常用的地方，讓球友看見你今天的高光。
+      </p>
+      <div class="mt-7 flex flex-wrap gap-3">
+        {% for s in [('小紅書','bg-[#fe2c55]/15 ring-[#fe2c55]/40 text-rose'),('IG','bg-[#e1306c]/15 ring-[#e1306c]/40 text-rose'),('抖音','bg-white/10 ring-white/25 text-champ-light'),('WhatsApp','bg-[#25d366]/15 ring-[#25d366]/40 text-emerald-200')] %}
+        <span class="rounded-xl px-4 py-2 text-sm font-600 ring-1 {{ s[1] }}">{{ s[0] }}</span>
+        {% endfor %}
+      </div>
+      <a href="#" class="mt-8 inline-flex items-center gap-2 rounded-full border border-champ/40 px-7 py-3 text-base font-600 text-champ-light transition hover:bg-champ/10">免費生成我的第一張戰報 →</a>
+    </div>
+  </div>
+</section>
+
+<div class="mx-auto max-w-5xl px-6"><div class="hairline"></div></div>
+
+<!-- 三大價值（精緻留白、襯線） -->
+<section class="mx-auto max-w-6xl px-6 py-20">
+  <h2 class="reveal mb-12 text-center font-display text-3xl font-700 text-white sm:text-4xl">不只是記分，是你的高球儀式</h2>
+  <div class="grid gap-8 sm:grid-cols-3">
+    {% for it in [
+      ('⛳','優雅記分','多人同組即時記錄，打完自動成卡，介面細緻得像精品會所。'),
+      ('✨','私人 AI 教練','點名失分洞、找出弱項，給你下一場可執行的策略。'),
+      ('🏅','榮譽收藏','球手等級、連勝與成就，化作可分享、可回味的個人榮譽。')
+    ] %}
+    <div class="reveal glass tilt rounded-3xl p-7 text-center">
+      <span class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-champ/15 text-3xl ring-1 ring-champ/40">{{ it[0] }}</span>
+      <h3 class="font-display text-xl font-700 text-white">{{ it[1] }}</h3>
+      <p class="mt-2.5 font-serif text-sm leading-relaxed text-champ-light/80">{{ it[2] }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- 範例記分卡（暖金玻璃） -->
+<section class="mx-auto max-w-3xl px-6 pb-20">
+  <p class="reveal mb-3 text-center text-[11px] font-600 uppercase tracking-[.25em] text-champ">Sample Scorecard</p>
+  <div class="reveal d1 glass rounded-3xl p-5 sm:p-6">
+    <div class="mb-4 flex items-center justify-between">
+      <span class="font-display text-lg text-white">示範球手</span>
+      <span class="font-display text-3xl font-700 text-champ-light">78 <span class="text-sm font-sans text-champ-light/60">+6</span></span>
+    </div>
+    {% set pars=[4,5,3,4,4,3,5,4,4,4,3,5,4,4,3,4,5,4] %}{% set sc=[4,4,3,5,4,3,6,5,4,4,4,5,4,5,3,4,5,4] %}
+    {% for h in [(0,9,'OUT'),(9,18,'IN')] %}
+    <div class="mb-1.5 flex gap-1">
+      {% for i in range(h[0],h[1]) %}{% set d=sc[i]-pars[i] %}
+      <div class="flex flex-1 flex-col items-center">
+        <span class="text-[9px] text-champ-light/40">{{ i+1 }}</span>
+        <span class="mt-0.5 flex h-8 w-full items-center justify-center rounded-md text-sm font-700
+          {% if d<=-1 %}bg-emerald-500 text-white{% elif d==0 %}bg-champ-light text-night{% elif d==1 %}bg-rose text-night{% else %}bg-red-600 text-white{% endif %}">{{ sc[i] }}</span>
+      </div>{% endfor %}
+      <div class="flex w-10 flex-col items-center justify-end"><span class="text-[9px] text-champ/70">{{ h[2] }}</span><span class="mt-0.5 flex h-8 items-center text-sm font-700 text-white">{{ sc[h[0]:h[1]]|sum }}</span></div>
+    </div>{% endfor %}
+  </div>
+</section>
+
+<!-- 結尾 CTA -->
+<section class="mx-auto mb-16 max-w-5xl px-6">
+  <div class="reveal overflow-hidden rounded-[2rem] border border-champ/25 px-8 py-14 text-center" style="background:radial-gradient(40rem 20rem at 50% 0%,rgba(227,183,160,.18),transparent),linear-gradient(180deg,rgba(16,42,29,.8),rgba(7,21,14,.9))">
+    <h2 class="font-display text-3xl font-700 text-white sm:text-5xl">你的下一場，<span class="shimmer">值得被記住</span>。</h2>
+    <p class="mt-4 font-serif text-base text-champ-light/80">免費加入 Maison Golf，第一場就拿到 AI 講評與專屬戰報。</p>
+    <a href="#" class="glow-cta mt-8 inline-block rounded-full bg-gradient-to-r from-champ to-champ-light px-12 py-4 text-lg font-700 text-night transition hover:brightness-105">免費加入 →</a>
+    <p class="mt-4 text-xs text-champ-light/50">免費使用 · 不需信用卡 · 30 秒開始</p>
+  </div>
+</section>
+
+<footer class="border-t border-champ/15 py-10 text-center">
+  <p class="font-display text-xl text-champ-light">Maison Golf</p>
+  <p class="mt-1 text-xs text-champ-light/50">B+ · 香檳金 · 為「成熟男 × 年輕女」客群特化</p>
+</footer>
+
+</body>
+</html>

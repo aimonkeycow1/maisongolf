@@ -12,3 +12,9 @@ static/fonts/NotoSansTC-Regular.otf
 app.db
 data/
 *.db-journal
+
+# 開發 / 模擬工具（不上線）
+simulate_users.py
+sim_report.json
+logs_devserver.txt
+rounds.json

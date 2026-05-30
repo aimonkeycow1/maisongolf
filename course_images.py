@@ -126,7 +126,10 @@ def ensure_course_images():
             shutil.copy2(src, dst)
             continue
         if os.path.isfile(HERO_JPG) and _is_placeholder(dst):
-            shutil.copy2(HERO_JPG, dst)
+            try:
+                shutil.copy2(HERO_JPG, dst)
+            except shutil.SameFileError:
+                pass  # src == dst（新球場使用 hero.jpg 作為佔位圖）
 
     # 首頁預設 hero（南場第 12 洞）
     south_src = os.path.join(STATIC_IMG, "ksc-south.jpg")

@@ -83,6 +83,32 @@ class User(UserMixin, db.Model):
         return self.email
 
 
+class Challenge(db.Model):
+    """差點挑戰：邀請好友在 30 天內比誰進步更多（差點降幅更大）"""
+
+    __tablename__ = "challenges"
+
+    id = db.Column(db.Integer, primary_key=True)
+    challenger_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    challenged_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    status = db.Column(db.String(20), nullable=False, default="pending", index=True)
+    # pending / accepted / rejected / completed / expired
+
+    # 起始差點快照（接受時記錄）
+    start_handicap_challenger = db.Column(db.Float, nullable=True)
+    start_handicap_challenged = db.Column(db.Float, nullable=True)
+
+    # 挑戰期間（接受後的 30 天）
+    start_date = db.Column(db.DateTime, nullable=True)
+    end_date = db.Column(db.DateTime, nullable=True)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    challenger = db.relationship("User", foreign_keys=[challenger_id], backref="challenges_sent")
+    challenged = db.relationship("User", foreign_keys=[challenged_id], backref="challenges_received")
+
+
 class FriendRequest(db.Model):
     """好友邀請：接受後雙方可查看彼此歷史成績"""
 

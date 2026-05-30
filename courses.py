@@ -40,6 +40,30 @@ _KSC_NORTH_WHITE = [
     450, 166, 508, 303, 168, 344, 308, 551, 373,
 ]
 
+# —— 清水灣高爾夫球場 · Par 70 · 白梯 5533 碼（官網記分卡）——
+_CWBGC_PARS = [4, 3, 4, 4, 3, 4, 5, 4, 3, 4, 5, 4, 3, 4, 4, 3, 5, 4]
+_CWBGC_HCP  = [9, 17, 1, 11, 15, 5, 7, 3, 13, 4, 12, 2, 18, 8, 10, 16, 6, 14]
+_CWBGC_WHITE = [
+    350, 140, 400, 330, 130, 340, 490, 370, 145,
+    375, 480, 365, 125, 355, 345, 160, 460, 373,
+]
+_CWBGC_RED = [
+    305, 115, 350, 285, 110, 285, 450, 320, 115,
+    310, 430, 305, 100, 300, 300, 130, 405, 320,
+]
+
+# —— 香港哥爾夫球會 · 粉嶺新場（Eden） · Par 70 · 白梯 5919 碼（官網記分卡）——
+_HKGC_EDEN_PARS = [4, 3, 4, 4, 5, 4, 3, 4, 4, 5, 3, 4, 4, 3, 5, 4, 3, 4]
+_HKGC_EDEN_HCP  = [7, 17, 3, 11, 5, 13, 15, 1, 9, 6, 14, 2, 12, 18, 4, 8, 16, 10]
+_HKGC_EDEN_WHITE = [
+    335, 165, 398, 354, 499, 360, 170, 437, 392,
+    480, 185, 410, 357, 155, 508, 378, 148, 388,
+]
+_HKGC_EDEN_YELLOW = [
+    315, 150, 371, 330, 475, 340, 155, 402, 365,
+    455, 170, 385, 335, 135, 480, 358, 130, 368,
+]
+
 # —— 馬來西亞 · Templer Park · 白梯 6343 碼（官網記分卡）——
 _TPCC_PARS = [5, 3, 4, 4, 4, 4, 5, 3, 4, 4, 3, 5, 4, 4, 5, 3, 4, 4]
 _TPCC_HCP = [11, 15, 1, 7, 5, 17, 13, 9, 3, 16, 12, 6, 10, 14, 2, 18, 4, 8]
@@ -133,6 +157,7 @@ COURSES = {
         "location": "西貢滘西洲",
         "country": "香港",
         "hero_image": f"{_IMG}/ksc-east.jpg",
+        "slope": 128, "rating": 70.5,
         "tees": {
             "white": {
                 "id": "white",
@@ -141,6 +166,7 @@ COURSES = {
                 "pars": _KSC_EAST_PARS,
                 "yardages": _KSC_EAST_WHITE,
                 "handicap": _KSC_EAST_HCP,
+                "slope": 128, "rating": 70.5,
             },
         },
     },
@@ -187,6 +213,66 @@ COURSES = {
                 "pars": _KSC_NORTH_PARS,
                 "yardages": _KSC_NORTH_WHITE,
                 "handicap": _KSC_NORTH_HCP,
+            },
+        },
+    },
+    "hk-cwbgc": {
+        "id": "hk-cwbgc",
+        "name": "清水灣高爾夫球場",
+        "name_en": "Clear Water Bay Golf & Country Club",
+        "description": "香港最具挑戰性的私人球場之一。面向清水灣海峽，多個洞要跨越山谷與海景斷崖。白梯 Par 70、5533 碼。",
+        "location": "清水灣，西貢",
+        "country": "香港",
+        "hero_image": f"{_IMG}/hero.jpg",
+        "slope": 132, "rating": 69.8,
+        "tees": {
+            "white": {
+                "id": "white",
+                "name": "白梯",
+                "name_en": "White Tee",
+                "pars": _CWBGC_PARS,
+                "yardages": _CWBGC_WHITE,
+                "handicap": _CWBGC_HCP,
+                "slope": 132, "rating": 69.8,
+            },
+            "red": {
+                "id": "red",
+                "name": "紅梯（女士）",
+                "name_en": "Red Tee (Ladies)",
+                "pars": _CWBGC_PARS,
+                "yardages": _CWBGC_RED,
+                "handicap": _CWBGC_HCP,
+                "slope": 124, "rating": 67.2,
+            },
+        },
+    },
+    "hk-fanling-eden": {
+        "id": "hk-fanling-eden",
+        "name": "香港哥爾夫球會 · 粉嶺 Eden 場",
+        "name_en": "Hong Kong Golf Club - Eden Course",
+        "description": "百年名會，香港高爾夫最高殿堂。Eden 場以精準制勝，是球星挑戰賽常用場地。白梯 Par 70、5919 碼。",
+        "location": "粉嶺",
+        "country": "香港",
+        "hero_image": f"{_IMG}/hero.jpg",
+        "slope": 130, "rating": 69.2,
+        "tees": {
+            "white": {
+                "id": "white",
+                "name": "白梯",
+                "name_en": "White Tee",
+                "pars": _HKGC_EDEN_PARS,
+                "yardages": _HKGC_EDEN_WHITE,
+                "handicap": _HKGC_EDEN_HCP,
+                "slope": 130, "rating": 69.2,
+            },
+            "yellow": {
+                "id": "yellow",
+                "name": "黃梯",
+                "name_en": "Yellow Tee",
+                "pars": _HKGC_EDEN_PARS,
+                "yardages": _HKGC_EDEN_YELLOW,
+                "handicap": _HKGC_EDEN_HCP,
+                "slope": 127, "rating": 68.0,
             },
         },
     },

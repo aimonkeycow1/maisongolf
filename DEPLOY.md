@@ -1,156 +1,152 @@
-# 滘西洲南場記分器 · 雲端部署指南（Render）
+# Maison Golf · 雲端部署指南（Render）
 
-部署後會得到固定網址，例如 `https://kau-sai-golf.onrender.com`，  
+部署後得到固定網址，例如 `https://kau-sai-golf.onrender.com`，  
 **手機用 4G 也能打開**，可貼到 WhatsApp 群。
+
+---
+
+## ⭐ 上線前完整檢查清單（Go-Live Checklist）
+
+> 每次部署前後請逐項確認，攸關資料永久保存與用戶體驗。
+
+### 🔒 資料永久保存（最重要）
+- [ ] `DATABASE_URL` 已設定且連到 **Render PostgreSQL**（Web 服務 → Environment 確認）。  
+      缺少時 fallback 到容器內 SQLite，**每次部署全部清空**。
+- [ ] PostgreSQL 資料庫**未被刪除**、狀態 Active（免費方案到期前保留）。
+- [ ] 所有資料表已自動建立（`db.create_all()` 在 app 啟動時執行），包含：  
+      `users`、`friend_requests`、`challenges`、`golf_rounds`、`round_participants`、`hole_scores`
+
+### 🔑 帳號與登入
+- [ ] `SECRET_KEY` 已固定（首次 `generateValue` 後在 Dashboard 鎖定，勿每次部署重產；  
+      變動會登出已登入用戶，但資料不遺失）。
+- [ ] `dev_tools.py` 在生產環境**自動關閉**（`RENDER=true` 時測試面板不可見，確認首頁無「測試」按鈕）。
+
+### 🖼️ 頭像與媒體
+- [ ] Cloudinary 三個環境變數已設定：`CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET`。  
+      不填則頭像存容器內，**部署後消失**。
+
+### 🤖 AI 教練
+- [ ] 若要啟用 Grok API：`XAI_API_KEY` 已設定。  
+      不設定時使用本地深度分析（功能完整，無需 API）。
+
+### 🧪 功能煙霧測試（部署後點一遍）
+
+| 路由 | 預期行為 |
+|------|---------|
+| `/`（未登入） | 看到公開落地頁、「立即登入」CTA |
+| `/register` | 填球友名稱 + 密碼 → 成功跳首頁 |
+| `/login` / 登出 | 正常跳轉，登出後 Cookie 清除 |
+| `/` (已登入) | 看到 Momentum Strip、好友動態 Feed、歷史場次 |
+| `/score` | 選球場（含清水灣、粉嶺）→ 逐洞記分 → 實時對決欄更新 |
+| `/round/<id>` | 成績卡 + AI 教練 + 同球場跨場次比較 + 分享圖卡 |
+| `/progress` | 差點指數 + 趨勢圖 + 弱點洞熱力圖 + 好友差點排行榜 + 挑戰系統 |
+| `/year-review` | 2026 年度回顧頁面正常渲染 |
+| `/friends` | 搜尋 / 邀請 / 好友列表 |
+| `/challenge/my` | 返回 JSON `{"ok": true, "challenges": [...]}` |
+| `/stats` | 全域統計頁正常 |
+| `/profile` | 個人資料、頭像上傳 |
 
 ---
 
 ## 第一步：上傳到 GitHub
 
-1. 登入 https://github.com  →  **New repository**
-2. 名稱例如：`kau-sai-golf` → **Create repository**
-3. 在本機終端機執行（把 `你的帳號` 換成你的 GitHub 用戶名）：
-
 ```bash
 cd ~/Desktop/Python高爾夫
 git init
 git add .
-git commit -m "滘西洲南場高爾夫記分器網頁版"
+git commit -m "Maison Golf — 完整版上線"
 git branch -M main
 git remote add origin https://github.com/你的帳號/kau-sai-golf.git
 git push -u origin main
 ```
 
+> `rounds.json`、`simulate_users.py`、`sim_report.json`、`app.db` 已加入 `.gitignore`，不會上傳。
+
 ---
 
-## 第二步：Render 部署
+## 第二步：Render Blueprint 部署
 
-1. 登入 https://render.com （可用 GitHub 登入）
+1. 登入 https://render.com（可用 GitHub 登入）
 2. **New +** → **Blueprint**
-3. 連接剛才的 GitHub 倉庫 `kau-sai-golf`
-4. Render 會讀取 `render.yaml` → **Apply**
+3. 連接剛才的 GitHub 倉庫
+4. Render 讀取 `render.yaml` → **Apply**
 5. 等待約 3～5 分鐘，狀態變 **Live**
-6. 點開網址，例如 `https://kau-sai-golf.onrender.com`
+6. 首次部署後在 **Environment** 把以下三個「選填」變數補上（見下方）：
+   - `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET`
+   - （可選）`XAI_API_KEY`
 
 ---
 
-## 第三步：記下同步密鑰
+## 第三步：鎖定 SECRET_KEY
 
-1. 在 Render 點你的服務 → **Environment**
-2. 找到 **`SYNC_SECRET`** → 複製數值（只給管理員，不要貼到群組）
+1. 服務 → **Environment** → 找到 `SECRET_KEY`
+2. 複製值 → 刪除原本的 `generateValue` 設定 → 改為 `value: "剛才複製的值"`
+3. **Save Changes**（不需重新部署，下次部署自動使用固定值）
 
 ---
 
-## 之後每次打完球
-
-### 方式 A：網頁直接錄分（推薦）
-
-1. 打開 `https://你的網址.onrender.com/score`
-2. 填球友名字 → 逐洞記分（可點 Par / +1 快捷鍵）
-3. 填 **管理員密鑰**（與 Render 的 `SYNC_SECRET` 相同）→ 存檔
-4. 群友重新整理首頁即可看到
-
-### 方式 B：本機錄分再同步
+## 之後每次更新程式碼
 
 ```bash
 cd ~/Desktop/Python高爾夫
-python3 golf_score.py   # 選 2 多人記分
-export DEPLOY_URL="https://你的網址.onrender.com"
-export SYNC_KEY="貼上 SYNC_SECRET"
-python3 sync_rounds.py
+git add .
+git commit -m "說明這次改了什麼"
+git push
 ```
 
----
-
-## 打球紀錄存在哪裡？
-
-**Render 正式環境**：所有場次寫入 **PostgreSQL**（`golf_rounds`、`round_participants`、`hole_scores` 表），重新部署後紀錄**不會消失**。請確認 Web 服務已設定 `DATABASE_URL`。
-
-**本機開發**：無 `DATABASE_URL` 時，帳號在 `app.db`、打球紀錄也在同一 SQLite 檔。首次啟動若專案內有 `rounds.json`，會自動匯入資料庫一次。
-
-`rounds.json` 僅作本機備份／CLI 相容，**不再作為正式儲存**。
+Render 連接 GitHub 後會**自動偵測 push → 重新部署**，約 2～3 分鐘，資料庫資料**完整保留**。
 
 ---
 
-## 會員帳號為什麼會「每次更新就消失」？
+## 功能架構速覽
 
-Render **免費版 Web 服務的檔案系統是暫存的**：每次重新部署或重啟，容器內的 `app.db` 會被清空。  
-`app.db` 又在 `.gitignore` 裡，**不會跟著 Git 上傳**，所以線上每次都是「空資料庫」→ 舊帳號不存在，只能重新註冊。
+### 核心記分
+- 多球場多梯台（香港 KSC 三場 + 清水灣 + 粉嶺 Eden + 馬來西亞 + 泰國）
+- Slope / Course Rating 已錄入，WHS 差點計算更準確
+- 逐洞記分 + 自動存草稿（可中途離開）
+- **實時對決欄**：記分過程中即時更新各球手總桿排名
 
-**解法（已寫入 `render.yaml`）**：使用 **Render PostgreSQL**，透過環境變數 `DATABASE_URL` 存會員資料。資料庫與 Web 服務分開，部署程式碼**不會**刪除使用者。
+### 成長引擎
+- WHS 風格差點指數（最佳 N 場）+ 趨勢圖
+- **逐洞弱點熱力圖**：18 格彩色熱力格 + 強/弱洞自動標出 + 4 種規律偵測
+- **跨場次比較**：同球場上次 vs 這次逐洞對比
+- **年度回顧**（`/year-review`）：全年統計、月份熱力圖、桿數分布
 
-### 若你早已部署過（沒有 Postgres）
+### 社交成癮
+- **好友動態 Feed**：首頁即時顯示球友最新動態
+- **差點排行榜**：好友間名次對比（🥇🥈🥉）
+- **差點挑戰**：30 天進步競賽，追蹤誰降得更多
+- 賽後慶祝彈窗（彩帶）+ 里程碑慶祝
+- 可分享圖卡（Battle Report Card + 進步曲線卡）
 
-1. Render Dashboard → **New +** → **PostgreSQL**（免費方案即可）
-2. 建立後，複製 **Internal Database URL** 或 **External Database URL**
-3. 打開你的 **Web 服務** → **Environment** → 新增：
-   - `DATABASE_URL` = 剛才的連線字串
-   - 確認 `SECRET_KEY` 已存在且**不要**每次部署都刪掉重產（否則已登入 cookie 會失效，但帳號仍在）
-4. **Manual Deploy** 一次，讓程式安裝 `psycopg2-binary` 並連到新庫
-5. **第一次接上 Postgres 後資料庫是空的**，球友需再註冊一次；之後每次更新程式碼，帳號都會保留
-
-### 本機開發
-
-不設 `DATABASE_URL` 時仍使用專案目錄的 `app.db`，與線上資料庫**分開**。
-
----
-
-## 注意
-
-- **免費版**約 15 分鐘沒人訪問會休眠，第一次打開可能要等 30～50 秒喚醒。
-- 雲端資料存在伺服器；本機 `rounds.json` 與雲端要以 `sync_rounds.py` 同步。
-- **頭像**請使用 **Cloudinary**（見下方），勿只放在 `static/uploads/avatars/`。
+### 基礎設施
+- Flask + SQLAlchemy（SQLite 本機 / PostgreSQL 線上）
+- Cloudinary 頭像持久化
+- B+ 設計語言（深綠金 / Playfair Display / Aurora 背景）
+- 本機開發測試面板（`/dev/test`）— **生產環境自動關閉**
 
 ---
 
-## 頭像為什麼部署後會消失？
+## 資料永久保存原理
 
-頭像若存在容器內 `static/uploads/avatars/`，與 `app.db` 一樣屬於**暫存檔案系統**，每次 Render 重新部署都會被清空。
-
-### 方案 A（推薦）：Cloudinary
-
-業界標準做法：圖片存在 Cloudinary，資料庫只存 URL 與 `public_id`，經 CDN 載入快、部署後不消失。
-
-#### 1. 註冊 Cloudinary
-
-1. 前往 https://cloudinary.com 註冊（免費額度足夠個人／小團隊）
-2. Dashboard → **API Keys** 記下：
-   - **Cloud name**
-   - **API Key**
-   - **API Secret**
-
-#### 2. Render 環境變數
-
-Web 服務 → **Environment** → **Add Environment Variable**：
-
-| 變數名稱 | 說明 |
-|----------|------|
-| `CLOUDINARY_CLOUD_NAME` | Dashboard 的 Cloud name |
-| `CLOUDINARY_API_KEY` | API Key |
-| `CLOUDINARY_API_SECRET` | API Secret（勿公開、勿 commit） |
-
-儲存後 **Manual Deploy** 一次。
-
-#### 3. 行為說明
-
-- 會員在「個人設定」上傳頭像 → 壓縮為 256×256 JPEG → 上傳至 Cloudinary 資料夾 `maisongolf/avatars/user_{id}`
-- 資料庫欄位：`avatar_url`（CDN 網址）、`avatar_public_id`、`avatar_revision`（快取破壞）
-- 未設定 Cloudinary 時，本機開發仍寫入 `static/uploads/avatars/`（僅供本機測試）
-- 若線上曾用本機頭像、DB 仍有 `avatar_path` 但無 `avatar_url`，**下次啟動**會嘗試自動上傳至 Cloudinary（需三個環境變數已設定）
-
-#### 4. 舊本機頭像手動遷移（可選）
-
-已部署且頭像已遺失的帳號，只能請使用者**重新上傳**。若容器內檔案還在、DB 仍有 `avatar_path`，重啟應用會自動遷移。
+| 環境 | 資料庫 | 重新部署後 |
+|------|--------|-----------|
+| Render（已設 DATABASE_URL）| PostgreSQL | ✅ 完整保留 |
+| Render（未設 DATABASE_URL）| 容器內 SQLite | ❌ 每次清空 |
+| 本機開發 | `app.db`（SQLite） | ✅ 本機保留 |
 
 ---
 
-### 方案 B（備選）：Render Persistent Disk
+## 常見問題
 
-若不想用外部服務，可為 Web 服務掛載**持久化磁碟**：
+### 免費版休眠
+免費 Render Web 服務約 15 分鐘無訪問會休眠，第一次打開等 30～50 秒喚醒正常。
 
-1. Render Dashboard → 你的 **Web 服務** → **Disks** → **Add Disk**
-2. 例如掛載路徑 `/var/data`、大小 1GB（依方案）
-3. **Environment** 新增：`INSTANCE_DATA_DIR` = `/var/data`
-4. 程式會把頭像寫到 `/var/data/avatars/`（見 `avatar_service.py`），重啟後保留
+### Challenges 表不存在
+新版新增了 `challenges` 資料表，首次部署到有此代碼的版本時，`db.create_all()` 會自動建立，無需手動執行 migration。
 
-注意：磁碟與服務綁定、免費方案可能需付費；多實例／擴展時不如 Cloudinary 單純。正式環境仍建議 **方案 A**。
+### 頭像部署後消失
+未設定 Cloudinary 三個環境變數。請依本文第一步「上線前檢查清單」補設。
+
+### AI 教練沒有反應
+未設定 `XAI_API_KEY`，系統使用本地深度分析（功能完整）。若要升級到 Grok API，在 Environment 添加 `XAI_API_KEY`。

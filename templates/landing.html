@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% from '_macros.html' import sample_scorecard, ai_coach_preview %}
+{% block title %}Maison Golf · 你的私人高球會所{% endblock %}
+{% block content %}
+
+{# ——— Hero：簡約高級感 + 襯線精緻 ——— #}
+<section class="reveal relative mb-2 overflow-hidden rounded-3xl px-6 py-16 text-center sm:py-24"
+         style="background:linear-gradient(180deg,#0a2317,#07150e)">
+  <div class="pointer-events-none absolute inset-0" style="background:radial-gradient(44rem 30rem at 74% 14%,rgba(227,183,160,.18),transparent 62%),radial-gradient(38rem 28rem at 18% 90%,rgba(34,99,64,.28),transparent 66%)"></div>
+  <div class="pointer-events-none absolute left-1/2 top-[60%] h-px w-[78%] max-w-2xl -translate-x-1/2" style="background:linear-gradient(90deg,transparent,rgba(233,212,173,.35),transparent)"></div>
+
+  <div class="relative">
+    <p class="mb-5 inline-flex rounded-full border border-champ/40 bg-black/35 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-champ backdrop-blur">A Round Worth Sharing</p>
+    <h1 class="mx-auto max-w-4xl font-brand text-5xl font-bold leading-[1.06] text-white drop-shadow-2xl sm:text-7xl">
+      讓每一場球，<br><span class="gold-shimmer">都美得值得被看見。</span>
+    </h1>
+    <p class="mx-auto mt-6 max-w-xl font-serif text-lg leading-relaxed text-champ-light/90 sm:text-xl">
+      優雅記分、AI 教練講評，<br class="hidden sm:block">
+      再為你生成一張捨不得不發的戰報。
+    </p>
+    <div class="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row">
+      <a href="{{ url_for('auth.register') }}"
+         class="pulse-cta rounded-full bg-gradient-to-r from-champ to-champ-light px-10 py-4 text-lg font-bold text-[#07150e] transition hover:brightness-105 no-underline">
+        免費加入 · 開始記分
+      </a>
+      <a href="#share" class="text-base font-semibold text-champ-light underline decoration-champ/50 underline-offset-4 hover:text-white">看看戰報長怎樣 ↓</a>
+    </div>
+    <p class="mt-4 text-xs text-champ-light/55">免費使用 · 不需信用卡 · 30 秒開始你的第一場</p>
+  </div>
+</section>
+
+{# ——— 分享戰報（前置，直擊分享慾） ——— #}
+<section id="share" class="mb-4 py-16 sm:py-20">
+  <div class="grid items-center gap-12 lg:grid-cols-2">
+    {# 手機戰報 mockup #}
+    <div class="reveal order-2 flex justify-center lg:order-1">
+      <div class="relative w-[16.5rem] overflow-hidden rounded-[2.2rem] border-[6px] border-black/60 bg-[#07150e] shadow-2xl sm:w-[18rem]">
+        <div class="relative h-[34rem]">
+          <div class="absolute inset-0 bg-cover bg-center" style="background-image:url('/static/img/kl-gcc-east.jpg')"></div>
+          <div class="absolute inset-0" style="background:linear-gradient(180deg,rgba(7,21,14,.15),rgba(7,21,14,.85))"></div>
+          <div class="absolute inset-x-0 top-0 flex items-center justify-between px-5 pt-5">
+            <span class="font-brand text-base text-champ-light">Maison Golf</span>
+            <span class="rounded-full bg-black/40 px-2.5 py-0.5 text-[10px] font-semibold tracking-wide text-champ backdrop-blur">2026.05.30</span>
+          </div>
+          <div class="absolute inset-x-0 bottom-0 p-6">
+            <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-champ/90">Today's Round</p>
+            <p class="mt-1 font-brand text-7xl font-bold leading-none text-white drop-shadow-lg">78</p>
+            <p class="mt-1 text-sm font-semibold text-champ-light">+6 · 個人最佳 · 1 birdie</p>
+            <div class="mt-4 h-px w-full bg-white/15"></div>
+            <p class="mt-3 text-xs leading-relaxed text-white/85">「第 7 洞驚險救 par，後九找回節奏。」</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# 文案 + 分享渠道 #}
+    <div class="reveal order-1 lg:order-2" style="--reveal-delay:120ms;">
+      <p class="text-xs font-semibold uppercase tracking-[0.25em] text-champ">One Tap · Share</p>
+      <h2 class="mt-3 font-brand text-3xl font-bold leading-tight text-white sm:text-5xl">打完最後一洞，<br>戰報已經幫你<span class="gold-shimmer">剪好</span>。</h2>
+      <p class="mt-5 max-w-md font-serif text-base leading-relaxed text-champ-light/85">
+        自動套版的精美戰報與短片，總桿、比 Par、個人最佳一目了然。
+        一鍵就能發到你常用的地方，讓球友看見你今天的高光。
+      </p>
+      <div class="mt-7 flex flex-wrap gap-3">
+        <span class="rounded-xl bg-[#fe2c55]/15 px-4 py-2 text-sm font-semibold text-rose ring-1 ring-[#fe2c55]/40">小紅書</span>
+        <span class="rounded-xl bg-[#e1306c]/15 px-4 py-2 text-sm font-semibold text-rose ring-1 ring-[#e1306c]/40">IG</span>
+        <span class="rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold text-champ-light ring-1 ring-white/25">抖音</span>
+        <span class="rounded-xl bg-[#25d366]/15 px-4 py-2 text-sm font-semibold text-emerald-200 ring-1 ring-[#25d366]/40">WhatsApp</span>
+      </div>
+      <a href="{{ url_for('auth.register') }}" class="mt-8 inline-flex items-center gap-2 rounded-full border border-champ/40 px-7 py-3 text-base font-semibold text-champ-light transition hover:bg-champ/10 no-underline">免費生成我的第一張戰報 →</a>
+    </div>
+  </div>
+</section>
+
+<div class="mx-auto mb-4 h-px w-full max-w-3xl" style="background:linear-gradient(90deg,transparent,rgba(233,212,173,.4),transparent)"></div>
+
+{# ——— 先嚐甜頭：範例記分卡 + AI 教練預告 ——— #}
+<section class="mb-10">
+  <div class="reveal mb-6 text-center">
+    <h2 class="font-brand text-3xl font-bold text-white sm:text-4xl">打完一場，你會得到這些</h2>
+    <p class="mt-2 font-serif text-sm text-champ-light/70">不用註冊也能先看 — 喜歡再加入。</p>
+  </div>
+  <div class="grid gap-5 lg:grid-cols-2">
+    <div class="reveal">
+      <p class="mb-2 text-sm font-semibold text-champ-light/85">⛳ 自動生成的記分卡</p>
+      {{ sample_scorecard() }}
+    </div>
+    <div class="reveal" style="--reveal-delay:120ms;">
+      <p class="mb-2 text-sm font-semibold text-champ-light/85">✨ AI 教練的賽後講評</p>
+      {{ ai_coach_preview() }}
+    </div>
+  </div>
+</section>
+
+{# ——— 三大價值（精緻留白、襯線） ——— #}
+<section class="reveal mb-10">
+  <h2 class="mb-10 text-center font-brand text-3xl font-bold text-white sm:text-4xl">不只是記分，是你的高球儀式</h2>
+  <div class="grid gap-6 sm:grid-cols-3">
+    <div class="lift glass rounded-3xl p-7 text-center">
+      <span class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-champ/15 text-3xl ring-1 ring-champ/40">⛳</span>
+      <h3 class="font-brand text-xl font-bold text-white">優雅記分</h3>
+      <p class="mt-2.5 font-serif text-sm leading-relaxed text-champ-light/80">多人同組即時記錄，打完自動成卡，介面細緻得像精品會所。</p>
+    </div>
+    <div class="lift glass rounded-3xl p-7 text-center">
+      <span class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-400/15 text-3xl ring-1 ring-emerald-400/40">✨</span>
+      <h3 class="font-brand text-xl font-bold text-white">私人 AI 教練</h3>
+      <p class="mt-2.5 font-serif text-sm leading-relaxed text-champ-light/80">點名失分洞、找出弱項，給你下一場可執行的策略。</p>
+    </div>
+    <div class="lift glass rounded-3xl p-7 text-center">
+      <span class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-champ/15 text-3xl ring-1 ring-champ/40">🏅</span>
+      <h3 class="font-brand text-xl font-bold text-white">榮譽收藏</h3>
+      <p class="mt-2.5 font-serif text-sm leading-relaxed text-champ-light/80">球手等級、連勝與成就，化作可分享、可回味的個人榮譽。</p>
+    </div>
+  </div>
+</section>
+
+{# ——— 結尾 CTA ——— #}
+<section class="reveal mb-4 overflow-hidden rounded-[2rem] border border-champ/25 px-6 py-14 text-center"
+         style="background:radial-gradient(40rem 20rem at 50% 0%,rgba(227,183,160,.16),transparent),linear-gradient(180deg,rgba(16,42,29,.8),rgba(7,21,14,.9))">
+  <h2 class="font-brand text-3xl font-bold text-white sm:text-5xl">你的下一場，<span class="gold-shimmer">值得被記住</span>。</h2>
+  <p class="mt-4 font-serif text-base text-champ-light/80">免費加入 Maison Golf，第一場就拿到 AI 講評與專屬戰報。</p>
+  <div class="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+    <a href="{{ url_for('auth.register') }}"
+       class="rounded-full bg-gradient-to-r from-champ to-champ-light px-12 py-4 text-lg font-bold text-[#07150e] transition hover:brightness-105 no-underline">
+      免費加入 →
+    </a>
+    <a href="{{ url_for('auth.login') }}" class="text-sm font-semibold text-champ-light hover:text-white">已有帳號？登入</a>
+  </div>
+</section>
+
+{% endblock %}

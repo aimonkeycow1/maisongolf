@@ -44,7 +44,7 @@ from web_helpers import (
     get_global_round_stats,
 )
 from web_score import validate_score_submission
-from friends_service import list_friends
+from friends_service import list_friends, get_friend_activity_feed
 from ai_coach import generate_coach_analysis
 from courses import resolve_course_tee
 from ai_coach import build_next_hole_strategy
@@ -56,10 +56,16 @@ from share_media import (
     save_upload,
     PHOTO_STYLES,
 )
+from engagement import compute_user_engagement, compute_round_celebration
+from progress import compute_progress, compute_friends_leaderboard, compute_newly_earned
+from hole_analysis import compute_hole_analysis, compute_course_comparison
+from year_review import compute_year_review
 from models import db, User
 import round_models  # noqa: F401 — 註冊 golf_rounds 資料表
 from auth import auth_bp
 from friends import friends_bp
+from challenges import challenges_bp
+from dev_tools import dev_bp, dev_tools_enabled
 from user_migrations import migrate_users_auth_columns
 from security_config import apply_security_config
 from database_config import resolve_database_uri, is_render_hosting
@@ -135,6 +141,13 @@ ensure_avatar_upload_dir()
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(friends_bp)
+app.register_blueprint(challenges_bp)
+app.register_blueprint(dev_bp)
+
+
+@app.context_processor
+def inject_dev_tools():
+    return {"dev_tools_enabled": dev_tools_enabled}
 
 def _init_database():
     """僅建立缺少的資料表與欄位，絕不 drop 或清空既有資料。"""
@@ -174,9 +187,13 @@ def admin_sync():
 
 
 @app.route("/")
-@login_required
 def index():
+    # 訪客預覽：未登入者先看到公開落地頁（含範例記分卡與 AI 教練預告），先嚐甜頭再註冊
+    if not current_user.is_authenticated:
+        return render_template("landing.html", page="home")
     rounds = _current_user_rounds()
+    engagement = compute_user_engagement(rounds, current_user)
+    friend_feed = get_friend_activity_feed(current_user, limit=8)
     return render_template(
         "index.html",
         page="home",
@@ -184,7 +201,28 @@ def index():
         par_total=PAR_TOTAL,
         course_name=COURSE_NAME,
         hero_slides=list_hero_carousel_slides(),
+        engagement=engagement,
+        friend_feed=friend_feed,
     )
+
+
+@app.route("/preview")
+def preview_gallery():
+    return render_template("preview_index.html")
+
+
+@app.route("/preview/<variant>")
+def preview_variant(variant):
+    allowed = {
+        "masters": "preview_masters.html",
+        "dusk": "preview_dusk.html",
+        "pro": "preview_pro.html",
+        "bplus": "preview_bplus.html",
+    }
+    tpl = allowed.get(variant)
+    if not tpl:
+        abort(404)
+    return render_template(tpl)
 
 
 @app.route("/round/<round_id>")
@@ -200,11 +238,25 @@ def round_detail(round_id):
         if row.get("to_par") is None:
             row["to_par"] = row.get("total", 0) - rp
         ranked.append(row)
+
+    celebration = None
+    if request.args.get("celebrate"):
+        celebration = compute_round_celebration(
+            r, current_user, _current_user_rounds()
+        )
+
+    # B3 — 同球場跨場次比較
+    all_rounds = _current_user_rounds()
+    course_id = r.get("course_id") or r.get("course") or ""
+    course_cmp = compute_course_comparison(all_rounds, current_user, course_id) if course_id else None
+
     return render_template(
         "round.html",
         page="home",
         round=r,
         ranked=ranked,
+        celebration=celebration,
+        course_cmp=course_cmp,
     )
 
 
@@ -284,7 +336,7 @@ def score_entry():
     return jsonify({
         "ok": True,
         "id": rid,
-        "redirect": request.url_root.rstrip("/") + f"/round/{rid}?ai=1&share=1",
+        "redirect": request.url_root.rstrip("/") + f"/round/{rid}?ai=1&share=1&celebrate=1",
     })
 
 
@@ -381,6 +433,10 @@ def share_meta(round_id):
     if not meta:
         return jsonify({"ok": False, "error": "場次無球員資料"}), 400
 
+    # 帶上目前使用者的差點指數（社交炫耀點）
+    prog = compute_progress(_current_user_rounds(), current_user)
+    meta["index"] = prog["index"] if prog else None
+
     players = sorted(r["players"], key=lambda p: p["total"])
     return jsonify({
         "ok": True,
@@ -472,6 +528,53 @@ def stats():
     )
 
 
+@app.route("/progress")
+@login_required
+def progress():
+    rounds = _current_user_rounds()
+    data = compute_progress(rounds, current_user)
+
+    # 好友差點排行榜
+    friends = list_friends(current_user.id)
+    leaderboard = compute_friends_leaderboard(friends, current_user, data) if data else None
+
+    # 剛解鎖成就／里程碑慶祝（URL 帶 ?prev_rounds=N 時觸發，由前端在新場次完成後設定）
+    prev_rounds_raw = request.args.get("prev_rounds")
+    try:
+        prev_rounds = int(prev_rounds_raw) if prev_rounds_raw is not None else None
+    except (TypeError, ValueError):
+        prev_rounds = None
+    newly_earned = compute_newly_earned(prev_rounds, data)
+
+    hole_data = compute_hole_analysis(rounds, current_user)
+
+    return render_template(
+        "progress.html",
+        page="progress",
+        progress=data,
+        leaderboard=leaderboard,
+        newly_earned=newly_earned,
+        hole_data=hole_data,
+    )
+
+
+@app.route("/year-review")
+@app.route("/year-review/<int:year>")
+@login_required
+def year_review(year: int | None = None):
+    rounds = _current_user_rounds()
+    data = compute_year_review(rounds, current_user, year)
+    available_years = sorted(set(
+        int(r["date"][:4]) for r in rounds if r.get("date") and len(r["date"]) >= 4
+    ), reverse=True) if rounds else []
+    return render_template(
+        "year_review.html",
+        page="progress",
+        review=data,
+        available_years=available_years,
+    )
+
+
 def local_ip():
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -487,7 +590,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5050))
     ip = local_ip()
     print("\n" + "=" * 50)
-    print("  ⛳ 滘西洲南場 · 網頁版已啟動")
+    print("  ⛳ Maison Golf · 網頁版已啟動")
     print("=" * 50)
     print(f"  本機打開：  http://127.0.0.1:{port}")
     print(f"  手機同 WiFi： http://{ip}:{port}")

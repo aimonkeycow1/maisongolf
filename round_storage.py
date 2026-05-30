@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import os
 import unicodedata
+import uuid
 from datetime import datetime
 
 from courses import DEFAULT_COURSE_ID, DEFAULT_TEE_ID, course_meta_for_round
@@ -450,8 +451,9 @@ def build_round_record(players_stats, note="", course_id=None, tee_id=None, user
         meta = course_meta_for_round(DEFAULT_COURSE_ID, DEFAULT_TEE_ID)
 
     players_stats = enrich_players_with_user_ids(players_stats, creator_user_id=user_id)
+    # 唯一場次 ID：秒級時間戳 + 微秒 + 隨機碼，避免同秒（甚至跨使用者並發）完成造成 ID 衝突與互相覆蓋
     record = {
-        "id": now.strftime("%Y%m%d_%H%M%S"),
+        "id": f"{now.strftime('%Y%m%d_%H%M%S')}_{now.microsecond:06d}{uuid.uuid4().hex[:4]}",
         "date": now.strftime("%Y-%m-%d"),
         "time": now.strftime("%H:%M"),
         "course_id": meta["course_id"],

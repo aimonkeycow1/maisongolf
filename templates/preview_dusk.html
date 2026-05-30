@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maison Golf — 方向 B · Fairway Dusk 電影感黃金時刻</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = { theme: { extend: {
+  colors: { night:'#06140d', moss:'#0f2a1c', gold:{DEFAULT:'#ca8a04',light:'#eab308',bright:'#fde047'} },
+  fontFamily: { brand:['"Playfair Display"','serif'], sans:['"Noto Sans TC"','sans-serif'] },
+}}};
+</script>
+<style>
+  body{background:#06140d;}
+  .shimmer{background:linear-gradient(110deg,#ca8a04 20%,#fde047 48%,#fffbe6 52%,#fde047 56%,#ca8a04 80%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sh 5s linear infinite}
+  @keyframes sh{to{background-position:-140% 0}}
+  .glass{background:linear-gradient(135deg,rgba(255,255,255,.10),rgba(255,255,255,.03));backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);border:1px solid rgba(255,255,255,.12);box-shadow:0 30px 70px -30px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.08)}
+  .grain:after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.05;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .reveal{opacity:0;transform:translateY(24px) scale(.98);animation:rv .9s cubic-bezier(.16,1,.3,1) forwards}
+  .reveal.d1{animation-delay:.15s}.reveal.d2{animation-delay:.3s}.reveal.d3{animation-delay:.45s}
+  @keyframes rv{to{opacity:1;transform:none}}
+  .pulse{animation:pl 2.8s ease-in-out infinite}
+  @keyframes pl{0%,100%{box-shadow:0 8px 30px rgba(0,0,0,.5)}50%{box-shadow:0 8px 30px rgba(0,0,0,.5),0 0 28px 5px rgba(234,179,8,.35)}}
+  @media(prefers-reduced-motion:reduce){.shimmer,.reveal,.pulse{animation:none}.reveal{opacity:1;transform:none}}
+</style>
+</head>
+<body class="grain font-sans text-green-50 antialiased">
+
+<!-- 全幅電影感 Hero -->
+<section class="relative min-h-[88vh] overflow-hidden">
+  <div class="absolute inset-0 bg-cover bg-center" style="background-image:url('/static/img/th-summit.jpg');transform:scale(1.06)"></div>
+  <div class="absolute inset-0" style="background:linear-gradient(180deg,rgba(6,20,13,.55) 0%,rgba(6,20,13,.35) 35%,rgba(6,20,13,.85) 80%,#06140d 100%)"></div>
+  <div class="absolute inset-0" style="background:radial-gradient(60rem 40rem at 75% 15%,rgba(234,179,8,.18),transparent 60%)"></div>
+
+  <header class="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
+    <p class="brand font-brand text-2xl font-700 tracking-wide text-white">Maison Golf</p>
+    <a href="#" class="rounded-full border border-white/20 bg-black/30 px-5 py-2 text-sm font-600 text-white backdrop-blur hover:bg-white/10">登入</a>
+  </header>
+
+  <div class="relative z-10 mx-auto flex max-w-6xl flex-col items-start px-6 pt-[10vh] sm:pt-[14vh]">
+    <p class="reveal mb-4 inline-flex rounded-full border border-gold-light/40 bg-black/40 px-4 py-1.5 text-[11px] font-600 uppercase tracking-[.2em] text-gold-light backdrop-blur">Golden Hour · Private Club</p>
+    <h1 class="reveal d1 max-w-3xl font-brand text-5xl font-800 leading-[1.04] text-white drop-shadow-2xl sm:text-7xl">
+      把每一場球，<br><span class="shimmer">拍成值得分享的電影。</span>
+    </h1>
+    <p class="reveal d2 mt-6 max-w-xl text-lg leading-relaxed text-white/90 sm:text-xl">
+      逐洞記分、AI 教練講評、自動生成的精美戰報——
+      打完最後一洞，故事已經為你剪好。
+    </p>
+    <div class="reveal d3 mt-9 flex flex-col gap-4 sm:flex-row">
+      <a href="#" class="pulse rounded-2xl bg-gradient-to-r from-gold to-gold-light px-9 py-4 text-lg font-700 text-night transition hover:brightness-110">免費加入 · 開始記分 →</a>
+      <a href="#" class="rounded-2xl border border-white/20 bg-black/30 px-9 py-4 text-lg font-600 text-white backdrop-blur hover:bg-white/10">先看看長怎樣</a>
+    </div>
+  </div>
+</section>
+
+<!-- 浮動玻璃資訊卡 -->
+<section class="mx-auto -mt-16 max-w-6xl px-6">
+  <div class="grid gap-5 sm:grid-cols-3">
+    {% for it in [('🏆','逐洞記分 · 自動戰績','多人同組即時記分，打完自動成卡與排行'),('✨','AI 教練 · 賽後講評','點名失分洞、找出弱項、給下一場策略'),('📱','一鍵生成 · 戰報分享','抖音風短片與套版戰報，直接發到球友群')] %}
+    <div class="reveal glass rounded-3xl p-6">
+      <span class="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gold/15 text-3xl ring-1 ring-gold/40">{{ it[0] }}</span>
+      <p class="text-base font-700 text-white">{{ it[1] }}</p>
+      <p class="mt-1.5 text-sm leading-relaxed text-green-100/70">{{ it[2] }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- 範例記分卡（暗金玻璃） -->
+<section class="mx-auto max-w-3xl px-6 py-20">
+  <p class="reveal mb-3 text-center text-[11px] font-700 uppercase tracking-[.25em] text-gold-light">Sample Scorecard</p>
+  <h2 class="reveal d1 mb-6 text-center font-brand text-3xl font-700 text-white sm:text-4xl">打完一場，你會得到這張卡</h2>
+  <div class="reveal d2 glass rounded-3xl p-5 sm:p-6">
+    <div class="mb-4 flex items-center justify-between">
+      <span class="text-base font-600 text-white">示範球手</span>
+      <span class="text-3xl font-800 text-gold-light">78 <span class="text-sm font-600 text-green-100/60">+6</span></span>
+    </div>
+    {% set pars=[4,5,3,4,4,3,5,4,4,4,3,5,4,4,3,4,5,4] %}{% set sc=[4,4,3,5,4,3,6,5,4,4,4,5,4,5,3,4,5,4] %}
+    {% for h in [(0,9,'OUT'),(9,18,'IN')] %}
+    <div class="mb-1.5 flex gap-1">
+      {% for i in range(h[0],h[1]) %}{% set d=sc[i]-pars[i] %}
+      <div class="flex flex-1 flex-col items-center">
+        <span class="text-[9px] text-green-100/40">{{ i+1 }}</span>
+        <span class="mt-0.5 flex h-8 w-full items-center justify-center rounded-md text-sm font-700
+          {% if d<=-1 %}bg-emerald-500 text-white{% elif d==0 %}bg-white text-night{% elif d==1 %}bg-orange-500 text-white{% else %}bg-red-600 text-white{% endif %}">{{ sc[i] }}</span>
+      </div>{% endfor %}
+      <div class="flex w-10 flex-col items-center justify-end"><span class="text-[9px] text-gold-light/70">{{ h[2] }}</span><span class="mt-0.5 flex h-8 items-center text-sm font-700 text-white">{{ sc[h[0]:h[1]]|sum }}</span></div>
+    </div>{% endfor %}
+  </div>
+</section>
+
+<footer class="border-t border-white/10 py-10 text-center">
+  <p class="font-brand text-xl text-white">Maison Golf</p>
+  <p class="mt-1 text-xs text-green-100/50">方向 B · Fairway Dusk 電影感黃金時刻</p>
+</footer>
+
+</body>
+</html>

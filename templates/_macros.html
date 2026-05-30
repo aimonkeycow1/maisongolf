@@ -71,7 +71,7 @@
 
 {% macro nav_link(url, label, active, primary=false) -%}
 <a href="{{ url }}"
-   class="flex flex-1 items-center justify-center gap-1.5 rounded-xl px-4 py-3 text-sm font-bold transition-all sm:flex-none sm:min-w-[5.5rem]
+   class="flex flex-1 items-center justify-center gap-1 rounded-xl px-2 py-2.5 text-[13px] font-bold transition-all sm:gap-1.5 sm:px-4 sm:py-3 sm:text-sm sm:flex-none sm:min-w-[5rem]
           {% if active and primary %}bg-gold text-fairway-dark shadow-lg ring-2 ring-gold-light ring-offset-2 ring-offset-fairway-dark
           {% elif active %}bg-white text-fairway-dark shadow-lg
           {% elif primary %}bg-gold/90 text-fairway-dark shadow-md hover:bg-gold-light hover:shadow-lg
@@ -83,9 +83,270 @@
 </a>
 {%- endmacro %}
 
+{# —— 範例記分卡（降低「第一次長怎樣」的不確定感） —— #}
+{% macro sample_scorecard() -%}
+{% set pars =   [4,5,3,4,4,3,5,4,4, 4,3,5,4,4,3,4,5,4] %}
+{% set scores = [4,4,3,5,4,3,6,5,4, 4,4,5,4,5,3,4,5,4] %}
+{% set total = scores | sum %}
+{% set par_total = pars | sum %}
+<div class="overflow-hidden rounded-2xl glass p-4 sm:p-5">
+  <div class="mb-3 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="rounded-md bg-gold/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-gold-light ring-1 ring-gold/40">範例</span>
+      <span class="text-sm font-semibold text-white">示範球手</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-2xl font-black tabular-nums text-gold-light">{{ total }}</span>
+      {{ par_trend_badge(total - par_total, 'sm') }}
+    </div>
+  </div>
+  {% for half in [(0, 9, 'OUT'), (9, 18, 'IN')] %}
+  <div class="mb-1.5 flex items-stretch gap-1">
+    {% for i in range(half[0], half[1]) %}
+    {% set diff = scores[i] - pars[i] %}
+    <div class="flex flex-1 flex-col items-center">
+      <span class="text-[9px] text-green-200/45">{{ i + 1 }}</span>
+      <span class="mt-0.5 flex h-7 w-full items-center justify-center rounded-md text-xs font-bold {{ score_cell_class(diff) }}">{{ scores[i] }}</span>
+    </div>
+    {% endfor %}
+    <div class="flex flex-col items-center justify-end pl-1">
+      <span class="text-[9px] text-gold-light/70">{{ half[2] }}</span>
+      <span class="mt-0.5 flex h-7 items-center justify-center px-1.5 text-xs font-bold tabular-nums text-white">{{ scores[half[0]:half[1]] | sum }}</span>
+    </div>
+  </div>
+  {% endfor %}
+  <p class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-green-200/55">
+    <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded bg-green-700"></span>Birdie</span>
+    <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded border border-green-200 bg-white"></span>Par</span>
+    <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded bg-orange-500"></span>Bogey</span>
+    <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded bg-red-600"></span>Double+</span>
+  </p>
+</div>
+{%- endmacro %}
+
+{# —— AI 教練價值預告（讓人知道點下去會得到什麼） —— #}
+{% macro ai_coach_preview() -%}
+<div class="rounded-2xl border border-emerald-400/25 bg-gradient-to-br from-emerald-900/40 to-fairway-dark p-5 ring-1 ring-emerald-400/15">
+  <div class="flex items-center gap-2">
+    <span class="text-xl">✨</span>
+    <p class="text-sm font-bold text-emerald-100">AI 教練 · 賽後講評</p>
+  </div>
+  <p class="mt-1 text-xs text-emerald-200/70">每場打完，教練會幫你做這 3 件事：</p>
+  <ul class="mt-3 space-y-2">
+    <li class="flex items-start gap-2.5">
+      <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[11px] text-emerald-200 ring-1 ring-emerald-400/30">1</span>
+      <p class="text-xs leading-relaxed text-green-100/85"><span class="font-semibold text-white">點名你的失分洞</span>：例如「第 7 洞 Par 5 打 +2，問題在第二桿選桿冒進」。</p>
+    </li>
+    <li class="flex items-start gap-2.5">
+      <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[11px] text-emerald-200 ring-1 ring-emerald-400/30">2</span>
+      <p class="text-xs leading-relaxed text-green-100/85"><span class="font-semibold text-white">找出技術弱項</span>：依洞型統計推斷你是輸在開球、鐵桿、短桿還是推桿。</p>
+    </li>
+    <li class="flex items-start gap-2.5">
+      <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-[11px] text-emerald-200 ring-1 ring-emerald-400/30">3</span>
+      <p class="text-xs leading-relaxed text-green-100/85"><span class="font-semibold text-white">給下一場策略</span>：可立刻執行的練習與止損打法，下場直接少幾桿。</p>
+    </li>
+  </ul>
+</div>
+{%- endmacro %}
+
+{# —— 動能條（回訪即見：連續 / 本月 / 下一個目標）—— #}
+{% macro momentum_strip(eng) -%}
+{% if eng %}
+<section class="reveal mb-6 overflow-hidden rounded-2xl border border-champ/25 bg-gradient-to-r from-champ/10 via-black/25 to-black/35 p-4 shadow-lg ring-1 ring-white/10 sm:p-5">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+
+    {# 身份問候（點擊前往我的進步） #}
+    <a href="{{ url_for('progress') }}"
+       class="group flex shrink-0 items-center gap-3 no-underline sm:pr-5 sm:border-r sm:border-white/10">
+      <span class="text-3xl leading-none">{{ eng.level_icon }}</span>
+      <div class="min-w-0">
+        <p class="text-[11px] font-semibold uppercase tracking-widest text-champ-light/70">歡迎回來</p>
+        <p class="truncate font-serif text-base font-bold text-white transition group-hover:text-champ-light">{{ eng.level_title }}
+          <span class="text-champ-light/60 transition group-hover:translate-x-0.5">→</span>
+        </p>
+      </div>
+    </a>
+
+    {# 三格動能 #}
+    <div class="grid flex-1 grid-cols-3 gap-3">
+
+      {# 連續週數 #}
+      <div class="rounded-xl bg-black/25 px-3 py-2.5 text-center ring-1 ring-white/10">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-champ-light/65">連續</p>
+        {% if eng.streak_weeks > 0 %}
+        <p class="mt-0.5 flex items-center justify-center gap-1 text-xl font-black tabular-nums {{ 'text-orange-300' if eng.streak_status == 'at_risk' else 'text-white' }}">
+          <span class="flame">🔥</span><span data-countup="{{ eng.streak_weeks }}">{{ eng.streak_weeks }}</span>
+        </p>
+        <p class="text-[10px] {{ 'text-orange-300/80' if eng.streak_status == 'at_risk' else 'text-green-200/55' }}">
+          {{ '週 · 快斷了' if eng.streak_status == 'at_risk' else '週連續' }}
+        </p>
+        {% else %}
+        <p class="mt-0.5 text-xl font-black text-white">—</p>
+        <p class="text-[10px] text-green-200/55">本週開賽</p>
+        {% endif %}
+      </div>
+
+      {# 本月進度 #}
+      <div class="rounded-xl bg-black/25 px-3 py-2.5 text-center ring-1 ring-white/10">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-champ-light/65">本月</p>
+        <p class="mt-0.5 text-xl font-black tabular-nums text-white">
+          <span data-countup="{{ eng.month_rounds }}">{{ eng.month_rounds }}</span><span class="text-sm text-green-200/55">/{{ eng.month_goal }}</span>
+        </p>
+        <div class="mt-1.5 h-1 overflow-hidden rounded-full bg-white/10">
+          <div class="h-full rounded-full bg-gradient-to-r from-champ to-champ-light" style="width: {{ eng.month_goal_pct }}%"></div>
+        </div>
+      </div>
+
+      {# 下一個目標 #}
+      <div class="rounded-xl bg-black/25 px-3 py-2.5 text-center ring-1 ring-white/10">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-champ-light/65">下一目標</p>
+        {% if eng.next_goal %}
+        <p class="mt-0.5 truncate text-base font-bold text-white" title="{{ eng.next_goal.name }}">{{ eng.next_goal.icon }} {{ eng.next_goal.name }}</p>
+        <div class="mt-1.5 h-1 overflow-hidden rounded-full bg-white/10">
+          <div class="h-full rounded-full bg-gradient-to-r from-champ to-champ-light" style="width: {{ eng.next_goal.progress }}%"></div>
+        </div>
+        {% else %}
+        <p class="mt-0.5 text-base font-bold text-champ-light">🏆 全數達成</p>
+        <p class="text-[10px] text-green-200/55">高手中的高手</p>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</section>
+{% endif %}
+{%- endmacro %}
+
+{# —— 成長儀表板（黏著引擎）—— #}
+{% macro growth_dashboard(eng) -%}
+{% if eng %}
+<section class="reveal mb-8 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.08] via-black/20 to-black/40 p-5 shadow-xl ring-1 ring-white/10 sm:p-7">
+  <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+
+    {# 等級 / 身份認同 #}
+    <div class="lift flex items-center gap-4 rounded-2xl bg-black/25 p-4 ring-1 ring-white/10">
+      <div class="relative flex h-20 w-20 shrink-0 items-center justify-center">
+        <svg class="h-20 w-20 -rotate-90" viewBox="0 0 36 36" aria-hidden="true">
+          <circle cx="18" cy="18" r="15.9155" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="3"></circle>
+          <circle class="ring-progress" cx="18" cy="18" r="15.9155" fill="none" stroke="#eab308" stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-dasharray="0 100" data-ring="{{ eng.level_pct }}"></circle>
+        </svg>
+        <span class="absolute text-2xl">{{ eng.level_icon }}</span>
+      </div>
+      <div class="min-w-0">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-gold-light/80">Lv.{{ eng.level }} · 球手等級</p>
+        <p class="truncate text-lg font-bold text-white">{{ eng.level_title }}</p>
+        {% if eng.is_max_level %}
+        <p class="mt-0.5 text-xs text-emerald-300/80">已達最高等級 · 維持榮耀</p>
+        {% elif eng.next_title %}
+        <p class="mt-0.5 text-xs text-green-200/60">再進步 {{ eng.level_remaining }} 桿 → {{ eng.next_title }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    {# 連續週數 / 損失厭惡 #}
+    <div class="lift flex items-center gap-4 rounded-2xl p-4 ring-1
+                {% if eng.streak_status == 'at_risk' %}bg-orange-500/15 ring-orange-400/40
+                {% elif eng.streak_status == 'active' %}bg-emerald-500/12 ring-emerald-400/30
+                {% else %}bg-black/25 ring-white/10{% endif %}">
+      <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-black/30 text-4xl ring-1 ring-white/10">
+        {% if eng.streak_weeks > 0 %}<span class="flame">🔥</span>{% else %}🧊{% endif %}
+      </div>
+      <div class="min-w-0">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-gold-light/80">連續出場</p>
+        <p class="text-2xl font-black tabular-nums text-white"><span data-countup="{{ eng.streak_weeks }}">{{ eng.streak_weeks }}</span> <span class="text-sm font-semibold text-green-200/70">週</span></p>
+        {% if eng.streak_status == 'at_risk' %}
+        <p class="mt-0.5 text-xs font-semibold text-orange-200">本週還沒記分 · 別讓連勝中斷！</p>
+        {% elif eng.streak_status == 'active' %}
+        <p class="mt-0.5 text-xs text-emerald-200/80">本週已出場 · 保持節奏</p>
+        {% else %}
+        <p class="mt-0.5 text-xs text-green-200/55">本週記一場 · 重啟連勝</p>
+        {% endif %}
+      </div>
+    </div>
+
+    {# 本月目標 / 稀缺 #}
+    <div class="lift rounded-2xl bg-black/25 p-4 ring-1 ring-white/10">
+      <div class="flex items-end justify-between">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-gold-light/80">本月目標</p>
+        <p class="text-xs text-green-200/60">剩 {{ eng.days_left_in_month }} 天</p>
+      </div>
+      <p class="mt-1 text-2xl font-black tabular-nums text-white">
+        <span data-countup="{{ eng.month_rounds }}">{{ eng.month_rounds }}</span><span class="text-sm font-semibold text-green-200/60"> / {{ eng.month_goal }} 場</span>
+      </p>
+      <div class="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
+        <div class="h-full rounded-full bg-gradient-to-r from-gold to-gold-light transition-all" style="width: {{ eng.month_goal_pct }}%;"></div>
+      </div>
+      {% if eng.best_to_par is not none %}
+      <p class="mt-2 text-xs text-green-200/60">個人最佳 <span class="font-bold text-gold-light">{{ to_par_text(eng.best_to_par) }}</span>（{{ eng.best_total }} 桿）</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {# 下一個成就 / 目標漸進 #}
+  {% if eng.next_goal %}
+  <div class="mt-5 flex items-center gap-4 rounded-2xl border border-gold/30 bg-gold/10 p-4">
+    <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-black/30 text-2xl ring-1 ring-gold/40">{{ eng.next_goal.icon }}</span>
+    <div class="min-w-0 flex-1">
+      <p class="text-xs font-bold text-gold-light">下一個成就 · {{ eng.next_goal.name }}</p>
+      <p class="truncate text-sm text-green-100/80">{{ eng.next_goal.desc }}</p>
+      <div class="mt-2 flex items-center gap-2">
+        <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
+          <div class="h-full rounded-full bg-gold-light transition-all" style="width: {{ eng.next_goal.progress }}%;"></div>
+        </div>
+        <span class="shrink-0 text-[11px] font-semibold tabular-nums text-green-200/70">{{ eng.next_goal.hint }}</span>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {# 成就牆 #}
+  <div class="mt-5">
+    <div class="mb-3 flex items-center justify-between">
+      <p class="text-sm font-bold text-white">成就牆</p>
+      <span class="rounded-full bg-white/10 px-3 py-0.5 text-xs font-semibold text-gold-light ring-1 ring-white/10">{{ eng.earned_count }} / {{ eng.total_achievements }} 解鎖</span>
+    </div>
+    <div class="grid grid-cols-3 gap-2 sm:grid-cols-5">
+      {% for a in eng.achievements %}
+      <div class="group/badge relative flex flex-col items-center gap-1 rounded-xl p-2.5 text-center ring-1 transition
+                  {% if a.earned %}badge-earned bg-gradient-to-br from-gold/25 to-amber-700/10 ring-gold/40
+                  {% else %}bg-black/25 ring-white/10{% endif %}"
+           title="{{ a.name }} · {{ a.desc }}">
+        <span class="text-2xl {% if not a.earned %}opacity-30 grayscale{% endif %}">{{ a.icon }}</span>
+        <span class="text-[10px] font-semibold leading-tight {% if a.earned %}text-gold-light{% else %}text-green-200/45{% endif %}">{{ a.name }}</span>
+        {% if not a.earned and a.progress > 0 %}
+        <div class="h-1 w-full overflow-hidden rounded-full bg-white/10">
+          <div class="h-full rounded-full bg-green-400/60" style="width: {{ a.progress }}%;"></div>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+{%- endmacro %}
+
+{# —— 斷連挽留橫幅（損失厭惡 / 未竟任務）—— #}
+{% macro retention_banner(eng, resume_url=none, score_url='#') -%}
+{% if eng and eng.streak_status == 'at_risk' and eng.streak_weeks > 0 %}
+<div class="reveal mb-6 flex flex-col items-start gap-3 rounded-2xl border border-orange-400/40 bg-gradient-to-r from-orange-500/20 to-amber-600/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+  <div class="flex items-center gap-3">
+    <span class="text-3xl">🔥</span>
+    <div>
+      <p class="text-sm font-bold text-orange-100">你已連續 {{ eng.streak_weeks }} 週出場！</p>
+      <p class="text-xs text-orange-200/80">本週還沒記分，打一場就能延續連勝。</p>
+    </div>
+  </div>
+  <a href="{{ score_url }}" class="shrink-0 rounded-xl bg-gold px-4 py-2 text-sm font-bold text-fairway-dark shadow-md transition hover:bg-gold-light no-underline">立即記分 →</a>
+</div>
+{% endif %}
+{%- endmacro %}
+
 {% macro cta_button(url, text, full=false) -%}
 <a href="{{ url }}"
-   class="{% if full %}w-full{% else %}w-full sm:w-auto{% endif %} group inline-flex items-center justify-center gap-3 rounded-2xl bg-fairway-dark px-10 py-5 text-xl font-bold text-gold-light shadow-[0_8px_30px_rgba(0,0,0,0.45)] ring-2 ring-gold/60 transition hover:bg-[#14532d] hover:text-yellow-300 hover:shadow-[0_12px_40px_rgba(202,138,4,0.25)] hover:ring-gold-light active:scale-[0.98] no-underline sm:text-2xl">
+   class="pulse-cta {% if full %}w-full{% else %}w-full sm:w-auto{% endif %} group inline-flex items-center justify-center gap-3 rounded-2xl bg-fairway-dark px-10 py-5 text-xl font-bold text-gold-light shadow-[0_8px_30px_rgba(0,0,0,0.45)] ring-2 ring-gold/60 transition hover:bg-[#14532d] hover:text-yellow-300 hover:shadow-[0_12px_40px_rgba(202,138,4,0.25)] hover:ring-gold-light active:scale-[0.98] no-underline sm:text-2xl">
   <span class="flex h-10 w-10 items-center justify-center rounded-full bg-gold/20 ring-1 ring-gold-light/50 transition group-hover:bg-gold/30">⛳</span>
   {{ text }}
   <svg class="h-6 w-6 transition group-hover:translate-x-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>

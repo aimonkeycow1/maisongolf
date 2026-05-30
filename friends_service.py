@@ -149,6 +149,97 @@ def pending_incoming(user_id: int) -> list[FriendRequest]:
     )
 
 
+def get_friend_activity_feed(user, limit: int = 10) -> list[dict]:
+    """
+    返回好友最近的動態列表，每條包含：
+    {type, name, headline, sub, icon, date, round_id}
+    """
+    from round_storage import load_rounds_visible_to_user
+    from progress import compute_progress
+
+    friends = list_friends(user.id)
+    if not friends:
+        return []
+
+    items: list[dict] = []
+    for friend in friends:
+        try:
+            rnds = load_rounds_visible_to_user(friend)
+        except Exception:
+            continue
+        # 只取最近 5 場，避免太慢
+        recent = sorted(rnds, key=lambda r: r.get("date", ""), reverse=True)[:5]
+        for r in recent:
+            players = r.get("players", [])
+            # 找這個好友在這場的成績
+            p = next((pl for pl in players if pl.get("name") == friend.username), None)
+            total = p.get("total") if p else None
+            par_total = r.get("par_total") or 72
+            to_par = (total - par_total) if total else None
+            date = r.get("date", "")
+
+            headline = ""
+            icon = "⛳"
+            if total and to_par is not None:
+                if total <= 80:
+                    icon = "🦅"
+                    headline = f"打出 {total} 桿！破80！"
+                elif total <= 90:
+                    icon = "🏆"
+                    headline = f"打出 {total} 桿！破90！"
+                elif total <= 100:
+                    icon = "🎯"
+                    headline = f"打出 {total} 桿，破百！"
+                else:
+                    to_str = f"+{to_par}" if to_par > 0 else str(to_par)
+                    icon = "⛳"
+                    headline = f"完成一場 {total} 桿（{to_str}）"
+            else:
+                headline = "完成一場新記錄"
+
+            course = r.get("course") or r.get("course_name") or "球場"
+            items.append({
+                "type": "round",
+                "user_id": friend.id,
+                "name": friend.username,
+                "headline": headline,
+                "sub": f"{date} · {course}",
+                "icon": icon,
+                "date": date,
+                "round_id": r.get("id"),
+            })
+
+        # 里程碑
+        try:
+            prog = compute_progress(rnds, friend)
+            if prog:
+                for m in prog.get("milestones", []):
+                    if m["achieved"]:
+                        items.append({
+                            "type": "milestone",
+                            "user_id": friend.id,
+                            "name": friend.username,
+                            "headline": f"達成里程碑：{m['label']}！",
+                            "sub": f"{prog['total_rounds']} 場累積",
+                            "icon": m["icon"],
+                            "date": "",
+                            "round_id": None,
+                        })
+                        break  # 一人只顯示最大里程碑一條
+        except Exception:
+            pass
+
+    # 按日期排序，去重，取最新 limit 條
+    seen_keys: set = set()
+    deduped = []
+    for it in sorted(items, key=lambda x: x["date"], reverse=True):
+        k = (it["user_id"], it.get("round_id") or it["headline"])
+        if k not in seen_keys:
+            seen_keys.add(k)
+            deduped.append(it)
+    return deduped[:limit]
+
+
 def pending_outgoing(user_id: int) -> list[FriendRequest]:
     return (
         FriendRequest.query.filter_by(from_user_id=user_id, status=STATUS_PENDING)

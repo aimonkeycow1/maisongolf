@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% from '_macros.html' import cta_button %}
+{% block title %}{{ review.year }} 年度回顧 · Maison Golf{% endblock %}
+{% block content %}
+
+{# 頁首 #}
+<div class="reveal mb-6 flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <p class="text-xs font-bold uppercase tracking-[0.25em] text-champ-light/70">Year in Review</p>
+    <h1 class="mt-1 font-brand text-3xl font-bold text-white sm:text-4xl">
+      {{ review.year }} <span class="text-champ-light">年度回顧</span>
+    </h1>
+    <p class="mt-2 text-sm text-green-200/65">你的 {{ review.year }} 年高爾夫全記錄 — 每一桿都算數。</p>
+  </div>
+  {% if available_years and available_years|length > 1 %}
+  <div class="flex flex-wrap gap-2">
+    {% for yr in available_years %}
+    <a href="{{ url_for('year_review', year=yr) }}"
+       class="rounded-xl border px-3 py-1.5 text-xs font-semibold no-underline transition
+              {% if yr == review.year %}border-champ/60 bg-champ/20 text-champ-light{% else %}border-white/15 bg-white/5 text-green-200/70 hover:bg-white/10{% endif %}">
+      {{ yr }}
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+{% if not review.has_data %}
+<section class="reveal overflow-hidden rounded-3xl border border-champ/25 bg-gradient-to-br from-champ/10 via-black/25 to-black/40 p-8 text-center shadow-xl">
+  <div class="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-champ/15 text-4xl">📅</div>
+  <h2 class="font-serif text-2xl font-bold text-white">{{ review.year }} 年尚無記錄</h2>
+  <p class="mx-auto mt-3 max-w-md text-sm leading-relaxed text-green-200/70">
+    開始記分後，這裡會自動生成你的年度高爾夫總結。
+  </p>
+  <div class="mt-8 flex justify-center">
+    {{ cta_button(url_for('score_entry'), '開始我的第一場', full=false) }}
+  </div>
+</section>
+{% else %}
+
+{# ===== 年度英雄數字 ===== #}
+<section class="reveal mb-6 overflow-hidden rounded-3xl border border-champ/30 bg-gradient-to-br from-[#0c2418] via-[#0a1c12] to-black/60 p-6 shadow-2xl ring-1 ring-white/10 sm:p-9">
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+    <div class="text-center sm:text-left">
+      <p class="text-[11px] font-bold uppercase tracking-widest text-champ-light/60">Total Rounds</p>
+      <p class="mt-1 font-brand text-6xl font-black leading-none gold-shimmer">{{ review.total_rounds }}</p>
+      <p class="mt-1 text-xs text-green-200/55">場出場記錄</p>
+    </div>
+
+    <div class="text-center sm:text-left">
+      <p class="text-[11px] font-bold uppercase tracking-widest text-champ-light/60">Total Holes</p>
+      <p class="mt-1 font-brand text-6xl font-black leading-none text-white">{{ review.total_holes }}</p>
+      <p class="mt-1 text-xs text-green-200/55">洞累積擊球</p>
+    </div>
+
+    {% if review.avg_total %}
+    <div class="text-center sm:text-left">
+      <p class="text-[11px] font-bold uppercase tracking-widest text-champ-light/60">Avg Score</p>
+      <p class="mt-1 font-brand text-6xl font-black leading-none text-white">{{ review.avg_total }}</p>
+      <p class="mt-1 text-xs text-green-200/55">
+        桿 · 平均 {{ '+' if review.avg_to_par >= 0 else '' }}{{ review.avg_to_par }}
+      </p>
+    </div>
+    {% endif %}
+
+    <div class="text-center sm:text-left">
+      <p class="text-[11px] font-bold uppercase tracking-widest text-champ-light/60">Wins</p>
+      <p class="mt-1 font-brand text-6xl font-black leading-none text-white">{{ review.wins }}</p>
+      <p class="mt-1 text-xs text-green-200/55">場同組第一</p>
+    </div>
+  </div>
+</section>
+
+{# ===== 最佳 / 最差場次 ===== #}
+{% if review.best_round %}
+<section class="reveal mb-6 grid gap-4 sm:grid-cols-2">
+  <a href="{{ url_for('round_detail', round_id=review.best_round.id) }}"
+     class="lift group overflow-hidden rounded-2xl border border-gold/35 bg-gradient-to-br from-gold/15 to-transparent p-5 no-underline ring-1 ring-white/10">
+    <p class="text-[11px] font-bold uppercase tracking-widest text-gold-light/80">🏆 年度最佳</p>
+    <p class="mt-2 font-brand text-5xl font-black leading-none text-white group-hover:text-gold-light">{{ review.best_round.total }}</p>
+    <p class="mt-1.5 truncate text-xs text-green-200/55">{{ review.best_round.date }} · {{ review.best_round.course or '—' }}</p>
+  </a>
+  <div class="overflow-hidden rounded-2xl border border-white/10 bg-black/25 p-5 ring-1 ring-white/10">
+    <p class="text-[11px] font-bold uppercase tracking-widest text-green-300/60">📍 最常打的球場</p>
+    <p class="mt-2 truncate text-xl font-bold text-white">{{ review.fav_course[0] if review.fav_course else '—' }}</p>
+    <p class="mt-1 text-xs text-green-200/55">共 {{ review.fav_course[1] if review.fav_course else 0 }} 場記錄</p>
+  </div>
+</section>
+{% endif %}
+
+{# ===== 上下半年進步比較 ===== #}
+{% if review.h1_avg and review.h2_avg %}
+<section class="reveal mb-6 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.06] via-black/20 to-black/40 p-5 shadow-xl ring-1 ring-white/10 sm:p-7">
+  <div class="mb-4">
+    <p class="text-xs font-bold uppercase tracking-widest text-champ-light/70">Half-Year Progress</p>
+    <h2 class="mt-1 text-lg font-bold text-white">上半年 vs 下半年</h2>
+  </div>
+  <div class="flex items-center gap-8">
+    <div class="text-center">
+      <p class="text-[11px] text-green-200/50">1–6 月</p>
+      <p class="font-brand text-4xl font-black text-white/80">{{ review.h1_avg }}</p>
+      <p class="text-xs text-green-200/40">平均桿數</p>
+    </div>
+    <div class="flex flex-col items-center gap-1">
+      {% if review.half_improved %}
+      <span class="text-2xl">📉</span>
+      <span class="rounded-full bg-emerald-500/25 px-3 py-1 text-sm font-black text-emerald-300">
+        ▼ {{ review.half_year_delta|abs }} 桿
+      </span>
+      <p class="text-xs text-emerald-300/70">下半年更強！</p>
+      {% else %}
+      <span class="text-2xl">📈</span>
+      <span class="rounded-full bg-orange-500/20 px-3 py-1 text-sm font-bold text-orange-300">
+        ▲ {{ review.half_year_delta|abs }} 桿
+      </span>
+      <p class="text-xs text-orange-300/70">上半年較佳</p>
+      {% endif %}
+    </div>
+    <div class="text-center">
+      <p class="text-[11px] text-green-200/50">7–12 月</p>
+      <p class="font-brand text-4xl font-black {{ 'text-champ-light' if review.half_improved else 'text-white/80' }}">{{ review.h2_avg }}</p>
+      <p class="text-xs text-green-200/40">平均桿數</p>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# ===== 月份出場熱力圖 ===== #}
+<section class="reveal mb-6 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.05] via-black/20 to-black/40 p-5 shadow-xl ring-1 ring-white/10 sm:p-7">
+  <div class="mb-4">
+    <p class="text-xs font-bold uppercase tracking-widest text-champ-light/70">Monthly Activity</p>
+    <h2 class="mt-1 text-lg font-bold text-white">每月出場</h2>
+    {% if review.most_active_month and review.most_active_month.count > 0 %}
+    <p class="mt-0.5 text-xs text-green-200/55">
+      最活躍月份：{{ review.most_active_month.label }}（{{ review.most_active_month.count }} 場）
+    </p>
+    {% endif %}
+  </div>
+  {% set max_count = review.month_data | map(attribute='count') | max %}
+  <div class="grid grid-cols-12 gap-1.5">
+    {% for m in review.month_data %}
+    <div class="flex flex-col items-center gap-1">
+      <div class="w-full rounded-lg transition"
+           style="height: {{ [8 + (m.count / [max_count, 1]|max) * 56, 8]|max }}px;
+                  background: {{ 'rgba(212,175,55,' + (0.2 + (m.count / [max_count, 1]|max) * 0.7)|string + ')' if m.count > 0 else 'rgba(255,255,255,0.05)' }};
+                  min-height: 8px;">
+      </div>
+      <p class="text-[10px] text-green-200/50">{{ m.label }}</p>
+      {% if m.count > 0 %}<p class="text-[11px] font-bold text-champ-light">{{ m.count }}</p>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+{# ===== 桿數分布 ===== #}
+{% set total_h = review.eagles + review.birdies + review.pars + review.bogeys + review.doubles %}
+{% if total_h > 0 %}
+<section class="reveal mb-6 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.05] via-black/20 to-black/40 p-5 shadow-xl ring-1 ring-white/10 sm:p-7">
+  <div class="mb-4">
+    <p class="text-xs font-bold uppercase tracking-widest text-champ-light/70">Shot Distribution</p>
+    <h2 class="mt-1 text-lg font-bold text-white">{{ review.year }} 年全年桿數總覽</h2>
+    <p class="mt-0.5 text-xs text-green-200/55">共 {{ total_h }} 洞</p>
+  </div>
+
+  <div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+    {% for item in [
+      {'label': 'Eagle+', 'count': review.eagles, 'color': '#3b82f6', 'icon': '🦅'},
+      {'label': 'Birdie', 'count': review.birdies, 'color': '#22c55e', 'icon': '🐦'},
+      {'label': 'Par', 'count': review.pars, 'color': '#94a3b8', 'icon': '⛳'},
+      {'label': 'Bogey', 'count': review.bogeys, 'color': '#f97316', 'icon': '😬'},
+      {'label': 'Double+', 'count': review.doubles, 'color': '#ef4444', 'icon': '💥'},
+    ] %}
+    <div class="flex items-center gap-2 rounded-xl bg-black/25 px-3 py-2.5 ring-1 ring-white/10">
+      <span class="text-lg">{{ item.icon }}</span>
+      <div>
+        <p class="text-xs font-bold text-white">{{ item.label }}</p>
+        <p class="text-lg font-black tabular-nums leading-none" style="color: {{ item.color }}">{{ item.count }}</p>
+        <p class="text-[11px] text-green-200/50">{{ ((item.count / total_h) * 100)|round|int }}%</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# 橫向比例條 #}
+  <div class="flex h-4 overflow-hidden rounded-full ring-1 ring-white/10">
+    {% for item in [
+      {'count': review.eagles, 'color': '#3b82f6'},
+      {'count': review.birdies, 'color': '#22c55e'},
+      {'count': review.pars, 'color': '#64748b'},
+      {'count': review.bogeys, 'color': '#f97316'},
+      {'count': review.doubles, 'color': '#ef4444'},
+    ] %}
+    {% set pct = (item.count / total_h * 100)|round(1) %}
+    {% if pct > 0 %}
+    <div style="width: {{ pct }}%; background: {{ item.color }};" title="{{ pct }}%"></div>
+    {% endif %}
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{# ===== 年度 Summary Card ===== #}
+<section class="reveal mb-8 overflow-hidden rounded-3xl border border-champ/25 bg-gradient-to-br from-[#0c2418] via-[#0a1c12] to-black/80 p-6 text-center shadow-2xl ring-1 ring-champ/20 sm:p-10">
+  <p class="text-3xl mb-3">🏌️</p>
+  <h2 class="font-brand text-2xl font-bold text-white">{{ review.year }} 年的你</h2>
+  <p class="mx-auto mt-3 max-w-md text-sm leading-relaxed text-green-200/75">
+    打了 <strong class="text-champ-light">{{ review.total_rounds }} 場</strong>，
+    共 <strong class="text-white">{{ review.total_holes }} 洞</strong>，
+    拿下 <strong class="text-gold-light">{{ review.wins }} 次冠軍</strong>，
+    打出 <strong class="text-blue-300">{{ review.eagles }} 個 Eagle</strong>
+    和 <strong class="text-emerald-300">{{ review.birdies }} 個 Birdie</strong>。
+    {% if review.best_round %}
+    最佳一場：<strong class="text-white">{{ review.best_round.total }} 桿</strong>。
+    {% endif %}
+    {% if review.half_improved %}
+    更值得驕傲的是，下半年表現比上半年進步了 <strong class="text-champ-light">{{ review.half_year_delta|abs }} 桿</strong>。
+    {% endif %}
+  </p>
+  <div class="mt-6 flex flex-wrap justify-center gap-3">
+    <a href="{{ url_for('progress') }}"
+       class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-champ to-champ-light px-6 py-3 text-sm font-bold text-[#07150e] shadow-lg no-underline transition hover:brightness-110">
+      📈 查看差點進步
+    </a>
+    <a href="{{ url_for('score_entry') }}"
+       class="inline-flex items-center gap-2 rounded-xl border border-champ/35 bg-champ/15 px-6 py-3 text-sm font-semibold text-champ-light no-underline transition hover:bg-champ/25">
+      ⛳ 開始新場次
+    </a>
+  </div>
+</section>
+
+{% endif %}
+{% endblock %}

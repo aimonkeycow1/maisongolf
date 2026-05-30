@@ -4,7 +4,19 @@ import os
 import re
 import unicodedata
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, send_file, abort
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+    session,
+    send_file,
+    abort,
+    current_app,
+    make_response,
+)
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import func
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -298,7 +310,15 @@ def profile():
 
 @auth_bp.route("/logout", methods=["GET", "POST"])
 def logout():
+    """登出並清除 Session /「記住我」Cookie，避免無法切換測試帳戶。"""
     if current_user.is_authenticated:
         logout_user()
     session.clear()
-    return redirect(url_for("auth.login"))
+    resp = make_response(redirect(url_for("auth.login")))
+    # 明確刪除 Cookie（部分瀏覽器在 remember 開啟時僅 logout_user 仍會自動登回）
+    for key in (
+        current_app.config.get("SESSION_COOKIE_NAME", "session"),
+        current_app.config.get("REMEMBER_COOKIE_NAME", "remember_token"),
+    ):
+        resp.set_cookie(key, "", expires=0, max_age=0)
+    return resp

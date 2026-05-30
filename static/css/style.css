@@ -1,6 +1,172 @@
-/* 僅保留 Tailwind 無法涵蓋的資源 */
+/* =========================================================================
+   Maison Golf — 視覺設計系統（藝術指導 + 行為心理學）
+   目標：第一印象「喜歡」、回訪「依賴」、獎勵「成癮」、戰報「分享」。
+   原則：精品會所質感（深祖母綠 × 香檳金）、電影感光影、克制的獎勵動效。
+   ========================================================================= */
+
+:root {
+  --gold: #ca8a04;
+  --gold-light: #eab308;
+  --gold-bright: #fde047;
+  --champ: #d9b78c;
+  --champ-light: #f6e7c5;
+  --champ-bright: #fffaf0;
+  --fairway-dark: #166534;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 .hero-bg-image {
   background-image: url("/static/img/hero.jpg");
   background-size: cover;
   background-position: center;
+}
+
+/* ---------- 電影感背景：極光流動 + 細顆粒 ---------- */
+body {
+  position: relative;
+}
+body::before {
+  /* 緩慢漂移的金/翠光暈，營造「會所夜色」氛圍 */
+  content: "";
+  position: fixed;
+  inset: -20%;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(40rem 32rem at 78% 12%, rgba(227, 183, 160, 0.16), transparent 62%),
+    radial-gradient(40rem 36rem at 16% 88%, rgba(34, 99, 64, 0.30), transparent 66%),
+    radial-gradient(34rem 30rem at 50% 50%, rgba(217, 183, 140, 0.06), transparent 70%);
+  filter: blur(10px);
+  animation: aurora-drift 28s var(--ease-out-expo) infinite alternate;
+}
+body::after {
+  /* 高級雜訊紋理，消除塑膠感 */
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+body > * {
+  position: relative;
+  z-index: 1;
+}
+@keyframes aurora-drift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(2%, 1.5%, 0) scale(1.06); }
+  100% { transform: translate3d(-2%, -1%, 0) scale(1.04); }
+}
+
+/* ---------- 玻璃擬態（高級感卡片） ---------- */
+.glass {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.03));
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* ---------- 黃金閃光文字（品牌 / 重點數字） ---------- */
+.gold-shimmer {
+  background: linear-gradient(110deg, var(--champ) 18%, var(--champ-light) 46%, var(--champ-bright) 52%, var(--champ-light) 58%, var(--champ) 82%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer-sweep 5.5s linear infinite;
+}
+@keyframes shimmer-sweep {
+  0%   { background-position: 220% 0; }
+  100% { background-position: -120% 0; }
+}
+
+/* ---------- 進場揭示（電影感 fade-up，支援 stagger） ---------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(22px) scale(0.985);
+  transition: opacity 0.7s var(--ease-out-expo), transform 0.7s var(--ease-out-expo);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+.reveal.in {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* ---------- 等級環填充動畫 ---------- */
+.ring-progress {
+  transition: stroke-dasharray 1.4s var(--ease-out-expo) 0.25s;
+}
+
+/* ---------- 連勝火焰脈動 ---------- */
+.flame {
+  display: inline-block;
+  animation: flame-pulse 1.8s ease-in-out infinite;
+  transform-origin: center bottom;
+  filter: drop-shadow(0 0 6px rgba(251, 146, 60, 0.55));
+}
+@keyframes flame-pulse {
+  0%, 100% { transform: scale(1) rotate(-2deg); }
+  50%      { transform: scale(1.14) rotate(2deg); }
+}
+
+/* ---------- 成就解鎖：金色掃光 ---------- */
+.badge-earned {
+  position: relative;
+  overflow: hidden;
+}
+.badge-earned::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%);
+  transform: translateX(-120%);
+  animation: badge-sweep 4.5s ease-in-out infinite;
+}
+@keyframes badge-sweep {
+  0%, 60% { transform: translateX(-120%); }
+  80%, 100% { transform: translateX(120%); }
+}
+
+/* ---------- 卡片懸停光暈／微浮 ---------- */
+.lift {
+  transition: transform 0.4s var(--ease-out-expo), box-shadow 0.4s var(--ease-out-expo);
+}
+.lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 28px 60px -24px rgba(202, 138, 4, 0.35);
+}
+
+/* ---------- 主行動按鈕呼吸光（吸引第一次點擊） ---------- */
+.pulse-cta {
+  animation: cta-glow 2.8s ease-in-out infinite;
+}
+@keyframes cta-glow {
+  0%, 100% { box-shadow: 0 8px 30px rgba(0,0,0,0.45), 0 0 0 0 rgba(234,179,8,0.0); }
+  50%      { box-shadow: 0 8px 30px rgba(0,0,0,0.45), 0 0 26px 4px rgba(234,179,8,0.30); }
+}
+
+/* ---------- 數字 count-up 進行時的微光 ---------- */
+.counting { color: var(--gold-bright); }
+
+/* ---------- 成長曲線：路徑描繪動畫 ---------- */
+.chart-line {
+  stroke-dasharray: 2400;
+  stroke-dashoffset: 2400;
+  animation: chart-draw 1.6s var(--ease-out-expo, ease-out) 0.15s forwards;
+}
+@keyframes chart-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* ---------- 尊重「減少動態」偏好 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  body::before { animation: none; }
+  .gold-shimmer { animation: none; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .flame, .badge-earned::after, .pulse-cta, .ring-progress { animation: none; transition: none; }
+  .chart-line { animation: none; stroke-dashoffset: 0; }
 }

@@ -4,6 +4,61 @@
 {% block content %}
 <div id="round-page-root" data-round-id="{{ round.id }}" class="contents"></div>
 
+{# 完成一場的慶祝彈窗（confetti + 一鍵分享） #}
+{% if celebration %}
+<div id="celebrate-modal" class="fixed inset-0 z-[110] hidden items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+     role="dialog" aria-modal="true" aria-labelledby="celebrate-title" data-celebrate-close>
+  <div class="w-full max-w-md overflow-hidden rounded-3xl glass p-7 text-center shadow-2xl">
+    <p class="text-5xl">🎉</p>
+    <h2 id="celebrate-title" class="mt-3 font-brand text-3xl font-bold text-white">{{ celebration.headline }}</h2>
+    <p class="mt-1 font-serif text-sm text-champ-light/75">{{ celebration.player_name }} · 本場成績</p>
+
+    <div class="mt-5 flex items-end justify-center gap-3">
+      <span class="font-brand text-7xl font-bold leading-none gold-shimmer">{{ celebration.total }}</span>
+      <span class="mb-2 rounded-full bg-white/10 px-3 py-1 text-sm font-bold text-champ-light ring-1 ring-white/15">{{ to_par_text(celebration.to_par) }}</span>
+    </div>
+
+    {% if celebration.feats %}
+    <div class="mt-5 flex flex-wrap items-center justify-center gap-2">
+      {% for f in celebration.feats %}
+      <span class="inline-flex items-center gap-1.5 rounded-full border border-champ/35 bg-champ/10 px-3 py-1.5 text-xs font-semibold text-champ-light">
+        <span>{{ f.icon }}</span>{{ f.label }}
+      </span>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if celebration.next_goal %}
+    <div class="mt-6 rounded-2xl border border-white/10 bg-black/25 p-4 text-left">
+      <p class="text-[11px] font-bold uppercase tracking-widest text-champ-light/70">下一個目標</p>
+      <div class="mt-2 flex items-center gap-3">
+        <span class="text-2xl">{{ celebration.next_goal.icon }}</span>
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-bold text-white">{{ celebration.next_goal.name }}</p>
+          <p class="text-xs text-champ-light/70">還差一點 · {{ celebration.next_goal.hint }}</p>
+        </div>
+      </div>
+      <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+        <div class="h-full rounded-full bg-gradient-to-r from-champ to-champ-light" style="width: {{ celebration.next_goal.progress }}%"></div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="mt-7 grid gap-2.5">
+      <button type="button"
+              class="share-content-trigger pulse-cta flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-champ to-champ-light px-5 py-3.5 text-base font-bold text-[#07150e] transition hover:brightness-105"
+              data-round-id="{{ round.id }}" data-share-tab="card" data-celebrate-close-btn data-celebrate-close>
+        <span aria-hidden="true">📱</span> 生成分享戰報
+      </button>
+      <button type="button" data-celebrate-close-btn data-celebrate-close
+              class="w-full rounded-xl border border-white/15 bg-black/25 px-5 py-3 text-sm font-semibold text-champ-light transition hover:bg-white/10">
+        查看完整記分卡
+      </button>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {# Hero #}
 {% set round_hero = '/static/img/' ~ (round.course_id ~ '.jpg' if round.course_id else 'hero.jpg') %}
 <section class="relative mb-6 overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10">
@@ -53,6 +108,70 @@
   {% include '_ai_coach_widget.html' %}
 </section>
 
+{# ===== B3 同球場跨場次比較 ===== #}
+{% if course_cmp %}
+<section class="reveal mb-8 overflow-hidden rounded-2xl border border-champ/30 bg-gradient-to-br from-champ/10 via-black/25 to-black/40 p-5 shadow-xl ring-1 ring-white/10 sm:p-7">
+  <div class="mb-4">
+    <p class="text-xs font-bold uppercase tracking-widest text-champ-light/70">Course Comparison</p>
+    <h2 class="mt-1 text-lg font-bold text-white sm:text-xl">
+      上次 vs 這次 · {{ course_cmp.course }}
+    </h2>
+    <p class="mt-0.5 text-xs text-green-200/55">{{ course_cmp.prev_date }} → {{ course_cmp.current_date }}</p>
+  </div>
+
+  {# 總分對比 #}
+  <div class="mb-5 flex items-center gap-6">
+    <div class="text-center">
+      <p class="text-[11px] text-green-200/50">上次</p>
+      <p class="font-brand text-4xl font-black text-white/70">{{ course_cmp.prev_total }}</p>
+      <p class="text-xs text-green-200/40">{{ '+' if course_cmp.prev_to_par >= 0 else '' }}{{ course_cmp.prev_to_par }}</p>
+    </div>
+    <div class="flex flex-col items-center gap-1">
+      {% if course_cmp.improved %}
+      <span class="text-2xl">📉</span>
+      <span class="rounded-full bg-emerald-500/25 px-3 py-1 text-sm font-black text-emerald-300 ring-1 ring-emerald-400/40">
+        ▼ {{ (course_cmp.delta)|abs }} 桿
+      </span>
+      <p class="text-xs text-emerald-300/70">進步了！</p>
+      {% else %}
+      <span class="text-2xl">📈</span>
+      <span class="rounded-full bg-orange-500/20 px-3 py-1 text-sm font-bold text-orange-300 ring-1 ring-orange-400/30">
+        ▲ {{ course_cmp.delta }} 桿
+      </span>
+      <p class="text-xs text-orange-300/70">繼續加油</p>
+      {% endif %}
+    </div>
+    <div class="text-center">
+      <p class="text-[11px] text-green-200/50">這次</p>
+      <p class="font-brand text-4xl font-black {{ 'text-champ-light' if course_cmp.improved else 'text-white' }}">{{ course_cmp.curr_total }}</p>
+      <p class="text-xs {{ 'text-champ-light/70' if course_cmp.improved else 'text-green-200/40' }}">{{ '+' if course_cmp.curr_to_par >= 0 else '' }}{{ course_cmp.curr_to_par }}</p>
+    </div>
+  </div>
+
+  {# 逐洞比較（最多顯示前9洞） #}
+  {% if course_cmp.hole_diffs %}
+  <div class="space-y-1.5">
+    <p class="mb-2 text-xs font-semibold text-green-200/60">逐洞對比（負 = 進步，正 = 退步）</p>
+    <div class="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+      {% for h in course_cmp.hole_diffs[:9] %}
+      <div class="flex items-center justify-between rounded-xl px-3 py-2
+                  {% if h.diff < 0 %}border border-emerald-400/25 bg-emerald-500/10
+                  {% elif h.diff > 0 %}border border-red-400/20 bg-red-500/8
+                  {% else %}border border-white/10 bg-black/20{% endif %}">
+        <span class="text-xs text-green-200/60">#{{ h.hole }} P{{ h.par }}</span>
+        <span class="text-xs font-bold
+                     {% if h.diff < 0 %}text-emerald-300{% elif h.diff > 0 %}text-red-400{% else %}text-white/60{% endif %}">
+          {{ h.prev }} → {{ h.current }}
+          ({{ h.diff if h.diff != 0 else 'E' }})
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+
 {# 社交分享 #}
 <section class="mb-8 overflow-hidden rounded-2xl border border-gold/40 bg-gradient-to-br from-gold/15 via-fairway-dark/90 to-black/50 p-5 shadow-xl ring-1 ring-gold/30 sm:p-7">
   <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -64,7 +183,7 @@
     <button type="button"
             class="share-content-trigger inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-gold via-gold-light to-amber-300 px-6 py-3.5 text-sm font-black text-fairway-dark shadow-lg shadow-gold/25 transition hover:brightness-110"
             data-round-id="{{ round.id }}"
-            data-share-tab="photo">
+            data-share-tab="card">
       <span aria-hidden="true">📱</span>
       生成分享內容
     </button>

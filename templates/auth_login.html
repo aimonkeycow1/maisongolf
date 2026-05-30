@@ -2,55 +2,115 @@
 {% block title %}登入 · Maison Golf{% endblock %}
 {% block content %}
 
-<section class="mx-auto max-w-md rounded-2xl bg-black/30 p-6 shadow-xl ring-1 ring-white/10 sm:p-8">
-  <h1 class="text-xl font-bold text-white sm:text-2xl">登入 Maison Golf</h1>
-  <p class="mt-1 text-sm text-green-200/70">使用球友名稱與密碼登入；舊帳號也可用註冊 Email。</p>
+<div class="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class="mt-4 space-y-2">
-        {% for category, msg in messages %}
-          <p class="rounded-lg border px-3 py-2 text-sm
-                    {% if category == 'ok' %}border-emerald-500/40 bg-emerald-900/30 text-emerald-100
-                    {% else %}border-red-500/40 bg-red-900/30 text-red-100{% endif %}">{{ msg }}</p>
-        {% endfor %}
-      </div>
-    {% endif %}
-  {% endwith %}
+  {# ——— 左側：品牌故事 + 價值主張 ——— #}
+  <section class="reveal order-1">
+    <p class="mb-3 inline-flex items-center gap-2 rounded-full border border-champ/40 bg-black/30 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-champ backdrop-blur-sm">
+      Private Golf Club
+    </p>
+    <h1 class="font-brand text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
+      <span class="gold-shimmer">Maison Golf</span>
+    </h1>
+    <p class="mt-4 max-w-md font-serif text-base leading-relaxed text-champ-light/90 sm:text-lg">
+      你的私人高球會所。記錄每一桿、看見每一次進步，<br class="hidden sm:block">
+      和球友一起，把每場球都變成值得分享的故事。
+    </p>
 
-  <form method="post" class="mt-5 space-y-4">
-    <div>
-      <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gold-light">球友名稱</label>
-      <input type="text" name="username" required autocomplete="username"
-             value="{{ login_identifier or '' }}"
-             class="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-green-200/40 focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/40"
-             placeholder="球友名稱或 Email">
-    </div>
-    <div>
-      <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gold-light">密碼</label>
-      <input type="password" name="password" required autocomplete="current-password"
-             class="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-green-200/40 focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/40">
-    </div>
+    <ul class="mt-7 grid max-w-md gap-3">
+      <li class="lift flex items-center gap-4 rounded-2xl glass px-4 py-3.5">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-champ/15 text-2xl ring-1 ring-champ/40">🏆</span>
+        <div>
+          <p class="text-sm font-bold text-white">逐洞記分 · 自動戰績</p>
+          <p class="text-xs text-champ-light/65">多人同組即時記分，打完自動生成排行與記分卡</p>
+        </div>
+      </li>
+      <li class="lift flex items-center gap-4 rounded-2xl glass px-4 py-3.5">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-400/15 text-2xl ring-1 ring-emerald-400/40">✨</span>
+        <div>
+          <p class="text-sm font-bold text-white">AI 教練 · 賽後講評</p>
+          <p class="text-xs text-champ-light/65">逐洞分析爆洞與弱項，給你下一場的具體策略</p>
+        </div>
+      </li>
+      <li class="lift flex items-center gap-4 rounded-2xl glass px-4 py-3.5">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-champ/15 text-2xl ring-1 ring-rose/40">📱</span>
+        <div>
+          <p class="text-sm font-bold text-white">一鍵生成 · 戰報分享</p>
+          <p class="text-xs text-champ-light/65">自動套版的精美戰報與短片，直接發到球友群</p>
+        </div>
+      </li>
+    </ul>
 
-    <label class="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
-      <input type="checkbox" name="remember" value="1"
-             class="mt-0.5 h-4 w-4 shrink-0 accent-gold">
-      <span class="text-xs leading-relaxed text-green-200/75">
-        保持登入（此裝置 14 天）<br>
-        <span class="text-green-200/50">公用或他人手機請勿勾選；用完請點「登出」。</span>
+    <p class="mt-6 flex items-center gap-2 text-xs text-champ-light/55">
+      <span class="inline-flex -space-x-2">
+        <span class="h-6 w-6 rounded-full bg-champ/40 ring-2 ring-[#07150e]"></span>
+        <span class="h-6 w-6 rounded-full bg-emerald-400/40 ring-2 ring-[#07150e]"></span>
+        <span class="h-6 w-6 rounded-full bg-rose/40 ring-2 ring-[#07150e]"></span>
       </span>
-    </label>
+      與你的球友，一起登上排行榜
+    </p>
+  </section>
 
-    <button type="submit"
-            class="mt-2 flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-gold to-gold-light px-4 py-2.5 text-sm font-bold text-fairway-dark shadow-lg hover:brightness-110">
-      登入
-    </button>
-  </form>
+  {# ——— 右側：玻璃登入卡 ——— #}
+  <section class="reveal order-2" style="--reveal-delay: 140ms;">
+    <div class="mx-auto w-full max-w-md rounded-3xl glass p-6 sm:p-8">
+      <h2 class="font-brand text-2xl font-bold text-white sm:text-3xl">歡迎回來</h2>
+      <p class="mt-1 font-serif text-sm text-champ-light/70">登入後即可查看你的成長儀表板與戰績。</p>
 
-  <p class="mt-4 text-center text-xs text-green-200/70">
-    還沒有帳號？
-    <a href="{{ url_for('auth.register') }}" class="font-semibold text-gold-light hover:text-white">立即註冊</a>
-  </p>
-</section>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="mt-4 space-y-2">
+            {% for category, msg in messages %}
+              <p class="rounded-lg border px-3 py-2 text-sm
+                        {% if category == 'ok' %}border-emerald-500/40 bg-emerald-900/30 text-emerald-100
+                        {% else %}border-red-500/40 bg-red-900/30 text-red-100{% endif %}">{{ msg }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <form method="post" class="mt-6 space-y-4">
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-champ">球友名稱</label>
+          <input type="text" name="username" required autocomplete="username"
+                 value="{{ login_identifier or '' }}"
+                 class="w-full rounded-xl border border-white/15 bg-black/40 px-3.5 py-3 text-sm text-white placeholder:text-champ-light/40 transition focus:border-champ/60 focus:outline-none focus:ring-2 focus:ring-champ/40"
+                 placeholder="球友名稱或 Email">
+        </div>
+        <div>
+          <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-champ">密碼</label>
+          <input type="password" name="password" required autocomplete="current-password"
+                 class="w-full rounded-xl border border-white/15 bg-black/40 px-3.5 py-3 text-sm text-white placeholder:text-champ-light/40 transition focus:border-champ/60 focus:outline-none focus:ring-2 focus:ring-champ/40"
+                 placeholder="輸入密碼">
+        </div>
+
+        <label class="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
+          <input type="checkbox" name="remember" value="1" class="mt-0.5 h-4 w-4 shrink-0 accent-champ">
+          <span class="text-xs leading-relaxed text-champ-light/75">
+            保持登入（此裝置 14 天）<br>
+            <span class="text-champ-light/50">公用或他人手機請勿勾選；用完請點「登出」。</span>
+          </span>
+        </label>
+
+        <button type="submit"
+                class="pulse-cta mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-champ to-champ-light px-4 py-3 text-base font-bold text-[#07150e] shadow-lg transition hover:brightness-105 active:scale-[0.99]">
+          <span>進入會所</span>
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+        </button>
+      </form>
+
+      <p class="mt-5 text-center text-sm text-champ-light/70">
+        還沒有帳號？
+        <a href="{{ url_for('auth.register') }}" class="font-semibold text-champ hover:text-white">免費加入 →</a>
+      </p>
+      {% if dev_tools_enabled %}
+      <p class="mt-4 text-center text-xs text-sky-200/80">
+        本機測試：
+        <a href="{{ url_for('dev.test_hub') }}" class="font-bold text-sky-300 underline hover:text-sky-100">帳戶控制台（訪客 / sim01–50）</a>
+      </p>
+      {% endif %}
+    </div>
+  </section>
+</div>
 
 {% endblock %}

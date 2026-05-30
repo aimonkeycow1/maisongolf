@@ -19,15 +19,30 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.7"
+      # ── 資料庫 ─────────────────────────────────────────────────────────────
       # 從連結的 PostgreSQL 注入，勿寫死 value，以免覆蓋 Dashboard 手動設定的 DATABASE_URL
       - key: DATABASE_URL
         fromDatabase:
           name: maisongolf-db
           property: connectionString
+      # ── 安全密鑰 ───────────────────────────────────────────────────────────
       # 僅在「第一次」建立服務時自動產生；之後請在 Dashboard 固定同一組值，勿隨部署刪除
       - key: SECRET_KEY
         generateValue: true
       - key: SYNC_SECRET
         generateValue: true
+      # ── 生產環境標記 ────────────────────────────────────────────────────────
       - key: RENDER
         value: "true"
+      # ── AI 教練（選填） ────────────────────────────────────────────────────
+      # XAI_API_KEY / GROK_API_KEY：填入後 AI 教練改用 Grok API；不填則使用本地分析
+      # - key: XAI_API_KEY
+      #   value: "YOUR_XAI_API_KEY_HERE"
+      # ── 頭像 Cloudinary（選填但強烈建議填寫） ────────────────────────────
+      # 不填頭像存容器內，每次部署後消失
+      # - key: CLOUDINARY_CLOUD_NAME
+      #   value: "your_cloud_name"
+      # - key: CLOUDINARY_API_KEY
+      #   value: "your_api_key"
+      # - key: CLOUDINARY_API_SECRET
+      #   value: "your_api_secret"

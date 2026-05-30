@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from '_macros.html' import cta_button, trophy_icon, par_trend_badge %}
+{% from '_macros.html' import cta_button, trophy_icon, par_trend_badge, momentum_strip, growth_dashboard, retention_banner, sample_scorecard, ai_coach_preview %}
 {% block title %}歷史戰績 · Maison Golf{% endblock %}
 {% block content %}
 
@@ -160,11 +160,57 @@
 })();
 </script>
 
+{# 動能條（回訪即見 · 連續/本月/下一個目標） #}
+{{ momentum_strip(engagement) }}
+
+{# 斷連挽留橫幅（最高優先 · 損失厭惡） #}
+{{ retention_banner(engagement, score_url=url_for('score_entry')) }}
+
+{# ===== 好友動態 Feed ===== #}
+{% if friend_feed %}
+<section class="reveal mb-6 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.05] via-black/20 to-black/35 p-5 shadow-xl ring-1 ring-white/10">
+  <div class="mb-4 flex items-center justify-between gap-3">
+    <div>
+      <p class="text-[11px] font-bold uppercase tracking-widest text-champ-light/60">Friend Activity</p>
+      <h2 class="mt-0.5 text-base font-bold text-white">球友動態</h2>
+    </div>
+    <a href="{{ url_for('friends.friends_home') }}"
+       class="rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-green-200 no-underline transition hover:bg-white/10">
+      所有好友 →
+    </a>
+  </div>
+  <div class="space-y-2">
+    {% for item in friend_feed %}
+    <div class="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 transition hover:border-champ/30 hover:bg-black/30
+                {% if item.type == 'milestone' %}border-gold/25 bg-gold/5{% endif %}">
+      <span class="shrink-0 text-2xl">{{ item.icon }}</span>
+      <div class="min-w-0 flex-1">
+        <p class="truncate text-sm font-semibold text-white">
+          <span class="text-champ-light">{{ item.name }}</span>
+          {{ item.headline[item.headline.index(' '):] if ' ' in item.headline else item.headline }}
+        </p>
+        <p class="text-[11px] text-green-200/50">{{ item.sub }}</p>
+      </div>
+      {% if item.round_id %}
+      <a href="{{ url_for('round_detail', round_id=item.round_id) }}"
+         class="shrink-0 rounded-lg border border-white/15 px-2.5 py-1 text-[11px] font-semibold text-green-200/70 no-underline transition hover:bg-white/10">
+        看 →
+      </a>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
 {# 醒目 CTA — Hero 正下方 #}
 <div class="mb-8 flex flex-col items-stretch sm:items-start">
   {{ cta_button(url_for('score_entry'), '立即錄分 · 開始新場次', full=true) }}
   <p class="mt-3 text-center text-xs text-green-200/50 sm:text-left">點擊進入逐洞記分 · 打完自動存入歷史</p>
 </div>
+
+{# 成長儀表板（等級 / 連勝 / 月目標 / 成就牆） #}
+{{ growth_dashboard(engagement) }}
 
 {# 提示 #}
 <div class="mb-6 rounded-xl border border-gold/30 bg-gold/10 px-5 py-4 text-sm leading-relaxed text-green-100/90">
@@ -181,7 +227,7 @@
 </div>
 
 {# 歷史場次 #}
-<section class="rounded-2xl bg-white/5 p-6 shadow-xl ring-1 ring-white/10 backdrop-blur-sm sm:p-8">
+<section class="reveal rounded-2xl bg-white/5 p-6 shadow-xl ring-1 ring-white/10 backdrop-blur-sm sm:p-8">
   <div class="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-white/10 pb-5">
     <div>
       <h2 class="text-xl font-bold text-white sm:text-2xl">歷史場次</h2>
@@ -269,7 +315,7 @@
         <button type="button"
                 class="share-content-trigger flex w-full items-center justify-center gap-2 rounded-xl border border-gold/45 bg-gradient-to-r from-gold/25 to-amber-600/20 px-4 py-2.5 text-sm font-bold text-gold-light shadow-md transition hover:border-gold/70 hover:from-gold/35 hover:text-white"
                 data-round-id="{{ r.id }}"
-                data-share-tab="photo">
+                data-share-tab="card">
           <span aria-hidden="true">📱</span>
           生成分享內容
         </button>
@@ -279,17 +325,33 @@
           <span aria-hidden="true">✨</span>
           AI 教練分析
         </button>
+        <p class="text-center text-[11px] leading-relaxed text-green-200/45 sm:col-span-2">
+          點「AI 教練分析」：點名失分洞 · 找出技術弱項 · 給下一場可執行策略
+        </p>
       </div>
       </article>
       {% endfor %}
     </div>
   {% else %}
-    <div class="py-12 text-center">
+    <div class="py-8 text-center">
       <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gold/10 text-gold-light ring-1 ring-gold/30">
         {{ trophy_icon('h-8 w-8') }}
       </div>
-      <p class="text-green-200/70 mb-6">尚無紀錄，開始你的第一場比賽吧！</p>
-      {{ cta_button(url_for('score_entry'), '立即錄分 · 開始新場次', full=false) }}
+      <p class="mb-1 text-lg font-bold text-white">還沒有紀錄 — 先看看打完一場長怎樣</p>
+      <p class="mb-6 text-sm text-green-200/65">下面是範例。打完你的第一場，這裡就會變成你自己的戰績與 AI 講評。</p>
+    </div>
+    <div class="grid gap-5 lg:grid-cols-2">
+      <div>
+        <p class="mb-2 text-sm font-semibold text-green-100/80">⛳ 你的記分卡會長這樣</p>
+        {{ sample_scorecard() }}
+      </div>
+      <div>
+        <p class="mb-2 text-sm font-semibold text-green-100/80">✨ 你會收到這樣的 AI 講評</p>
+        {{ ai_coach_preview() }}
+      </div>
+    </div>
+    <div class="mt-8 text-center">
+      {{ cta_button(url_for('score_entry'), '立即錄分 · 開始我的第一場', full=false) }}
     </div>
   {% endif %}
 </section>

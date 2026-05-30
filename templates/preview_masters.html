@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maison Golf — 方向 A · The Masters 經典名門</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Noto+Serif+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = { theme: { extend: {
+  colors: { augusta: { dark:'#0b3d2e', DEFAULT:'#13573f', light:'#3f7d63' }, ivory:'#f7f3e8', cream:'#efe7d4', brass:'#b08d3f' },
+  fontFamily: { display:['"Cormorant Garamond"','Georgia','serif'], sans:['"Noto Serif TC"','serif'] },
+}}};
+</script>
+<style>
+  body{background:#f7f3e8;}
+  .rule{height:1px;background:linear-gradient(90deg,transparent,rgba(176,141,63,.6),transparent);}
+  .kicker{letter-spacing:.42em;}
+  .frame{box-shadow:0 1px 0 rgba(176,141,63,.4),0 30px 60px -30px rgba(11,61,46,.45);}
+  .fade{opacity:0;transform:translateY(20px);animation:fade .9s cubic-bezier(.16,1,.3,1) forwards;}
+  .fade.d1{animation-delay:.12s}.fade.d2{animation-delay:.24s}.fade.d3{animation-delay:.36s}
+  @keyframes fade{to{opacity:1;transform:none}}
+  @media(prefers-reduced-motion:reduce){.fade{animation:none;opacity:1;transform:none}}
+</style>
+</head>
+<body class="font-sans text-augusta-dark antialiased">
+
+<!-- 頂部細紋章 -->
+<header class="border-b border-brass/30 bg-ivory/80 backdrop-blur">
+  <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+    <p class="font-display text-2xl font-700 tracking-wide text-augusta-dark">Maison&nbsp;Golf</p>
+    <p class="kicker hidden text-[10px] font-600 uppercase text-brass sm:block">Est. · Members Only</p>
+  </div>
+</header>
+
+<!-- Hero：雜誌編輯式 -->
+<section class="mx-auto max-w-5xl px-6 pt-16 pb-12 text-center">
+  <p class="kicker fade text-[11px] font-700 uppercase text-brass">A Tradition Unlike Any Other</p>
+  <h1 class="fade d1 mx-auto mt-5 max-w-3xl font-display text-5xl font-700 leading-[1.05] text-augusta-dark sm:text-7xl">
+    記錄你的每一桿，<br>如收藏一場名門賽事。
+  </h1>
+  <p class="fade d2 mx-auto mt-6 max-w-xl text-lg leading-relaxed text-augusta/90">
+    為熱愛這項運動的人而生。優雅的記分、深度的講評、值得珍藏的戰績——
+    讓你的高爾夫人生，被好好記下。
+  </p>
+  <div class="fade d3 mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row">
+    <a href="#" class="rounded-full bg-augusta-dark px-9 py-3.5 text-base font-600 text-ivory shadow-lg transition hover:bg-augusta">成為會員 · 免費</a>
+    <a href="#" class="text-base font-600 text-augusta-dark underline decoration-brass/60 underline-offset-4 hover:text-brass">登入</a>
+  </div>
+</section>
+
+<!-- 主視覺照片，框裝 -->
+<section class="mx-auto max-w-5xl px-6">
+  <figure class="fade d2 frame overflow-hidden rounded-sm border border-brass/40">
+    <img src="/static/img/ksc-south.jpg" alt="球場" class="h-[42vh] w-full object-cover sm:h-[56vh]">
+    <figcaption class="flex items-center justify-between bg-ivory px-5 py-3 text-xs text-augusta/70">
+      <span class="kicker uppercase">The Course</span><span class="font-display text-base text-augusta-dark">Hole 12 · Amen Corner</span>
+    </figcaption>
+  </figure>
+</section>
+
+<!-- 三大價值，編輯式分欄 -->
+<section class="mx-auto max-w-5xl px-6 py-16">
+  <div class="rule mb-12"></div>
+  <div class="grid gap-10 sm:grid-cols-3">
+    {% for it in [
+      ('I','優雅記分','逐洞、多人同組即時記錄，打完自動成卡，如賽事官方計分般莊重。'),
+      ('II','私人講評','資深教練視角的賽後分析，點出失分洞與下一場的具體策略。'),
+      ('III','珍藏戰績','等級、連勝與生涯里程碑，化作可分享、可回味的個人榮譽冊。')
+    ] %}
+    <div class="fade text-center">
+      <p class="font-display text-3xl text-brass">{{ it[0] }}</p>
+      <h3 class="mt-2 font-display text-2xl font-600 text-augusta-dark">{{ it[1] }}</h3>
+      <p class="mt-3 text-sm leading-relaxed text-augusta/80">{{ it[2] }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="rule mt-12"></div>
+</section>
+
+<!-- 範例記分卡（米色名門風） -->
+<section class="mx-auto max-w-3xl px-6 pb-16">
+  <p class="kicker mb-3 text-center text-[11px] font-700 uppercase text-brass">Sample Scorecard</p>
+  <div class="overflow-hidden rounded-sm border border-brass/40 bg-cream frame">
+    <div class="flex items-center justify-between border-b border-brass/30 px-5 py-3">
+      <span class="font-display text-xl text-augusta-dark">示範球手</span>
+      <span class="font-display text-3xl font-700 text-augusta-dark">78<span class="ml-2 align-middle text-sm font-sans text-brass">+6</span></span>
+    </div>
+    {% set pars=[4,5,3,4,4,3,5,4,4,4,3,5,4,4,3,4,5,4] %}{% set sc=[4,4,3,5,4,3,6,5,4,4,4,5,4,5,3,4,5,4] %}
+    <div class="grid grid-cols-9 text-center text-sm">
+      {% for i in range(18) %}{% set d=sc[i]-pars[i] %}
+      <div class="border-b border-r border-brass/15 py-2 {% if i%9==8 %}border-r-0{% endif %}">
+        <div class="text-[9px] text-augusta/40">{{ i+1 }}</div>
+        <div class="mx-auto mt-0.5 flex h-7 w-7 items-center justify-center rounded-full font-600
+          {% if d<=-1 %}bg-augusta text-ivory{% elif d==0 %}text-augusta-dark{% elif d==1 %}bg-brass/25 text-augusta-dark{% else %}bg-red-700/80 text-ivory{% endif %}">{{ sc[i] }}</div>
+      </div>{% endfor %}
+    </div>
+  </div>
+</section>
+
+<footer class="border-t border-brass/30 bg-ivory py-10 text-center">
+  <p class="font-display text-xl text-augusta-dark">Maison Golf</p>
+  <p class="mt-1 text-xs text-augusta/60">方向 A · The Masters 經典名門</p>
+</footer>
+
+</body>
+</html>

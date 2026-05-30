@@ -1,0 +1,732 @@
+{% extends "base.html" %}
+{% from '_macros.html' import cta_button, par_trend_badge, trophy_icon %}
+{% block title %}我的進步 · 差點指數 · Maison Golf{% endblock %}
+{% block content %}
+
+{# 頁首 #}
+<div class="reveal mb-6 flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <p class="text-xs font-bold uppercase tracking-[0.25em] text-champ-light/70">Your Progress</p>
+    <h1 class="mt-1 font-brand text-3xl font-bold text-white sm:text-4xl">我的進步</h1>
+    <p class="mt-2 text-sm text-green-200/65">你的差點指數、成長曲線與個人紀錄 — 每打一場，這裡都會變得更強。</p>
+  </div>
+  <div class="flex flex-wrap shrink-0 gap-2">
+    <a href="{{ url_for('year_review') }}"
+       class="inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-green-200 no-underline transition hover:bg-white/10">
+      📅 年度回顧
+    </a>
+    {% if progress and progress.chart %}
+    <button type="button" id="progress-share-open"
+            class="pulse-cta inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-champ to-champ-light px-5 py-3 text-sm font-bold text-[#07150e] shadow-lg transition hover:brightness-105">
+      <span aria-hidden="true">📤</span> 分享我的進步
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+{% if not progress %}
+{# —— 完全沒有場次 —— #}
+<section class="reveal overflow-hidden rounded-3xl border border-champ/25 bg-gradient-to-br from-champ/10 via-black/25 to-black/40 p-8 text-center shadow-xl ring-1 ring-white/10 sm:p-12">
+  <div class="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-champ/15 text-4xl ring-1 ring-champ/30">📈</div>
+  <h2 class="font-serif text-2xl font-bold text-white">先打完第一場</h2>
+  <p class="mx-auto mt-3 max-w-md text-sm leading-relaxed text-green-200/70">
+    打完一場記分後，系統會自動算出你的<strong class="text-champ-light">差點指數</strong>、畫出你的<strong class="text-champ-light">成長曲線</strong>，
+    並把你的最佳紀錄收藏在這裡。這會是你最想一直回來看的一頁。
+  </p>
+  <div class="mt-8 flex justify-center">
+    {{ cta_button(url_for('score_entry'), '立即錄分 · 開始我的第一場', full=false) }}
+  </div>
+</section>
+{% else %}
+
+{# ===== 差點指數 Hero ===== #}
+<section class="reveal mb-6 overflow-hidden rounded-3xl border border-champ/30 bg-gradient-to-br from-[#0c2418] via-[#0a1c12] to-black/60 p-6 shadow-2xl ring-1 ring-white/10 sm:p-9">
+  <div class="grid items-center gap-6 sm:grid-cols-[auto_1fr]">
+    {# 大數字 #}
+    <div class="text-center sm:text-left">
+      <p class="text-[11px] font-bold uppercase tracking-[0.25em] text-champ-light/70">Handicap Index · 差點指數</p>
+      {% if progress.index is not none %}
+      <div class="mt-1 flex items-end justify-center gap-3 sm:justify-start">
+        <span class="font-brand text-7xl font-black leading-none gold-shimmer sm:text-8xl">{{ '%.1f'|format(progress.index) }}</span>
+        {% if progress.delta is not none and progress.delta != 0 %}
+          {% if progress.improving %}
+          <span class="mb-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-3 py-1 text-sm font-bold text-emerald-300 ring-1 ring-emerald-400/40">
+            ▼ {{ '%.1f'|format(progress.delta|abs) }}
+          </span>
+          {% else %}
+          <span class="mb-2 inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-3 py-1 text-sm font-bold text-amber-300 ring-1 ring-amber-400/30">
+            ▲ {{ '%.1f'|format(progress.delta) }}
+          </span>
+          {% endif %}
+        {% endif %}
+      </div>
+      <p class="mt-2 text-sm text-green-200/65">
+        依你最佳 <span class="font-bold text-champ-light">{{ progress.index_used }}</span> 場成績計算 · 數字越低越強
+        {% if progress.improving %}<span class="text-emerald-300"> · 正在進步中 🎉</span>{% endif %}
+      </p>
+      {% else %}
+      <div class="mt-1 flex items-end justify-center gap-3 sm:justify-start">
+        <span class="font-brand text-7xl font-black leading-none text-white/30 sm:text-8xl">?</span>
+      </div>
+      <p class="mt-2 text-sm text-green-200/65">
+        再打 <span class="font-bold text-champ-light">{{ progress.rounds_needed }}</span> 場（共需 {{ progress.min_rounds }} 場）即可解鎖你的差點指數。
+      </p>
+      <div class="mt-3 h-2 max-w-xs overflow-hidden rounded-full bg-white/10">
+        <div class="h-full rounded-full bg-gradient-to-r from-champ to-champ-light"
+             style="width: {{ (progress.total_rounds / progress.min_rounds * 100)|round|int }}%"></div>
+      </div>
+      {% endif %}
+    </div>
+
+    {# 右側速覽 #}
+    <div class="grid grid-cols-3 gap-3 border-t border-white/10 pt-5 sm:border-l sm:border-t-0 sm:pl-8 sm:pt-0">
+      <div class="text-center">
+        <p class="text-2xl font-black tabular-nums text-white" data-countup="{{ progress.total_rounds }}">{{ progress.total_rounds }}</p>
+        <p class="mt-0.5 text-[11px] text-green-200/55">總場次</p>
+      </div>
+      <div class="text-center">
+        <p class="text-2xl font-black tabular-nums text-white">{{ progress.avg_total }}</p>
+        <p class="mt-0.5 text-[11px] text-green-200/55">平均總桿</p>
+      </div>
+      <div class="text-center">
+        <p class="text-2xl font-black tabular-nums text-champ-light">{{ progress.recent_avg_topar_label }}</p>
+        <p class="mt-0.5 text-[11px] text-green-200/55">近5場均</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ===== 成長曲線 ===== #}
+{% if progress.chart %}
+<section class="reveal mb-6 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.06] via-black/20 to-black/40 p-5 shadow-xl ring-1 ring-white/10 sm:p-7">
+  <div class="mb-4 flex items-end justify-between">
+    <div>
+      <p class="text-xs font-bold uppercase tracking-widest text-champ-light/70">Trend</p>
+      <h2 class="mt-1 text-lg font-bold text-white sm:text-xl">成長曲線</h2>
+      <p class="mt-0.5 text-xs text-green-200/55">最近 {{ progress.chart.points|length }} 場 · 相對標準桿（越高越好）</p>
+    </div>
+    {% if progress.records.best_to_par %}
+    <div class="text-right">
+      <p class="text-[11px] text-green-200/55">最佳一場</p>
+      {{ par_trend_badge(progress.records.best_to_par.value, 'sm') }}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="relative w-full overflow-hidden">
+    <svg viewBox="0 0 {{ progress.chart.w }} {{ progress.chart.h }}" class="w-full" preserveAspectRatio="none" style="height: 220px;" role="img" aria-label="成長曲線">
+      <defs>
+        <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#d9b78c" stop-opacity="0.35"></stop>
+          <stop offset="100%" stop-color="#d9b78c" stop-opacity="0"></stop>
+        </linearGradient>
+        <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#f6e7c5"></stop>
+          <stop offset="100%" stop-color="#d9b78c"></stop>
+        </linearGradient>
+      </defs>
+
+      {% if progress.chart.par_y is not none %}
+      <line x1="0" y1="{{ progress.chart.par_y }}" x2="{{ progress.chart.w }}" y2="{{ progress.chart.par_y }}"
+            stroke="rgba(255,255,255,0.18)" stroke-width="1" stroke-dasharray="6 6"></line>
+      <text x="8" y="{{ progress.chart.par_y - 6 }}" fill="rgba(255,255,255,0.4)" font-size="16">E (標準桿)</text>
+      {% endif %}
+
+      <path d="{{ progress.chart.area }}" fill="url(#areaGrad)"></path>
+      <path class="chart-line" d="{{ progress.chart.line }}" fill="none" stroke="url(#lineGrad)"
+            stroke-width="3" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>
+
+      {% for p in progress.chart.points %}
+      <circle cx="{{ p.x }}" cy="{{ p.y }}" r="{{ 7 if p.is_best else 5 }}"
+              fill="{{ '#f6e7c5' if p.is_best else '#0a1c12' }}"
+              stroke="{{ '#eab308' if p.is_best else '#d9b78c' }}" stroke-width="3" vector-effect="non-scaling-stroke">
+        <title>{{ p.date }} · {{ p.total }} 桿（{{ p.to_par_label }}）</title>
+      </circle>
+      {% endfor %}
+    </svg>
+  </div>
+
+  <div class="mt-2 flex justify-between text-[11px] text-green-200/45">
+    <span>{{ progress.chart.points[0].date }}</span>
+    <span class="text-champ-light/70">⭐ 為個人最佳</span>
+    <span>{{ progress.chart.points[-1].date }}</span>
+  </div>
+</section>
+{% endif %}
+
+{# ===== 個人紀錄牆 ===== #}
+<section class="reveal mb-6">
+  <h2 class="mb-4 text-lg font-bold text-white sm:text-xl">個人紀錄</h2>
+  <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+    {% set rec = progress.records %}
+    <a href="{{ url_for('round_detail', round_id=rec.best_total.round_id) }}"
+       class="lift group rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/15 to-transparent p-4 no-underline ring-1 ring-white/10 sm:p-5">
+      <p class="text-[11px] font-bold uppercase tracking-widest text-gold-light/80">🏆 最佳總桿</p>
+      <p class="mt-2 text-4xl font-black tabular-nums text-white">{{ rec.best_total.value }}</p>
+      <p class="mt-1 truncate text-xs text-green-200/55">{{ rec.best_total.date }} · {{ rec.best_total.course or '—' }}</p>
+    </a>
+
+    <a href="{{ url_for('round_detail', round_id=rec.best_to_par.round_id) }}"
+       class="lift rounded-2xl border border-champ/30 bg-gradient-to-br from-champ/12 to-transparent p-4 no-underline ring-1 ring-white/10 sm:p-5">
+      <p class="text-[11px] font-bold uppercase tracking-widest text-champ-light/80">🎯 最佳 to-par</p>
+      <p class="mt-2 text-4xl font-black tabular-nums text-champ-light">{{ rec.best_to_par.label }}</p>
+      <p class="mt-1 truncate text-xs text-green-200/55">{{ rec.best_to_par.date }}</p>
+    </a>
+
+    <div class="rounded-2xl border border-white/10 bg-black/25 p-4 ring-1 ring-white/10 sm:p-5">
+      <p class="text-[11px] font-bold uppercase tracking-widest text-emerald-300/80">⛳ 最低單九</p>
+      <p class="mt-2 text-4xl font-black tabular-nums text-white">{{ rec.lowest_nine.value if rec.lowest_nine else '—' }}</p>
+      <p class="mt-1 truncate text-xs text-green-200/55">{{ rec.lowest_nine.date if rec.lowest_nine else '尚無' }}</p>
+    </div>
+
+    <div class="rounded-2xl border border-white/10 bg-black/25 p-4 ring-1 ring-white/10 sm:p-5">
+      <p class="text-[11px] font-bold uppercase tracking-widest text-green-300/80">🐦 單場最多鳥</p>
+      <p class="mt-2 text-4xl font-black tabular-nums text-white">{{ rec.most_birdies.value }}</p>
+      <p class="mt-1 truncate text-xs text-green-200/55">{{ rec.most_birdies.date if rec.most_birdies.value > 0 else '尚無' }} · Birdie 以上</p>
+    </div>
+
+    <div class="rounded-2xl border border-white/10 bg-black/25 p-4 ring-1 ring-white/10 sm:p-5">
+      <p class="text-[11px] font-bold uppercase tracking-widest text-gold-light/80">👑 同組冠軍</p>
+      <p class="mt-2 text-4xl font-black tabular-nums text-white">{{ rec.wins }}</p>
+      <p class="mt-1 text-xs text-green-200/55">場勝出</p>
+    </div>
+
+    <div class="rounded-2xl border border-white/10 bg-black/25 p-4 ring-1 ring-white/10 sm:p-5">
+      <p class="text-[11px] font-bold uppercase tracking-widest text-orange-300/80">🔥 連續週數</p>
+      <p class="mt-2 text-4xl font-black tabular-nums text-white">{{ rec.streak_weeks }}</p>
+      <p class="mt-1 text-xs text-green-200/55">週連續出場</p>
+    </div>
+  </div>
+</section>
+
+{# ===== 好友差點排行榜 ===== #}
+{% if leaderboard %}
+<section class="reveal mb-6 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.06] via-black/20 to-black/40 p-5 shadow-xl ring-1 ring-white/10 sm:p-7">
+  <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <p class="text-xs font-bold uppercase tracking-widest text-champ-light/70">Leaderboard</p>
+      <h2 class="mt-1 text-lg font-bold text-white sm:text-xl">好友差點排行榜</h2>
+      <p class="mt-0.5 text-xs text-green-200/55">差點越低越強 · 你目前排 {{ leaderboard.self_rank }}/{{ leaderboard.total }}</p>
+    </div>
+    <a href="{{ url_for('friends.friends_home') }}"
+       class="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-green-200 no-underline transition hover:bg-white/10">
+      + 邀請更多球友
+    </a>
+  </div>
+
+  {% if not leaderboard.has_friends %}
+  <div class="rounded-2xl border border-white/10 bg-black/25 p-6 text-center">
+    <p class="text-2xl mb-2">🤝</p>
+    <p class="text-sm font-semibold text-white">還沒有好友</p>
+    <p class="mt-1 text-xs text-green-200/55">邀請你的球友加入，就能在這裡看到你們的差點高下</p>
+    <a href="{{ url_for('friends.friends_home') }}"
+       class="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-champ/80 to-champ-light px-5 py-2.5 text-sm font-bold text-[#07150e] no-underline transition hover:brightness-105">
+      邀請球友 →
+    </a>
+  </div>
+  {% else %}
+  <div class="space-y-2">
+    {% for e in leaderboard.entries %}
+    <div class="flex items-center gap-4 rounded-2xl border px-4 py-3.5 transition
+                {% if e.is_self %}border-champ/45 bg-gradient-to-r from-champ/15 to-transparent ring-1 ring-champ/20
+                {% elif e.rank == 1 %}border-gold/35 bg-gradient-to-r from-gold/10 to-transparent
+                {% else %}border-white/10 bg-black/25{% endif %}">
+      {# 名次 #}
+      <div class="w-8 shrink-0 text-center">
+        {% if e.rank == 1 %}
+          <span class="text-xl">🥇</span>
+        {% elif e.rank == 2 %}
+          <span class="text-xl">🥈</span>
+        {% elif e.rank == 3 %}
+          <span class="text-xl">🥉</span>
+        {% else %}
+          <span class="text-sm font-bold text-green-200/50">{{ e.rank }}</span>
+        {% endif %}
+      </div>
+
+      {# 姓名 #}
+      <div class="min-w-0 flex-1">
+        <p class="truncate text-sm font-bold {{ 'text-champ-light' if e.is_self else 'text-white' }}">
+          {{ e.name }}{% if e.is_self %} <span class="text-[11px] font-normal text-champ-light/70">（你）</span>{% endif %}
+        </p>
+        <p class="text-[11px] text-green-200/50">{{ e.total_rounds }} 場 {% if e.best_total %}· 最佳 {{ e.best_total }}{% endif %}</p>
+      </div>
+
+      {# 差點指數 + 挑戰按鈕 #}
+      <div class="shrink-0 text-right">
+        {% if e.index is not none %}
+        <p class="font-brand text-2xl font-black tabular-nums {{ 'gold-shimmer' if e.rank == 1 else ('text-champ-light' if e.is_self else 'text-white') }}">
+          {{ '%.1f'|format(e.index) }}
+        </p>
+        <p class="text-[11px] text-green-200/45">差點指數</p>
+        {% else %}
+        <p class="text-sm text-green-200/35">未解鎖</p>
+        <p class="text-[11px] text-green-200/30">需 3 場</p>
+        {% endif %}
+        {% if not e.is_self %}
+        <button type="button"
+                class="challenge-btn mt-1.5 rounded-lg bg-champ/20 border border-champ/35 px-2.5 py-1 text-[11px] font-bold text-champ-light transition hover:bg-champ/35"
+                data-user-id="{{ e.user_id }}"
+                data-name="{{ e.name }}">
+          ⚔️ 挑戰
+        </button>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+
+{# ===== 我的挑戰 ===== #}
+<section id="challenges-section" class="reveal mb-6 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.04] via-black/20 to-black/40 p-5 shadow-xl ring-1 ring-white/10 sm:p-7" style="display:none">
+  <div class="mb-4 flex items-center justify-between gap-3">
+    <div>
+      <p class="text-xs font-bold uppercase tracking-widest text-champ-light/70">Challenges</p>
+      <h2 class="mt-1 text-lg font-bold text-white">我的挑戰</h2>
+    </div>
+  </div>
+  <div id="challenges-list" class="space-y-3">
+    <p class="text-sm text-green-200/50">載入中…</p>
+  </div>
+</section>
+
+{# 挑戰確認 Modal #}
+<div id="challenge-confirm-modal"
+     class="fixed inset-0 z-[115] hidden items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+     role="dialog" aria-modal="true">
+  <div class="w-full max-w-sm overflow-hidden rounded-3xl glass p-7 text-center shadow-2xl">
+    <p class="text-4xl mb-2">⚔️</p>
+    <h2 class="font-brand text-xl font-bold text-white">發起差點挑戰</h2>
+    <p class="mt-2 text-sm text-green-200/70">向 <span id="challenge-target-name" class="font-bold text-champ-light"></span> 發起<br>30 天差點進步競賽！</p>
+    <p class="mt-3 rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-xs leading-relaxed text-green-200/70">
+      接受後雙方各記錄<strong class="text-white">當前差點</strong>，30 天後比較降幅。<br>誰降得更多，誰贏！
+    </p>
+    <div class="mt-5 grid gap-2.5">
+      <button type="button" id="challenge-confirm-btn"
+              class="w-full rounded-xl bg-gradient-to-r from-champ to-champ-light px-5 py-3.5 text-sm font-bold text-[#07150e] transition hover:brightness-105">
+        確認發出挑戰
+      </button>
+      <button type="button" id="challenge-cancel-btn"
+              class="w-full rounded-xl border border-white/15 bg-black/25 px-5 py-3 text-sm font-semibold text-green-200 transition hover:bg-white/10">
+        取消
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // ── 挑戰確認 ──
+  var pendingUserId = null;
+  var modal = document.getElementById("challenge-confirm-modal");
+  var confirmBtn = document.getElementById("challenge-confirm-btn");
+  var cancelBtn = document.getElementById("challenge-cancel-btn");
+  var targetName = document.getElementById("challenge-target-name");
+
+  document.querySelectorAll(".challenge-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      pendingUserId = btn.dataset.userId;
+      if (targetName) targetName.textContent = btn.dataset.name;
+      if (modal) { modal.classList.remove("hidden"); modal.classList.add("flex"); }
+    });
+  });
+
+  if (cancelBtn) cancelBtn.addEventListener("click", function () {
+    if (modal) { modal.classList.add("hidden"); modal.classList.remove("flex"); }
+    pendingUserId = null;
+  });
+
+  if (confirmBtn) confirmBtn.addEventListener("click", function () {
+    if (!pendingUserId) return;
+    fetch("/challenge/send/" + pendingUserId, { method: "POST", headers: { "X-CSRFToken": "" } })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (modal) { modal.classList.add("hidden"); modal.classList.remove("flex"); }
+        if (data.ok) {
+          alert("✅ " + (data.message || "挑戰已送出！"));
+          loadChallenges();
+        } else {
+          alert("❌ " + (data.error || "發送失敗"));
+        }
+        pendingUserId = null;
+      })
+      .catch(function () { alert("網路錯誤，請稍後再試"); });
+  });
+
+  // ── 載入我的挑戰 ──
+  function loadChallenges() {
+    fetch("/challenge/my")
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var section = document.getElementById("challenges-section");
+        var list = document.getElementById("challenges-list");
+        if (!data.ok || !data.challenges || data.challenges.length === 0) {
+          if (section) section.style.display = "none";
+          return;
+        }
+        if (section) section.style.display = "";
+        if (!list) return;
+        list.innerHTML = data.challenges.map(function (c) {
+          var res = c.result;
+          var isChallenger = c.is_challenger;
+          var myName = isChallenger ? c.challenger : c.challenged;
+          var opponentName = isChallenger ? c.challenged : c.challenger;
+          var myDelta = res ? (isChallenger ? res.challenger_delta : res.challenged_delta) : null;
+          var oppDelta = res ? (isChallenger ? res.challenged_delta : res.challenger_delta) : null;
+          var winnerHtml = "";
+          if (res && res.winner_id !== undefined) {
+            var winning = (myDelta !== null && oppDelta !== null) ? myDelta > oppDelta : false;
+            var draw = res.is_draw;
+            winnerHtml = draw ? '<span class="text-yellow-400">🤝 平局</span>'
+              : winning ? '<span class="text-emerald-400 font-bold">👑 你領先！</span>'
+              : '<span class="text-orange-400">📈 對方領先</span>';
+          }
+          var acceptHtml = !isChallenger && c.status === "pending"
+            ? '<div class="mt-2 flex gap-2"><button class="accept-btn rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-500" data-id="' + c.id + '">接受</button><button class="reject-btn rounded-lg bg-white/10 border border-white/15 px-3 py-1.5 text-xs font-semibold text-green-200 hover:bg-white/15" data-id="' + c.id + '">拒絕</button></div>'
+            : "";
+          return '<div class="rounded-2xl border border-white/10 bg-black/25 px-4 py-3.5">'
+            + '<div class="flex items-center gap-3">'
+            + '<span class="text-xl">⚔️</span>'
+            + '<div class="flex-1 min-w-0">'
+            + '<p class="text-sm font-bold text-white truncate">你 vs <span class="text-champ-light">' + opponentName + '</span></p>'
+            + '<p class="text-[11px] text-green-200/50">' + c.status_label
+              + (c.end_date ? ' · 至 ' + c.end_date : '') + '</p>'
+            + '</div>'
+            + '<span class="text-sm">' + winnerHtml + '</span>'
+            + '</div>'
+            + (res && myDelta !== null ? '<div class="mt-2 flex gap-4 text-xs">'
+              + '<span class="text-green-200/60">你降：<strong class="text-white">' + (myDelta > 0 ? '-' + myDelta.toFixed(1) : '—') + '</strong></span>'
+              + '<span class="text-green-200/60">對方降：<strong class="text-white">' + (oppDelta !== null && oppDelta > 0 ? '-' + oppDelta.toFixed(1) : '—') + '</strong></span>'
+              + '</div>' : '')
+            + acceptHtml + '</div>';
+        }).join("");
+
+        // 綁定接受/拒絕按鈕
+        list.querySelectorAll(".accept-btn").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            fetch("/challenge/accept/" + btn.dataset.id, { method: "POST" })
+              .then(function (r) { return r.json(); })
+              .then(function (d) { alert(d.ok ? "✅ " + d.message : "❌ " + d.error); loadChallenges(); });
+          });
+        });
+        list.querySelectorAll(".reject-btn").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            fetch("/challenge/reject/" + btn.dataset.id, { method: "POST" })
+              .then(function (r) { return r.json(); })
+              .then(function (d) { alert(d.ok ? d.message : "❌ " + d.error); loadChallenges(); });
+          });
+        });
+      })
+      .catch(function () {});
+  }
+
+  // 頁面載入時拉取
+  loadChallenges();
+})();
+</script>
+
+{# ===== 桿數分布 ===== #}
+{% if progress.total_holes > 0 %}
+<section class="reveal mb-6 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.06] via-black/20 to-black/40 p-5 shadow-xl ring-1 ring-white/10 sm:p-7">
+  <div class="mb-4">
+    <p class="text-xs font-bold uppercase tracking-widest text-champ-light/70">Distribution</p>
+    <h2 class="mt-1 text-lg font-bold text-white sm:text-xl">你的桿數都花在哪</h2>
+    <p class="mt-0.5 text-xs text-green-200/55">共 {{ progress.total_holes }} 洞 · 看出你的強項與失分點</p>
+  </div>
+
+  <div class="flex h-5 w-full overflow-hidden rounded-full ring-1 ring-white/10">
+    {% for d in progress.distribution %}
+    {% if d.pct > 0 %}
+    <div style="width: {{ d.pct }}%; background-color: {{ d.color }};" title="{{ d.label }} {{ d.count }}（{{ d.pct }}%）"></div>
+    {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
+    {% for d in progress.distribution %}
+    <div class="flex items-center gap-2 rounded-xl bg-black/25 px-3 py-2 ring-1 ring-white/10">
+      <span class="h-3 w-3 shrink-0 rounded-full" style="background-color: {{ d.color }};"></span>
+      <div class="min-w-0">
+        <p class="truncate text-xs font-bold text-white">{{ d.label }}</p>
+        <p class="text-[11px] tabular-nums text-green-200/55">{{ d.count }} · {{ d.pct }}%</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{# ===== 里程碑 ===== #}
+<section class="reveal mb-8">
+  <h2 class="mb-4 text-lg font-bold text-white sm:text-xl">里程碑</h2>
+  <div class="grid gap-3 sm:grid-cols-3 sm:gap-4">
+    {% for m in progress.milestones %}
+    <div class="relative overflow-hidden rounded-2xl border p-5 ring-1
+                {% if m.achieved %}border-gold/45 bg-gradient-to-br from-gold/15 to-transparent ring-gold/20{% else %}border-white/10 bg-black/25 ring-white/10{% endif %}">
+      <div class="flex items-center justify-between">
+        <span class="text-3xl">{{ m.icon }}</span>
+        {% if m.achieved %}
+        <span class="inline-flex items-center gap-1 rounded-full bg-gold/25 px-2.5 py-1 text-[11px] font-bold text-gold-light ring-1 ring-gold/40">✓ 已達成</span>
+        {% else %}
+        <span class="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-green-200/60">還差 {{ m.gap }} 桿</span>
+        {% endif %}
+      </div>
+      <p class="mt-3 text-xl font-bold {{ 'text-white' if m.achieved else 'text-green-200/80' }}">{{ m.label }}</p>
+      <p class="mt-0.5 text-xs text-green-200/50">單場總桿低於 {{ m.threshold }}</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if progress.next_milestone %}
+  <div class="mt-4 flex flex-col items-start gap-3 rounded-2xl border border-champ/30 bg-gradient-to-r from-champ/12 to-transparent px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+    <p class="text-sm text-green-100/90">
+      下一個目標：<span class="font-bold text-champ-light">{{ progress.next_milestone.icon }} {{ progress.next_milestone.label }}</span>
+      — 再進步 <span class="font-bold text-white">{{ progress.next_milestone.gap }}</span> 桿就達成！
+    </p>
+    <a href="{{ url_for('score_entry') }}"
+       class="shrink-0 rounded-xl bg-gradient-to-r from-champ to-champ-light px-5 py-2.5 text-sm font-bold text-[#07150e] no-underline transition hover:brightness-105">
+      去打一場 →
+    </a>
+  </div>
+  {% endif %}
+</section>
+
+{# ===== B1 弱點洞熱力圖 ===== #}
+{% if hole_data and hole_data.has_data %}
+<section class="reveal mb-6 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.05] via-black/20 to-black/40 p-5 shadow-xl ring-1 ring-white/10 sm:p-7">
+  <div class="mb-5">
+    <p class="text-xs font-bold uppercase tracking-widest text-champ-light/70">Hole Analysis</p>
+    <h2 class="mt-1 text-lg font-bold text-white sm:text-xl">逐洞分析 · 你的強弱洞</h2>
+    <p class="mt-0.5 text-xs text-green-200/55">{{ hole_data.total_holes_played }} 洞歷史記錄 · 熱力越紅失分越多，越綠越強</p>
+  </div>
+
+  {# 熱力格 #}
+  <div class="grid grid-cols-9 gap-1.5 sm:grid-cols-18">
+    {% for h in hole_data.holes %}
+    {% if h.count > 0 %}
+    {% set intensity = [[h.avg_to_par, -1.5]|max, 2.5]|min %}
+    {# 用 data- 屬性，讓 JS 設顏色 #}
+    <div class="hole-heat-cell group relative flex h-10 w-full cursor-default items-center justify-center rounded-lg text-xs font-bold transition hover:scale-110"
+         data-to-par="{{ h.avg_to_par }}"
+         data-hole="{{ h.hole }}"
+         title="第{{ h.hole }}洞 Par{{ h.par }} · 平均 {{ h.avg }} · avg to-par {{ '+' if h.avg_to_par > 0 else '' }}{{ '%.2f'|format(h.avg_to_par) }}">
+      {{ h.hole }}
+      <span class="pointer-events-none absolute -top-10 left-1/2 z-30 hidden -translate-x-1/2 rounded-xl bg-black/90 px-3 py-1.5 text-[11px] whitespace-nowrap text-white shadow-xl group-hover:flex">
+        #{{ h.hole }} Par{{ h.par }} · avg {{ h.avg }} ({{ '+' if h.avg_to_par >= 0 else '' }}{{ '%.1f'|format(h.avg_to_par) }})
+      </span>
+    </div>
+    {% else %}
+    <div class="flex h-10 w-full items-center justify-center rounded-lg bg-white/5 text-xs font-bold text-white/20">{{ h.hole }}</div>
+    {% endif %}
+    {% endfor %}
+  </div>
+
+  {# 圖例 #}
+  <div class="mt-3 flex items-center gap-2 text-[11px] text-green-200/60">
+    <div class="h-3 w-12 rounded-full" style="background:linear-gradient(to right,#22c55e,#fbbf24,#ef4444)"></div>
+    <span>強 → 普通 → 弱</span>
+  </div>
+
+  {# 弱洞 & 強洞標籤 #}
+  <div class="mt-4 grid gap-3 sm:grid-cols-2">
+    {% if hole_data.weak_holes %}
+    <div class="rounded-2xl border border-red-400/25 bg-red-500/10 px-4 py-3">
+      <p class="text-xs font-bold uppercase tracking-widest text-red-300/80">🔴 重點攻克</p>
+      <p class="mt-1 text-sm font-semibold text-white">
+        第 {{ hole_data.weak_holes | join('、') }} 洞
+      </p>
+      <p class="mt-0.5 text-xs text-green-200/55">這些洞平均超過標準桿 +0.8 以上</p>
+    </div>
+    {% endif %}
+    {% if hole_data.strong_holes %}
+    <div class="rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3">
+      <p class="text-xs font-bold uppercase tracking-widest text-emerald-300/80">🟢 你的強項</p>
+      <p class="mt-1 text-sm font-semibold text-white">
+        第 {{ hole_data.strong_holes | join('、') }} 洞
+      </p>
+      <p class="mt-0.5 text-xs text-green-200/55">這些洞平均等於或低於標準桿</p>
+    </div>
+    {% endif %}
+  </div>
+
+  {# 規律分析 #}
+  {% if hole_data.patterns %}
+  <div class="mt-4 space-y-2">
+    {% for pat in hole_data.patterns %}
+    <div class="flex items-start gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3">
+      <span class="mt-0.5 shrink-0 text-lg">{{ pat.icon }}</span>
+      <p class="text-sm text-green-100/85">{{ pat.text }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+
+<script>
+(function () {
+  document.querySelectorAll(".hole-heat-cell").forEach(function (el) {
+    var tp = parseFloat(el.dataset.toPar);
+    var r, g, b;
+    if (tp <= -0.5) {
+      // 綠（強）
+      var t = Math.min(1, (-tp - 0.5) / 1.5);
+      r = Math.round(34 + (34 - 34) * t);
+      g = Math.round(197 - (197 - 197) * t);
+      b = Math.round(94 - 94 * t);
+      el.style.background = "rgba(34,197,94," + (0.25 + t * 0.35) + ")";
+      el.style.color = "#86efac";
+      el.style.border = "1px solid rgba(34,197,94,0.3)";
+    } else if (tp >= 1.0) {
+      // 紅（弱）
+      var t2 = Math.min(1, (tp - 1.0) / 1.5);
+      el.style.background = "rgba(239,68,68," + (0.25 + t2 * 0.4) + ")";
+      el.style.color = "#fca5a5";
+      el.style.border = "1px solid rgba(239,68,68,0.3)";
+    } else {
+      // 黃（普通）
+      var t3 = (tp + 0.5) / 1.5;
+      el.style.background = "rgba(251,191,36," + (0.12 + t3 * 0.25) + ")";
+      el.style.color = "#fde68a";
+      el.style.border = "1px solid rgba(251,191,36,0.2)";
+    }
+  });
+})();
+</script>
+{% elif hole_data and not hole_data.has_data %}
+<div class="reveal mb-6 rounded-2xl border border-white/10 bg-black/25 px-5 py-4 text-center">
+  <p class="text-sm text-green-200/50">🔍 打滿 18 洞才能啟動逐洞分析（目前已累積 {{ hole_data.total_holes_played }} 洞）</p>
+</div>
+{% endif %}
+
+{# ===== 分享「我的進步」圖卡 ===== #}
+<script id="progress-share-data" type="application/json">
+{{ {
+  'player_name': current_user.display_label,
+  'index': progress.index,
+  'delta': progress.delta,
+  'improving': progress.improving,
+  'index_used': progress.index_used,
+  'rounds_needed': progress.rounds_needed,
+  'min_rounds': progress.min_rounds,
+  'total_rounds': progress.total_rounds,
+  'avg_total': progress.avg_total,
+  'recent_avg_topar_label': progress.recent_avg_topar_label,
+  'best_total': progress.records.best_total.value,
+  'best_to_par_label': progress.records.best_to_par.label,
+  'points': progress.chart.points
+} | tojson }}
+</script>
+
+<div id="progress-share-modal"
+     class="fixed inset-0 z-[110] hidden items-center justify-center bg-black/75 p-3 backdrop-blur-sm sm:p-4"
+     role="dialog" aria-modal="true" aria-labelledby="progress-share-title">
+  <div class="flex max-h-[94vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-champ/35 bg-gradient-to-b from-fairway-dark via-[#0f2918] to-[#071810] shadow-2xl ring-1 ring-champ/25">
+    <div class="flex shrink-0 items-start justify-between gap-3 border-b border-white/10 bg-black/30 px-5 py-4">
+      <div>
+        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-champ-light">My Progress</p>
+        <h2 id="progress-share-title" class="text-lg font-bold text-white">分享我的進步</h2>
+        <p class="mt-1 text-xs text-green-200/65">把差點曲線做成圖卡 · 一鍵下載發佈</p>
+      </div>
+      <button type="button" id="progress-share-close"
+              class="shrink-0 rounded-xl border border-white/15 px-3 py-1.5 text-sm text-green-200 transition hover:bg-white/10">關閉</button>
+    </div>
+    <div class="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+      <div id="progress-card-size-group" class="mb-4 grid grid-cols-3 gap-2">
+        <button type="button" data-card-size="xhs"
+                class="progress-size-btn rounded-xl border border-champ/50 bg-champ/20 py-2.5 text-xs font-bold text-champ-light transition">小紅書 3:4</button>
+        <button type="button" data-card-size="story"
+                class="progress-size-btn rounded-xl border border-white/15 bg-white/5 py-2.5 text-xs font-semibold text-green-200/80 transition hover:bg-white/10">限動 9:16</button>
+        <button type="button" data-card-size="square"
+                class="progress-size-btn rounded-xl border border-white/15 bg-white/5 py-2.5 text-xs font-semibold text-green-200/80 transition hover:bg-white/10">方形 1:1</button>
+      </div>
+      <div class="rounded-2xl bg-black/35 p-3 ring-1 ring-white/10">
+        <canvas id="progress-card-canvas" class="mx-auto block w-full max-w-[260px] rounded-lg shadow-2xl"></canvas>
+      </div>
+      <a id="progress-card-download" download="maison-golf-progress.png"
+         class="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-champ to-champ-light px-4 py-3.5 text-sm font-bold text-[#07150e] shadow-lg no-underline transition hover:brightness-110">
+        <span aria-hidden="true">⬇️</span> 下載圖卡
+      </a>
+      <p class="mt-2 text-center text-[11px] text-green-200/45">提示：手機長按上方圖片亦可直接儲存</p>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/progress-share.js') }}" defer></script>
+
+{# ===== 成就／里程碑慶祝彈窗 ===== #}
+{% if newly_earned %}
+<div id="progress-achieve-modal"
+     class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+     role="dialog" aria-modal="true" aria-labelledby="achieve-modal-title"
+     data-progress-achieve-close>
+  <div class="w-full max-w-sm overflow-hidden rounded-3xl glass p-7 text-center shadow-2xl">
+    <p class="text-5xl">{{ newly_earned.icon }}</p>
+    <h2 id="achieve-modal-title" class="mt-3 font-brand text-2xl font-bold text-white">{{ newly_earned.headline }}</h2>
+
+    {% if newly_earned.index is not none %}
+    <div class="mt-4 flex items-end justify-center gap-2">
+      <span class="font-brand text-5xl font-black leading-none gold-shimmer">{{ '%.1f'|format(newly_earned.index) }}</span>
+      <span class="mb-1 text-sm text-champ-light/80">差點指數</span>
+    </div>
+    {% endif %}
+
+    {% if newly_earned.milestone %}
+    <div class="mt-4 rounded-2xl border border-gold/30 bg-gold/10 px-4 py-3">
+      <p class="text-sm font-bold text-gold-light">{{ newly_earned.milestone.icon }} {{ newly_earned.milestone.label }} 達成！</p>
+      <p class="mt-0.5 text-xs text-green-200/60">{{ newly_earned.total_rounds }} 場累積</p>
+    </div>
+    {% elif newly_earned.achievement %}
+    <div class="mt-4 rounded-2xl border border-champ/30 bg-champ/10 px-4 py-3">
+      <p class="text-sm font-bold text-champ-light">{{ newly_earned.achievement.icon }} {{ newly_earned.achievement.name }}</p>
+      <p class="mt-0.5 text-xs text-green-200/60">{{ newly_earned.achievement.desc }}</p>
+    </div>
+    {% endif %}
+
+    <div class="mt-6 grid gap-2.5">
+      <button type="button"
+              id="achieve-share-btn"
+              class="pulse-cta flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-champ to-champ-light px-5 py-3.5 text-sm font-bold text-[#07150e] transition hover:brightness-105"
+              onclick="document.getElementById('progress-achieve-modal').classList.add('hidden'); document.getElementById('progress-achieve-modal').classList.remove('flex'); document.getElementById('progress-share-open')?.click();">
+        <span>📤</span> 分享我的進步
+      </button>
+      <button type="button"
+              class="w-full rounded-xl border border-white/15 bg-black/25 px-5 py-3 text-sm font-semibold text-champ-light transition hover:bg-white/10"
+              data-progress-achieve-close-btn data-progress-achieve-close>
+        繼續查看
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var modal = document.getElementById('progress-achieve-modal');
+  if (!modal) return;
+  function closeAchieve() {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    try {
+      var url = new URL(window.location.href);
+      url.searchParams.delete('prev_rounds');
+      window.history.replaceState({}, '', url);
+    } catch(e) {}
+  }
+  modal.addEventListener('click', function(e) { if (e.target === modal) closeAchieve(); });
+  modal.querySelectorAll('[data-progress-achieve-close]').forEach(function(el) {
+    el.addEventListener('click', closeAchieve);
+  });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeAchieve(); });
+  // 開啟 + confetti
+  setTimeout(function () {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    if (window.MaisonConfetti) window.MaisonConfetti(2400);
+  }, 300);
+})();
+</script>
+{% endif %}
+
+{% endif %}
+{% endblock %}
