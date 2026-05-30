@@ -388,6 +388,23 @@ def compute_user_engagement(rounds, user):
     # 「最接近達成」的下一個目標（目標漸進效應）
     next_goal = max(locked, key=lambda a: a["progress"]) if locked else None
 
+    # 簡易差點指數（供首頁顯示用）
+    _MIN_IDX = 3
+    _WHS_SHORT = {3:(1,0.0),4:(1,0.0),5:(1,0.0),6:(2,0.0),7:(2,0.0),8:(2,0.0),
+                  9:(3,0.0),10:(3,0.0),11:(3,0.0),12:(4,0.0),13:(4,0.0),14:(4,0.0),
+                  15:(5,0.0),16:(5,0.0),17:(6,0.0),18:(6,0.0),19:(7,0.0)}
+    to_par_series = [e["to_par"] for e in entries if e["to_par"] is not None]
+    handicap_index = None
+    if len(to_par_series) >= _MIN_IDX:
+        recent = to_par_series[-20:]
+        n = len(recent)
+        count, adj = _WHS_SHORT.get(n, (8, 0.0))
+        lowest = sorted(recent)[:count]
+        if lowest:
+            handicap_index = round(sum(lowest)/len(lowest)*0.96 + adj, 1)
+
+    last_score = entries[-1]["total"] if entries else None
+
     return {
         "total_rounds": total_rounds,
         "level": level,
@@ -412,4 +429,6 @@ def compute_user_engagement(rounds, user):
         "total_achievements": len(achievements),
         "next_goal": next_goal,
         "wins": wins,
+        "handicap_index": handicap_index,
+        "last_score": last_score,
     }

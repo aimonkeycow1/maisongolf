@@ -4,25 +4,34 @@
 {% block content %}
 
 {# 頁首 #}
-<div class="reveal mb-6 flex flex-wrap items-end justify-between gap-4">
+<div class="mb-5 flex flex-wrap items-center justify-between gap-3">
   <div>
-    <p class="text-xs font-bold uppercase tracking-[0.25em] text-champ-light/70">Your Progress</p>
-    <h1 class="mt-1 font-brand text-3xl font-bold text-white sm:text-4xl">我的進步</h1>
-    <p class="mt-2 text-sm text-green-200/65">你的差點指數、成長曲線與個人紀錄 — 每打一場，這裡都會變得更強。</p>
+    <h1 class="font-brand text-2xl font-bold text-white sm:text-3xl">我的進步</h1>
+    <p class="mt-0.5 text-xs text-green-200/55">差點指數 · 成長曲線 · 個人紀錄</p>
   </div>
-  <div class="flex flex-wrap shrink-0 gap-2">
+  <div class="flex shrink-0 gap-2">
     <a href="{{ url_for('year_review') }}"
-       class="inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-green-200 no-underline transition hover:bg-white/10">
+       class="inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold text-green-200 no-underline transition hover:bg-white/10">
       📅 年度回顧
     </a>
     {% if progress and progress.chart %}
     <button type="button" id="progress-share-open"
-            class="pulse-cta inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-champ to-champ-light px-5 py-3 text-sm font-bold text-[#07150e] shadow-lg transition hover:brightness-105">
-      <span aria-hidden="true">📤</span> 分享我的進步
+            class="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-champ to-champ-light px-4 py-2 text-sm font-bold text-[#07150e] shadow transition hover:brightness-105">
+      📤 分享
     </button>
     {% endif %}
   </div>
 </div>
+
+{# 頁面快速導覽（方便跳到各區塊） #}
+{% if progress %}
+<nav class="mb-6 flex gap-2 overflow-x-auto rounded-2xl bg-black/25 p-1.5 ring-1 ring-white/10 scrollbar-none" aria-label="頁面導覽">
+  <a href="#handicap" class="progress-anchor flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-green-100 transition hover:bg-white/15 no-underline whitespace-nowrap">📊 差點指數</a>
+  <a href="#records" class="progress-anchor flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-green-100 transition hover:bg-white/15 no-underline whitespace-nowrap">🏆 個人紀錄</a>
+  {% if leaderboard %}<a href="#leaderboard" class="progress-anchor flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-green-100 transition hover:bg-white/15 no-underline whitespace-nowrap">🏅 排行榜</a>{% endif %}
+  {% if hole_analysis %}<a href="#hole-analysis" class="progress-anchor flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-green-100 transition hover:bg-white/15 no-underline whitespace-nowrap">🗺️ 弱洞分析</a>{% endif %}
+</nav>
+{% endif %}
 
 {% if not progress %}
 {# —— 完全沒有場次 —— #}
@@ -40,7 +49,7 @@
 {% else %}
 
 {# ===== 差點指數 Hero ===== #}
-<section class="reveal mb-6 overflow-hidden rounded-3xl border border-champ/30 bg-gradient-to-br from-[#0c2418] via-[#0a1c12] to-black/60 p-6 shadow-2xl ring-1 ring-white/10 sm:p-9">
+<section id="handicap" class="reveal mb-6 overflow-hidden rounded-3xl border border-champ/30 bg-gradient-to-br from-[#0c2418] via-[#0a1c12] to-black/60 p-6 shadow-2xl ring-1 ring-white/10 sm:p-9">
   <div class="grid items-center gap-6 sm:grid-cols-[auto_1fr]">
     {# 大數字 #}
     <div class="text-center sm:text-left">
@@ -155,7 +164,7 @@
 {% endif %}
 
 {# ===== 個人紀錄牆 ===== #}
-<section class="reveal mb-6">
+<section id="records" class="reveal mb-6">
   <h2 class="mb-4 text-lg font-bold text-white sm:text-xl">個人紀錄</h2>
   <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
     {% set rec = progress.records %}
@@ -201,7 +210,7 @@
 
 {# ===== 好友差點排行榜 ===== #}
 {% if leaderboard %}
-<section class="reveal mb-6 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.06] via-black/20 to-black/40 p-5 shadow-xl ring-1 ring-white/10 sm:p-7">
+<section id="leaderboard" class="reveal mb-6 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.06] via-black/20 to-black/40 p-5 shadow-xl ring-1 ring-white/10 sm:p-7">
   <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
     <div>
       <p class="text-xs font-bold uppercase tracking-widest text-champ-light/70">Leaderboard</p>
@@ -495,7 +504,7 @@
 
 {# ===== B1 弱點洞熱力圖 ===== #}
 {% if hole_data and hole_data.has_data %}
-<section class="reveal mb-6 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.05] via-black/20 to-black/40 p-5 shadow-xl ring-1 ring-white/10 sm:p-7">
+<section id="hole-analysis" class="reveal mb-6 overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.05] via-black/20 to-black/40 p-5 shadow-xl ring-1 ring-white/10 sm:p-7">
   <div class="mb-5">
     <p class="text-xs font-bold uppercase tracking-widest text-champ-light/70">Hole Analysis</p>
     <h2 class="mt-1 text-lg font-bold text-white sm:text-xl">逐洞分析 · 你的強弱洞</h2>

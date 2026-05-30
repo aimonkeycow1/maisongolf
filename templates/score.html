@@ -33,7 +33,7 @@
   <section id="step-country" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8">
     <div class="mb-6 flex items-center justify-between">
       <h2 class="text-lg font-bold text-fairway-dark">選擇國家</h2>
-      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 1</span>
+      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">第 1 步</span>
     </div>
     <p class="mb-6 text-sm text-green-600">共 {{ courses_by_country|length }} 個國家 · {{ courses_catalog|length }} 個球場</p>
     <div class="grid gap-4 sm:grid-cols-2">
@@ -57,7 +57,7 @@
   <section id="step-course" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8" hidden>
     <div class="mb-2 flex items-center justify-between">
       <h2 class="text-lg font-bold text-fairway-dark">選擇球場</h2>
-      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 2</span>
+      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">第 2 步</span>
     </div>
     <p id="course-country-label" class="mb-5 flex items-center gap-2 text-sm font-medium text-green-700"></p>
     <div id="course-grid" class="grid gap-4 sm:grid-cols-2"></div>
@@ -71,7 +71,7 @@
   <section id="step-tee" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8" hidden>
     <div class="mb-2 flex items-center justify-between">
       <h2 class="text-lg font-bold text-fairway-dark">選擇發球台</h2>
-      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 3</span>
+      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">第 3 步</span>
     </div>
     <p id="tee-course-name" class="mb-5 text-sm text-green-600"></p>
     <div id="tee-grid" class="grid gap-3 sm:grid-cols-2"></div>
@@ -85,7 +85,7 @@
   <section id="step-setup" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8" hidden>
     <div class="mb-6 flex items-center justify-between">
       <h2 class="text-lg font-bold text-fairway-dark">球友設定</h2>
-      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 4</span>
+      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">第 4 步</span>
     </div>
 
     <label class="mb-4 block">
@@ -133,16 +133,16 @@
   </section>
 
   {# Step 2：逐洞記分 #}
-  <section id="step-holes" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8" hidden>
-    <div class="mb-4 flex items-center justify-between">
+  <section id="step-holes" class="rounded-2xl bg-white p-5 shadow-xl ring-1 ring-green-900/10 sm:p-7" hidden>
+    <div class="mb-3 flex items-center justify-between">
       <h2 class="text-lg font-bold text-fairway-dark">逐洞記分</h2>
-      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 5</span>
+      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">第 2 步</span>
     </div>
-    <div class="mb-4 h-1.5 overflow-hidden rounded-full bg-green-100">
-      <div id="progress-bar" class="h-full rounded-full bg-gradient-to-r from-fairway to-gold transition-all duration-300" style="width:0%"></div>
+    <div class="mb-1 h-2 overflow-hidden rounded-full bg-green-100">
+      <div id="progress-bar" class="h-full rounded-full bg-gradient-to-r from-fairway to-gold transition-all duration-500" style="width:0%"></div>
     </div>
-    <p id="hole-counter" class="mb-4 text-lg font-bold text-fairway-dark">第 1 洞 / 18</p>
-    <div id="hole-info"></div>
+    <p id="hole-counter" class="mb-4 text-2xl font-black text-fairway-dark">第 1 洞 / 18</p>
+    <div id="hole-info" class="mb-4"></div>
     <article id="next-hole-strategy-card" class="mt-4 rounded-xl border border-blue-200 bg-blue-50/80 p-4 hidden">
       <p id="strategy-title" class="text-base font-bold text-blue-900"></p>
       <p id="strategy-subtitle" class="mt-1 text-xs font-semibold text-blue-700"></p>
@@ -161,14 +161,16 @@
       <div id="live-standings-rows" class="grid gap-2"></div>
     </div>
 
-    <div class="mt-6 flex flex-wrap gap-3">
+    <div class="mt-6 flex gap-3">
       <button type="button" id="btn-prev" disabled
-              class="flex-1 min-w-[120px] rounded-xl border border-green-200 bg-green-50 py-3 font-semibold text-fairway-dark disabled:opacity-40">
-        ← 上一洞
+              class="flex items-center justify-center gap-1.5 rounded-xl border-2 border-green-200 bg-green-50 px-5 py-3.5 font-bold text-fairway-dark disabled:opacity-30 transition">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        上一洞
       </button>
       <button type="button" id="btn-next"
-              class="flex-1 min-w-[120px] rounded-xl bg-fairway py-3 font-semibold text-white shadow hover:bg-fairway-light">
-        下一洞 →
+              class="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-fairway py-3.5 font-bold text-white shadow-lg transition hover:bg-fairway-light active:scale-[0.99]">
+        下一洞
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
       </button>
     </div>
   </section>
@@ -176,8 +178,8 @@
   {# Step 3：確認 #}
   <section id="step-review" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8" hidden>
     <div class="mb-6 flex items-center justify-between">
-      <h2 class="text-lg font-bold text-fairway-dark">確認並存檔</h2>
-      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">Step 6</span>
+      <h2 class="text-lg font-bold text-fairway-dark">確認成績</h2>
+      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">第 3 步</span>
     </div>
     <div id="review-board"></div>
     <p id="submit-error" class="mt-4 hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"></p>
@@ -546,54 +548,100 @@ const MY_USERNAME = {{ current_username|tojson }};
     const par = activeTee.pars[holeIndex];
     const yard = activeTee.yardages[holeIndex];
     const hcp = activeTee.handicap[holeIndex];
-    const section = holeIndex < 9 ? "前九洞" : "後九洞";
+    const section = holeIndex < 9 ? "前九洞（1–9）" : "後九洞（10–18）";
 
-    el("hole-counter").textContent = `第 ${h} 洞 / 18 · ${section}`;
+    el("hole-counter").textContent = `第 ${h} 洞 / 18`;
     el("progress-bar").style.width = `${((holeIndex + 1) / HOLES) * 100}%`;
     el("hole-info").innerHTML = `
+      <div class="mb-1 text-xs font-semibold text-green-600/70">${section}</div>
       <div class="grid grid-cols-3 gap-3 rounded-xl bg-fairway-dark p-4 text-center text-white">
-        <div><p class="text-xs text-gold-light">Par</p><p class="text-xl font-bold">${par}</p></div>
-        <div><p class="text-xs text-gold-light">碼數</p><p class="text-xl font-bold">${yard}</p></div>
-        <div><p class="text-xs text-gold-light">差點</p><p class="text-xl font-bold">${hcp}</p></div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider text-gold-light/70">Par</p>
+          <p class="mt-0.5 text-3xl font-black tabular-nums">${par}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider text-gold-light/70">碼數</p>
+          <p class="mt-0.5 text-3xl font-black tabular-nums">${yard}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider text-gold-light/70">HCP</p>
+          <p class="mt-0.5 text-3xl font-black tabular-nums">${hcp}</p>
+        </div>
       </div>`;
 
     const container = el("hole-inputs");
     container.innerHTML = "";
-    function tapBtnClasses(selected) {
-      const base =
-        "tap-btn min-h-[48px] rounded-lg py-2.5 text-base font-bold shadow-md transition touch-manipulation active:scale-[0.97] ";
+
+    // Quick-tap labels: show score name under each button
+    const SCORE_NAMES = {
+      "-3": "信天翁", "-2": "Eagle", "-1": "Birdie", "0": "Par",
+      "1": "Bogey", "2": "Double", "3": "Triple"
+    };
+    function getScoreName(diff) {
+      return SCORE_NAMES[String(diff)] || (diff > 0 ? `+${diff}` : String(diff));
+    }
+
+    function tapBtnClasses(selected, diff) {
+      const base = "tap-btn flex flex-col items-center justify-center gap-0.5 min-h-[64px] rounded-xl py-2 text-base font-black shadow-md transition touch-manipulation active:scale-[0.97] ";
+      const colorMap = {
+        "-3": "bg-purple-600 text-white", "-2": "bg-blue-600 text-white",
+        "-1": "bg-green-700 text-white", "0": "bg-white text-green-900 ring-1 ring-green-200",
+        "1": "bg-orange-500 text-white", "2": "bg-red-600 text-white"
+      };
       if (selected) {
-        return base + "bg-gold text-fairway-dark ring-2 ring-gold-light ring-offset-2 ring-offset-white";
+        const selColor = colorMap[String(diff)] || "bg-gold text-fairway-dark";
+        return base + selColor + " ring-4 ring-gold-light ring-offset-2 ring-offset-white scale-[1.04] shadow-xl";
       }
-      return base + "bg-fairway-dark text-white hover:brightness-110 hover:ring-2 hover:ring-gold-light/60";
+      return base + "bg-fairway-dark/90 text-white hover:brightness-110 border border-white/10";
     }
 
     players.forEach((name, pi) => {
       const val = scores[pi][holeIndex];
       const diff = val !== null ? val - par : null;
       const key = diff !== null ? scoreKey(diff) : "";
-      const q1 = Math.max(1, par - 1);
-      const q2 = par;
-      const q3 = par + 1;
-      const q4 = par + 2;
+      const q1 = Math.max(1, par - 2); // Eagle or better (for par3: 1, par4: 2, par5: 3)
+      const q2 = Math.max(1, par - 1); // Birdie
+      const q3 = par;                   // Par
+      const q4 = par + 1;               // Bogey
+      const q5 = par + 2;               // Double
       const row = document.createElement("div");
-      row.className = "border-b border-green-100 pb-5 last:border-0";
+      row.className = "rounded-xl border border-green-100 bg-white p-4 mb-3 last:mb-0";
       row.innerHTML = `
-        <p class="mb-3 font-bold text-fairway-dark">${name}</p>
-        <div class="mb-3 grid grid-cols-4 gap-2">
-          <button type="button" data-pi="${pi}" data-val="${q1}"
-            class="${tapBtnClasses(val !== null && val === q1)}">${q1}</button>
-          <button type="button" data-pi="${pi}" data-val="${q2}"
-            class="${tapBtnClasses(val !== null && val === q2)}">${q2}</button>
-          <button type="button" data-pi="${pi}" data-val="${q3}"
-            class="${tapBtnClasses(val !== null && val === q3)}">${q3}</button>
-          <button type="button" data-pi="${pi}" data-val="${q4}"
-            class="${tapBtnClasses(val !== null && val === q4)}">${q4}</button>
+        <div class="mb-3 flex items-center justify-between">
+          <p class="font-bold text-fairway-dark text-base">${name}</p>
+          <span data-hint="${pi}" class="score-hint rounded-full px-3 py-1 text-sm font-semibold ${diff !== null ? SCORE_TW[key] : "invisible"}">${diff !== null ? scoreLabel(diff) : "—"}</span>
+        </div>
+        <div class="mb-3 grid grid-cols-5 gap-1.5">
+          <button type="button" data-pi="${pi}" data-val="${q1}" data-diff="${q1 - par}"
+            class="${tapBtnClasses(val !== null && val === q1, q1 - par)}">
+            <span>${q1}</span>
+            <span class="text-[10px] font-semibold leading-none opacity-75">${getScoreName(q1 - par)}</span>
+          </button>
+          <button type="button" data-pi="${pi}" data-val="${q2}" data-diff="${q2 - par}"
+            class="${tapBtnClasses(val !== null && val === q2, q2 - par)}">
+            <span>${q2}</span>
+            <span class="text-[10px] font-semibold leading-none opacity-75">${getScoreName(q2 - par)}</span>
+          </button>
+          <button type="button" data-pi="${pi}" data-val="${q3}" data-diff="${q3 - par}"
+            class="${tapBtnClasses(val !== null && val === q3, q3 - par)}">
+            <span>${q3}</span>
+            <span class="text-[10px] font-semibold leading-none opacity-75">${getScoreName(q3 - par)}</span>
+          </button>
+          <button type="button" data-pi="${pi}" data-val="${q4}" data-diff="${q4 - par}"
+            class="${tapBtnClasses(val !== null && val === q4, q4 - par)}">
+            <span>${q4}</span>
+            <span class="text-[10px] font-semibold leading-none opacity-75">${getScoreName(q4 - par)}</span>
+          </button>
+          <button type="button" data-pi="${pi}" data-val="${q5}" data-diff="${q5 - par}"
+            class="${tapBtnClasses(val !== null && val === q5, q5 - par)}">
+            <span>${q5}</span>
+            <span class="text-[10px] font-semibold leading-none opacity-75">${getScoreName(q5 - par)}</span>
+          </button>
         </div>
         <div class="flex items-center gap-3">
-          <input type="number" min="1" max="20" data-pi="${pi}" value="${val !== null ? val : ""}" placeholder="桿"
-            class="score-input w-24 rounded-lg border-2 border-fairway-dark/30 bg-green-50 px-3 py-2 text-center text-2xl font-bold text-fairway-dark focus:border-fairway-dark focus:outline-none focus:ring-2 focus:ring-fairway-dark/35">
-          <span data-hint="${pi}" class="score-hint rounded-full px-3 py-1 text-sm font-semibold ${diff !== null ? SCORE_TW[key] : "hidden"}">${diff !== null ? scoreLabel(diff) : ""}</span>
+          <label class="text-xs font-semibold text-green-700">其他桿數：</label>
+          <input type="number" min="1" max="20" data-pi="${pi}" value="${val !== null ? val : ""}" placeholder="輸入"
+            class="score-input w-24 rounded-lg border-2 border-fairway-dark/30 bg-green-50 px-3 py-2 text-center text-xl font-bold text-fairway-dark focus:border-fairway-dark focus:outline-none focus:ring-2 focus:ring-fairway-dark/35">
         </div>`;
       container.appendChild(row);
     });
@@ -611,7 +659,16 @@ const MY_USERNAME = {{ current_username|tojson }};
     });
 
     el("btn-prev").disabled = holeIndex === 0;
-    el("btn-next").textContent = holeIndex === HOLES - 1 ? "查看總成績 →" : "下一洞 →";
+    const nextBtn = el("btn-next");
+    if (holeIndex === HOLES - 1) {
+      nextBtn.innerHTML = `查看總成績 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>`;
+      nextBtn.classList.add("bg-gold", "hover:bg-gold-light");
+      nextBtn.classList.remove("bg-fairway", "hover:bg-fairway-light");
+    } else {
+      nextBtn.innerHTML = `下一洞 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>`;
+      nextBtn.classList.add("bg-fairway", "hover:bg-fairway-light");
+      nextBtn.classList.remove("bg-gold", "hover:bg-gold-light");
+    }
     updateLiveStandings();
   }
 

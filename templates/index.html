@@ -1,189 +1,99 @@
 {% extends "base.html" %}
-{% from '_macros.html' import cta_button, trophy_icon, par_trend_badge, momentum_strip, growth_dashboard, retention_banner, sample_scorecard, ai_coach_preview %}
-{% block title %}歷史戰績 · Maison Golf{% endblock %}
+{% from '_macros.html' import trophy_icon, par_trend_badge, sample_scorecard, ai_coach_preview %}
+{% block title %}首頁 · Maison Golf{% endblock %}
 {% block content %}
 
-{# Hero 走馬燈 #}
-<section id="hero-carousel"
-         class="group/carousel relative mb-6 overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10"
-         aria-roledescription="carousel"
-         aria-label="精選球場">
-  <div class="relative min-h-[280px] sm:min-h-[340px] lg:min-h-[380px]">
-    {% for slide in hero_slides %}
-    <article class="hero-slide absolute inset-0 transition-opacity duration-700 ease-in-out
-                    {% if loop.first %}z-10 opacity-100{% else %}z-0 opacity-0 pointer-events-none{% endif %}"
-             data-index="{{ loop.index0 }}"
-             aria-hidden="{{ 'false' if loop.first else 'true' }}">
-      <div class="absolute inset-0 bg-cover bg-center transition-transform duration-[1200ms] scale-105 hero-slide-bg"
-           style="background-image: url('{{ slide.image }}')"></div>
-      <div class="relative z-10 flex h-full min-h-[inherit] flex-col justify-end px-6 py-10 sm:px-10 sm:py-14">
-        <p class="mb-2 inline-block w-fit rounded-full border border-gold-light/40 bg-black/40 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-gold-light backdrop-blur-sm">
-          {{ slide.badge }}
-        </p>
-        <h1 class="text-2xl font-bold tracking-tight text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.75)] sm:text-4xl lg:text-5xl">
-          {{ slide.name }}
-        </h1>
-        <p class="mt-3 max-w-2xl text-sm text-white/95 drop-shadow-[0_1px_8px_rgba(0,0,0,0.7)] sm:text-lg">
-          {{ slide.subtitle }}
-        </p>
-      </div>
-    </article>
-    {% endfor %}
-  </div>
-
-  {# 左右箭頭 #}
-  <button type="button"
-          id="hero-prev"
-          class="absolute left-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-fairway-dark/70 text-white shadow-lg backdrop-blur-sm transition hover:border-gold-light/50 hover:bg-fairway-dark/90 focus:outline-none focus:ring-2 focus:ring-gold-light/60 sm:left-4 sm:h-11 sm:w-11"
-          aria-label="上一張球場照片">
-    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-    </svg>
-  </button>
-  <button type="button"
-          id="hero-next"
-          class="absolute right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-fairway-dark/70 text-white shadow-lg backdrop-blur-sm transition hover:border-gold-light/50 hover:bg-fairway-dark/90 focus:outline-none focus:ring-2 focus:ring-gold-light/60 sm:right-4 sm:h-11 sm:w-11"
-          aria-label="下一張球場照片">
-    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-    </svg>
-  </button>
-
-  {# 指示點 #}
-  <div class="absolute bottom-4 left-0 right-0 z-20 flex justify-center gap-2 px-4"
-       role="tablist"
-       aria-label="選擇球場照片">
-    {% for slide in hero_slides %}
-    <button type="button"
-            class="hero-dot h-2 w-2 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gold-light/60 sm:h-2.5 sm:w-2.5
-                   {% if loop.first %}w-6 bg-gold-light sm:w-8{% else %}bg-white/40 hover:bg-white/70{% endif %}"
-            data-index="{{ loop.index0 }}"
-            aria-label="{{ slide.name }}"
-            aria-selected="{{ 'true' if loop.first else 'false' }}"
-            role="tab"></button>
-    {% endfor %}
+{# ── 歡迎區 ── #}
+<section class="mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-fairway/30 via-black/30 to-black/50 p-5 ring-1 ring-white/10 sm:p-7">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <p class="text-sm text-green-200/60">歡迎回來</p>
+      <h1 class="mt-0.5 font-brand text-2xl font-bold text-white sm:text-3xl">
+        {{ current_user.username }}
+        {% if engagement and engagement.handicap_index is not none %}
+        <span class="ml-2 rounded-full bg-gold/20 px-3 py-0.5 text-sm font-bold text-gold-light ring-1 ring-gold/40">
+          差點 {{ "%.1f"|format(engagement.handicap_index) }}
+        </span>
+        {% endif %}
+      </h1>
+      {% if engagement %}
+      <p class="mt-1 text-xs text-green-200/50">
+        {{ engagement.level_icon }} {{ engagement.level_title }}
+        {% if engagement.streak_weeks > 0 %}
+        · 🔥 連續 {{ engagement.streak_weeks }} 週
+        {% endif %}
+      </p>
+      {% endif %}
+    </div>
+    {# 大錄分按鈕（只在手機版的歡迎區顯示，讓底部 tab 也能用） #}
+    <a href="{{ url_for('score_entry') }}"
+       class="sm:hidden flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fairway-light to-fairway px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-fairway/30 no-underline transition active:scale-[0.98]">
+      <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+      開始錄分
+    </a>
+    <a href="{{ url_for('score_entry') }}"
+       class="hidden sm:flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fairway-light to-fairway px-8 py-4 text-lg font-bold text-white shadow-lg shadow-fairway/30 no-underline transition hover:brightness-110 active:scale-[0.98]">
+      <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+      ⛳ 開始錄分
+    </a>
   </div>
 </section>
 
-<script>
-(function () {
-  const root = document.getElementById("hero-carousel");
-  if (!root) return;
-
-  const slides = Array.from(root.querySelectorAll(".hero-slide"));
-  const dots = Array.from(root.querySelectorAll(".hero-dot"));
-  const prevBtn = document.getElementById("hero-prev");
-  const nextBtn = document.getElementById("hero-next");
-  const INTERVAL_MS = 4500;
-  let current = 0;
-  let timer = null;
-  let paused = false;
-
-  function goTo(index) {
-    if (!slides.length) return;
-    current = (index + slides.length) % slides.length;
-
-    slides.forEach((slide, i) => {
-      const active = i === current;
-      slide.classList.toggle("opacity-100", active);
-      slide.classList.toggle("z-10", active);
-      slide.classList.toggle("opacity-0", !active);
-      slide.classList.toggle("pointer-events-none", !active);
-      slide.classList.toggle("z-0", !active);
-      slide.setAttribute("aria-hidden", active ? "false" : "true");
-      const bg = slide.querySelector(".hero-slide-bg");
-      if (bg) bg.classList.toggle("scale-110", active);
-    });
-
-    dots.forEach((dot, i) => {
-      const active = i === current;
-      dot.setAttribute("aria-selected", active ? "true" : "false");
-      dot.classList.remove("w-2", "w-6", "sm:w-2.5", "sm:w-8", "bg-gold-light", "bg-white/40");
-      if (active) {
-        dot.classList.add("w-6", "sm:w-8", "bg-gold-light");
-      } else {
-        dot.classList.add("w-2", "sm:w-2.5", "bg-white/40");
-      }
-    });
-  }
-
-  function next() { goTo(current + 1); }
-  function prev() { goTo(current - 1); }
-
-  function startAutoplay() {
-    stopAutoplay();
-    timer = setInterval(() => {
-      if (!paused) next();
-    }, INTERVAL_MS);
-  }
-
-  function stopAutoplay() {
-    if (timer) clearInterval(timer);
-    timer = null;
-  }
-
-  function resetAutoplay() {
-    stopAutoplay();
-    startAutoplay();
-  }
-
-  nextBtn?.addEventListener("click", () => { next(); resetAutoplay(); });
-  prevBtn?.addEventListener("click", () => { prev(); resetAutoplay(); });
-
-  dots.forEach((dot) => {
-    dot.addEventListener("click", () => {
-      goTo(Number(dot.dataset.index));
-      resetAutoplay();
-    });
-  });
-
-  root.addEventListener("mouseenter", () => { paused = true; });
-  root.addEventListener("mouseleave", () => { paused = false; });
-
-    root.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowLeft") { prev(); resetAutoplay(); }
-    if (e.key === "ArrowRight") { next(); resetAutoplay(); }
-  });
-
-  let touchStartX = 0;
-  root.addEventListener("touchstart", (e) => {
-    touchStartX = e.changedTouches[0].screenX;
-  }, { passive: true });
-  root.addEventListener("touchend", (e) => {
-    const dx = e.changedTouches[0].screenX - touchStartX;
-    if (Math.abs(dx) < 40) return;
-    if (dx < 0) next(); else prev();
-    resetAutoplay();
-  }, { passive: true });
-
-  startAutoplay();
-})();
-</script>
-
-{# 動能條（回訪即見 · 連續/本月/下一個目標） #}
-{{ momentum_strip(engagement) }}
-
-{# 斷連挽留橫幅（最高優先 · 損失厭惡） #}
-{{ retention_banner(engagement, score_url=url_for('score_entry')) }}
-
-{# ===== 好友動態 Feed ===== #}
-{% if friend_feed %}
-<section class="reveal mb-6 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.05] via-black/20 to-black/35 p-5 shadow-xl ring-1 ring-white/10">
-  <div class="mb-4 flex items-center justify-between gap-3">
-    <div>
-      <p class="text-[11px] font-bold uppercase tracking-widest text-champ-light/60">Friend Activity</p>
-      <h2 class="mt-0.5 text-base font-bold text-white">球友動態</h2>
+{# ── 快速統計（本月 / 最近成績 / 本月目標） ── #}
+{% if engagement %}
+<div class="mb-6 grid grid-cols-3 gap-3">
+  <div class="rounded-2xl bg-white/5 p-4 text-center ring-1 ring-white/10">
+    <p class="text-[11px] font-semibold uppercase tracking-wider text-green-200/60">本月</p>
+    <p class="mt-1.5 text-3xl font-black tabular-nums text-white">{{ engagement.month_rounds }}</p>
+    <p class="text-[11px] text-green-200/50">/ {{ engagement.month_goal }} 場目標</p>
+    <div class="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
+      <div class="h-full rounded-full bg-gradient-to-r from-fairway to-fairway-light" style="width:{{ engagement.month_goal_pct }}%"></div>
     </div>
-    <a href="{{ url_for('friends.friends_home') }}"
-       class="rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-green-200 no-underline transition hover:bg-white/10">
-      所有好友 →
-    </a>
   </div>
-  <div class="space-y-2">
-    {% for item in friend_feed %}
-    <div class="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 transition hover:border-champ/30 hover:bg-black/30
-                {% if item.type == 'milestone' %}border-gold/25 bg-gold/5{% endif %}">
-      <span class="shrink-0 text-2xl">{{ item.icon }}</span>
+  <div class="rounded-2xl bg-white/5 p-4 text-center ring-1 ring-white/10">
+    <p class="text-[11px] font-semibold uppercase tracking-wider text-green-200/60">連勝週</p>
+    {% if engagement.streak_weeks > 0 %}
+    <p class="mt-1.5 text-3xl font-black tabular-nums text-orange-300">{{ engagement.streak_weeks }}</p>
+    <p class="text-[11px] {{ 'text-orange-300/80' if engagement.streak_status == 'at_risk' else 'text-green-200/50' }}">
+      {{ '快斷了！' if engagement.streak_status == 'at_risk' else '週連續' }}
+    </p>
+    {% else %}
+    <p class="mt-1.5 text-3xl font-black text-green-200/30">—</p>
+    <p class="text-[11px] text-green-200/50">本週開賽</p>
+    {% endif %}
+  </div>
+  <div class="rounded-2xl bg-white/5 p-4 text-center ring-1 ring-white/10">
+    <p class="text-[11px] font-semibold uppercase tracking-wider text-green-200/60">最近成績</p>
+    {% if engagement.last_score %}
+    <p class="mt-1.5 text-3xl font-black tabular-nums text-white">{{ engagement.last_score }}</p>
+    <p class="text-[11px] text-green-200/50">桿（上一場）</p>
+    {% else %}
+    <p class="mt-1.5 text-3xl font-black text-green-200/30">—</p>
+    <p class="text-[11px] text-green-200/50">尚無紀錄</p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{# ── 好友動態（有才顯示，摺疊式） ── #}
+{% if friend_feed %}
+<details class="group mb-6 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+  <summary class="flex cursor-pointer list-none items-center justify-between px-5 py-4 select-none">
+    <div class="flex items-center gap-2">
+      <svg class="h-5 w-5 text-green-300/70" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+      </svg>
+      <span class="text-sm font-bold text-white">球友動態</span>
+      <span class="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-semibold text-green-200/70">{{ friend_feed|length }}</span>
+    </div>
+    <svg class="h-4 w-4 text-green-200/50 transition group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+    </svg>
+  </summary>
+  <div class="space-y-2 border-t border-white/10 px-5 py-4">
+    {% for item in friend_feed[:5] %}
+    <div class="flex items-center gap-3 rounded-xl bg-black/20 px-4 py-3">
+      <span class="shrink-0 text-xl">{{ item.icon }}</span>
       <div class="min-w-0 flex-1">
         <p class="truncate text-sm font-semibold text-white">
           <span class="text-champ-light">{{ item.name }}</span>
@@ -193,174 +103,120 @@
       </div>
       {% if item.round_id %}
       <a href="{{ url_for('round_detail', round_id=item.round_id) }}"
-         class="shrink-0 rounded-lg border border-white/15 px-2.5 py-1 text-[11px] font-semibold text-green-200/70 no-underline transition hover:bg-white/10">
+         class="shrink-0 rounded-lg border border-white/15 px-2.5 py-1 text-[11px] font-semibold text-green-200/70 no-underline hover:bg-white/10">
         看 →
       </a>
       {% endif %}
     </div>
     {% endfor %}
+    <a href="{{ url_for('friends.friends_home') }}"
+       class="block pt-1 text-center text-xs font-semibold text-champ hover:text-white no-underline">
+      查看所有好友 →
+    </a>
   </div>
-</section>
+</details>
 {% endif %}
 
-{# 醒目 CTA — Hero 正下方 #}
-<div class="mb-8 flex flex-col items-stretch sm:items-start">
-  {{ cta_button(url_for('score_entry'), '立即錄分 · 開始新場次', full=true) }}
-  <p class="mt-3 text-center text-xs text-green-200/50 sm:text-left">點擊進入逐洞記分 · 打完自動存入歷史</p>
-</div>
-
-{# 成長儀表板（等級 / 連勝 / 月目標 / 成就牆） #}
-{{ growth_dashboard(engagement) }}
-
-{# 提示 #}
-<div class="mb-6 rounded-xl border border-gold/30 bg-gold/10 px-5 py-4 text-sm leading-relaxed text-green-100/90">
-  <span class="font-semibold text-gold-light">給球友</span> — 把此頁網址傳到 WhatsApp 群，隨時查看歷史戰績與記分卡。
-</div>
-
-{# 圖例 #}
-<div class="mb-8 flex flex-wrap gap-3 rounded-xl bg-white/5 px-4 py-3 ring-1 ring-white/10 text-xs sm:text-sm">
-  <span class="flex items-center gap-2"><span class="h-3 w-3 rounded bg-blue-600"></span>Eagle</span>
-  <span class="flex items-center gap-2"><span class="h-3 w-3 rounded bg-green-700"></span>Birdie</span>
-  <span class="flex items-center gap-2"><span class="h-3 w-3 rounded border border-green-200 bg-white"></span>Par</span>
-  <span class="flex items-center gap-2"><span class="h-3 w-3 rounded bg-orange-500"></span>Bogey</span>
-  <span class="flex items-center gap-2"><span class="h-3 w-3 rounded bg-red-600"></span>Double+</span>
-</div>
-
-{# 歷史場次 #}
-<section class="reveal rounded-2xl bg-white/5 p-6 shadow-xl ring-1 ring-white/10 backdrop-blur-sm sm:p-8">
-  <div class="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-white/10 pb-5">
-    <div>
-      <h2 class="text-xl font-bold text-white sm:text-2xl">歷史場次</h2>
-      <p class="mt-1 text-sm text-green-200/60">僅顯示您帳號下的場次 · 點擊查看完整記分卡</p>
-    </div>
-    <span class="rounded-full bg-fairway px-4 py-1.5 text-sm font-bold text-white shadow-md">{{ rounds_rev|length }} 場</span>
+{# ── 歷史場次 ── #}
+<section>
+  <div class="mb-4 flex items-center justify-between">
+    <h2 class="text-lg font-bold text-white">我的場次</h2>
+    <span class="rounded-full bg-white/10 px-3 py-1 text-sm font-bold text-green-200">{{ rounds_rev|length }} 場</span>
   </div>
 
   {% if rounds_rev %}
-    <div class="space-y-4">
-      {% for r in rounds_rev %}
-      {% set best = r.players|sort(attribute='total')|first %}
-      {% set round_par = r.par_total if r.par_total is defined else par_total %}
-      {% set to_par = best.to_par if best.to_par is defined else (best.total - round_par) %}
-      <article class="group relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.08] via-black/20 to-black/40 shadow-lg shadow-black/30 ring-1 ring-white/10 transition duration-300 hover:-translate-y-0.5 hover:border-gold/50 hover:shadow-2xl hover:shadow-gold/10">
+  <div class="space-y-3">
+    {% for r in rounds_rev %}
+    {% set best = r.players|sort(attribute='total')|first %}
+    {% set round_par = r.par_total if r.par_total is defined else par_total %}
+    {% set to_par = best.to_par if best.to_par is defined else (best.total - round_par) %}
+    <article class="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.05] transition hover:border-gold/40 hover:bg-white/[0.08]">
       <a href="{{ url_for('round_detail', round_id=r.id) }}"
-         class="relative block p-5 no-underline sm:p-7">
+         class="flex items-center gap-4 p-4 no-underline sm:p-5">
 
-        <div class="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-gold/10 blur-2xl transition group-hover:bg-gold/20"></div>
+        {# 左：總桿大字 #}
+        <div class="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-gold/30 to-gold/10 ring-1 ring-gold/40">
+          <span class="text-3xl font-black tabular-nums leading-none text-gold-light">{{ best.total }}</span>
+          <span class="text-[10px] font-semibold text-gold-light/60">桿</span>
+        </div>
 
-        <div class="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          {# 左側：賽事資訊 #}
-          <div class="min-w-0 flex-1">
-            <div class="flex flex-wrap items-center gap-2 text-sm text-green-200/70">
-              <time class="font-semibold text-white">{{ r.date }}</time>
-              <span class="opacity-40">·</span>
-              <span>{{ r.time }}</span>
-            </div>
-
-            <p class="mt-1.5 truncate text-xs font-semibold uppercase tracking-wide text-fairway-light sm:text-sm">
-              {{ r.course or course_name }}
-            </p>
-            {% if r.tee %}
-            <p class="mt-0.5 text-xs text-green-200/50">Par {{ round_par }} · {{ r.tee }}</p>
-            {% endif %}
-
-            {% if r.note %}
-            <p class="mt-2 text-sm italic text-green-200/45 line-clamp-2">{{ r.note }}</p>
-            {% endif %}
-
-            <div class="mt-4 flex flex-wrap items-center gap-3">
-              <div class="flex items-center gap-2">
-                <span class="flex h-10 w-10 items-center justify-center rounded-full bg-gold/25 text-gold-light shadow-inner ring-2 ring-gold/40">
-                  {{ trophy_icon('h-5 w-5') }}
-                </span>
-                <div>
-                  <p class="text-[10px] font-bold uppercase tracking-widest text-gold-light/75">冠軍</p>
-                  <p class="text-base font-bold text-white transition group-hover:text-gold-light sm:text-lg">{{ best.name }}</p>
-                </div>
-              </div>
-              {{ par_trend_badge(to_par, 'sm') }}
-            </div>
-
-            <p class="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-xs font-medium text-green-200/75 ring-1 ring-white/10">
-              <svg class="h-3.5 w-3.5 opacity-60" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-              {{ r.players|length }} 位球手
-            </p>
+        {# 中：場次資訊 #}
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-bold text-white">{{ r.course or course_name }}</p>
+          <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-green-200/55">
+            <time>{{ r.date }}</time>
+            {% if r.tee %}<span>· {{ r.tee }}</span>{% endif %}
+            <span>· {{ r.players|length }} 人</span>
           </div>
-
-          {# 右側：超大總桿 + 獎盃 #}
-          <div class="flex shrink-0 items-center justify-between gap-4 border-t border-white/10 pt-4 sm:flex-col sm:items-end sm:justify-center sm:border-l sm:border-t-0 sm:pl-8 sm:pt-0">
-            <div class="flex flex-col items-start sm:items-end">
-              <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-gold-light/80 sm:text-xs">冠軍總桿</p>
-              <div class="mt-1 flex items-center gap-2 sm:gap-3">
-                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-gold/40 to-gold/10 text-gold-light shadow-lg ring-2 ring-gold/50 sm:h-12 sm:w-12">
-                  {{ trophy_icon('h-6 w-6 sm:h-7 sm:w-7') }}
-                </span>
-                <p class="text-6xl font-black tabular-nums leading-none tracking-tight text-gold-light drop-shadow-[0_4px_24px_rgba(234,179,8,0.35)] transition duration-300 group-hover:scale-[1.03] sm:text-7xl lg:text-8xl">
-                  {{ best.total }}
-                </p>
-              </div>
-              <p class="mt-1 text-sm font-semibold text-green-200/55 sm:text-right">桿 · 比標準桿</p>
-              <div class="mt-2 sm:flex sm:justify-end">
-                {{ par_trend_badge(to_par) }}
-              </div>
-            </div>
-            <span class="hidden items-center gap-1 text-xs font-semibold text-fairway-light sm:flex opacity-0 transition group-hover:opacity-100">
-              查看記分卡
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          <div class="mt-2 flex items-center gap-2">
+            {{ par_trend_badge(to_par, 'sm') }}
+            {% if r.players|length > 1 %}
+            <span class="inline-flex items-center gap-1 text-[11px] text-green-200/60">
+              {{ trophy_icon('h-3.5 w-3.5 text-gold-light') }}
+              {{ best.name }}
             </span>
+            {% endif %}
           </div>
         </div>
+
+        {# 右：箭頭 #}
+        <svg class="h-5 w-5 shrink-0 text-green-200/30 transition group-hover:text-green-200/70" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+        </svg>
       </a>
-      <div class="relative z-10 grid gap-2 border-t border-white/10 bg-black/25 px-5 py-4 sm:grid-cols-2 sm:px-7">
+
+      {# 操作列 #}
+      <div class="flex gap-2 border-t border-white/10 bg-black/20 px-4 py-3">
         <button type="button"
-                class="share-content-trigger flex w-full items-center justify-center gap-2 rounded-xl border border-gold/45 bg-gradient-to-r from-gold/25 to-amber-600/20 px-4 py-2.5 text-sm font-bold text-gold-light shadow-md transition hover:border-gold/70 hover:from-gold/35 hover:text-white"
+                class="share-content-trigger flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gold/35 bg-gold/10 py-2.5 text-sm font-bold text-gold-light transition hover:bg-gold/20"
                 data-round-id="{{ r.id }}"
                 data-share-tab="card">
-          <span aria-hidden="true">📱</span>
-          生成分享內容
+          <span aria-hidden="true">📱</span> 分享戰報
         </button>
         <button type="button"
-                class="ai-coach-trigger-standalone flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-400/40 bg-gradient-to-r from-emerald-800/80 to-fairway-dark px-4 py-2.5 text-sm font-bold text-emerald-100 shadow-md transition hover:border-emerald-300/60 hover:from-emerald-700/90 hover:text-white"
+                class="ai-coach-trigger-standalone flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-emerald-400/30 bg-emerald-900/30 py-2.5 text-sm font-bold text-emerald-100 transition hover:bg-emerald-800/40"
                 data-round-id="{{ r.id }}">
-          <span aria-hidden="true">✨</span>
-          AI 教練分析
+          <span aria-hidden="true">✨</span> AI 分析
         </button>
-        <p class="text-center text-[11px] leading-relaxed text-green-200/45 sm:col-span-2">
-          點「AI 教練分析」：點名失分洞 · 找出技術弱項 · 給下一場可執行策略
-        </p>
       </div>
-      </article>
-      {% endfor %}
-    </div>
+    </article>
+    {% endfor %}
+  </div>
+
   {% else %}
-    <div class="py-8 text-center">
-      <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gold/10 text-gold-light ring-1 ring-gold/30">
-        {{ trophy_icon('h-8 w-8') }}
+  {# 空狀態 — 示範讓新用戶安心 #}
+  <div class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+    <div class="mb-5 text-center">
+      <div class="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-fairway/20 text-3xl ring-1 ring-fairway/40">
+        ⛳
       </div>
-      <p class="mb-1 text-lg font-bold text-white">還沒有紀錄 — 先看看打完一場長怎樣</p>
-      <p class="mb-6 text-sm text-green-200/65">下面是範例。打完你的第一場，這裡就會變成你自己的戰績與 AI 講評。</p>
+      <h3 class="text-base font-bold text-white">還沒有場次紀錄</h3>
+      <p class="mt-1 text-sm text-green-200/60">打完一場，這裡就會出現你的戰績。下面是範例。</p>
     </div>
-    <div class="grid gap-5 lg:grid-cols-2">
-      <div>
-        <p class="mb-2 text-sm font-semibold text-green-100/80">⛳ 你的記分卡會長這樣</p>
-        {{ sample_scorecard() }}
-      </div>
-      <div>
-        <p class="mb-2 text-sm font-semibold text-green-100/80">✨ 你會收到這樣的 AI 講評</p>
-        {{ ai_coach_preview() }}
-      </div>
+
+    <div class="mb-5">
+      <p class="mb-2 text-xs font-semibold text-green-200/70">記分卡長這樣 👇</p>
+      {{ sample_scorecard() }}
     </div>
-    <div class="mt-8 text-center">
-      {{ cta_button(url_for('score_entry'), '立即錄分 · 開始我的第一場', full=false) }}
+
+    <div class="mb-4">
+      <p class="mb-2 text-xs font-semibold text-green-200/70">打完會收到 AI 教練分析 👇</p>
+      {{ ai_coach_preview() }}
     </div>
+
+    <a href="{{ url_for('score_entry') }}"
+       class="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fairway-light to-fairway py-4 text-base font-bold text-white shadow-lg no-underline transition hover:brightness-110">
+      開始我的第一場 →
+    </a>
+  </div>
   {% endif %}
 </section>
 
-{# 首頁 AI 教練彈層 #}
+{# ── 首頁 AI 教練彈層 ── #}
 <div id="ai-coach-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="ai-coach-modal-title">
   <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-emerald-500/30 bg-fairway-dark shadow-2xl ring-1 ring-emerald-400/20">
     <div class="sticky top-0 flex items-center justify-between border-b border-white/10 bg-fairway-dark/95 px-5 py-4 backdrop-blur">
-      <h3 id="ai-coach-modal-title" class="text-base font-bold text-white">AI 教練分析</h3>
+      <h3 id="ai-coach-modal-title" class="text-base font-bold text-white">✨ AI 教練分析</h3>
       <button type="button" id="ai-coach-modal-close" class="rounded-lg border border-white/15 px-3 py-1 text-sm text-green-200 hover:bg-white/10">關閉</button>
     </div>
     <div id="ai-coach-modal-body" class="p-5"></div>

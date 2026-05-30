@@ -48,76 +48,146 @@
 </head>
 <body class="min-h-full flex flex-col bg-gradient-to-b from-fairway-dark via-[#0f2918] to-[#071810] font-sans text-green-50 antialiased">
 
-  <header class="sticky top-0 z-50 border-b border-white/10 bg-fairway-dark/95 backdrop-blur-md shadow-lg shadow-black/20">
+  {# ── 頂部 Header（桌面顯示完整導覽，手機只顯示 Logo + 頭像） ── #}
+  <header class="sticky top-0 z-50 border-b border-white/10 bg-fairway-dark/95 backdrop-blur-md shadow-md">
     <div class="mx-auto max-w-5xl px-4 py-3 sm:px-6 lg:px-8">
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center justify-between gap-3">
+
+        {# Logo #}
         <a href="{{ url_for('index') }}"
-           class="group flex items-center gap-3 no-underline shrink-0 rounded-2xl py-0.5 pr-1 outline-none transition focus-visible:ring-2 focus-visible:ring-gold-light/60 focus-visible:ring-offset-2 focus-visible:ring-offset-fairway-dark sm:gap-3.5"
+           class="group flex items-center gap-2.5 no-underline shrink-0"
            aria-label="Maison Golf 首頁">
           {% include '_brand_logo.html' %}
-          <span class="flex flex-col justify-center">
-            <span class="font-brand text-[1.05rem] font-semibold leading-tight tracking-[0.06em] text-white transition group-hover:text-champ sm:text-xl">
-              Maison Golf
-            </span>
-            <span class="mt-0.5 h-px w-8 bg-gradient-to-r from-champ/80 to-transparent opacity-80 transition group-hover:w-10 sm:w-10"></span>
+          <span class="font-brand text-lg font-semibold tracking-wide text-white transition group-hover:text-champ sm:text-xl">
+            Maison Golf
           </span>
         </a>
 
-        <div class="flex w-full items-center justify-between gap-3 sm:w-auto">
-          {# 主導覽 Tab #}
-          <nav class="flex flex-1 gap-2 rounded-2xl bg-black/25 p-1.5 ring-1 ring-white/10 sm:flex-none" role="navigation" aria-label="主選單">
-            {% from '_macros.html' import nav_link %}
-            {{ nav_link(url_for('index'), '首頁', page == 'home') }}
-            {{ nav_link(url_for('score_entry'), '錄分', page == 'score', primary=true) }}
-            {{ nav_link(url_for('progress'), '進步', page == 'progress') }}
-            {{ nav_link(url_for('stats'), '統計', page == 'stats') }}
-            {{ nav_link(url_for('friends.friends_home'), '好友', page == 'friends') }}
-            {{ nav_link(url_for('auth.profile'), '我的', page == 'profile') }}
-          </nav>
+        {# 桌面導覽（手機隱藏，改用底部） #}
+        <nav class="hidden sm:flex items-center gap-1 rounded-2xl bg-black/25 p-1.5 ring-1 ring-white/10" role="navigation" aria-label="主選單">
+          {% from '_macros.html' import nav_link %}
+          {{ nav_link(url_for('index'), '首頁', page == 'home') }}
+          {{ nav_link(url_for('score_entry'), '⛳ 錄分', page == 'score', primary=true) }}
+          {{ nav_link(url_for('progress'), '進步', page == 'progress') }}
+          {{ nav_link(url_for('stats'), '統計', page == 'stats') }}
+          {{ nav_link(url_for('friends.friends_home'), '好友', page == 'friends') }}
+          {{ nav_link(url_for('auth.profile'), '我的', page == 'profile') }}
+        </nav>
 
+        {# 右側動作區 #}
+        <div class="flex items-center gap-2">
           {% if dev_tools_enabled %}
             <a href="{{ url_for('dev.test_hub') }}"
-               class="hidden rounded-xl border border-sky-400/35 bg-sky-950/40 px-2.5 py-1.5 text-xs font-bold text-sky-200 no-underline hover:bg-sky-900/50 sm:inline-flex sm:items-center"
-               title="本機測試：訪客模式與一鍵切換帳戶">
-              測試
-            </a>
+               class="hidden sm:inline-flex rounded-xl border border-sky-400/35 bg-sky-950/40 px-2.5 py-1.5 text-xs font-bold text-sky-200 no-underline hover:bg-sky-900/50 items-center"
+               title="本機測試">測試</a>
           {% endif %}
           {% if current_user.is_authenticated %}
             {% from '_user_avatar.html' import user_name_with_avatar %}
             <a href="{{ url_for('auth.profile') }}"
-               class="hidden max-w-[200px] rounded-xl border border-white/15 bg-black/30 px-2.5 py-1.5 text-xs font-semibold text-green-100 no-underline hover:bg-white/10 sm:inline-flex"
-               title="會員個人頁">
-              {{ user_name_with_avatar(current_user, 'sm', 'text-xs font-semibold text-green-100 truncate max-w-[120px]') }}
+               class="hidden sm:inline-flex max-w-[160px] rounded-xl border border-white/15 bg-black/30 px-2.5 py-1.5 text-xs font-semibold text-green-100 no-underline hover:bg-white/10 items-center gap-1.5"
+               title="個人頁">
+              {{ user_name_with_avatar(current_user, 'sm', 'text-xs font-semibold text-green-100 truncate max-w-[100px]') }}
             </a>
             <a href="{{ url_for('auth.logout') }}"
-               class="hidden rounded-xl border border-red-500/30 bg-red-900/20 px-2.5 py-1.5 text-xs font-semibold text-red-200 no-underline hover:bg-red-900/35 sm:inline-flex sm:items-center"
-               title="登出並清除登入狀態">
+               class="hidden sm:inline-flex rounded-xl border border-red-500/30 bg-red-900/20 px-2.5 py-1.5 text-xs font-semibold text-red-200 no-underline hover:bg-red-900/35 items-center">
               登出
+            </a>
+            {# 手機版：只顯示個人頭像 #}
+            <a href="{{ url_for('auth.profile') }}"
+               class="sm:hidden flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-black/40 text-sm font-bold text-champ no-underline"
+               title="個人頁">
+              {{ current_user.username[0].upper() }}
             </a>
           {% else %}
             <a href="{{ url_for('auth.login') }}"
-               class="hidden rounded-xl border border-gold/40 bg-gold/20 px-3.5 py-1.5 text-xs font-semibold text-gold-light shadow-sm hover:bg-gold/30 sm:inline-flex sm:items-center">
+               class="rounded-xl border border-gold/40 bg-gold/20 px-3.5 py-1.5 text-xs font-semibold text-gold-light shadow-sm hover:bg-gold/30 inline-flex items-center no-underline">
               登入
             </a>
           {% endif %}
         </div>
+
       </div>
     </div>
   </header>
 
-  <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
+  {# ── 主內容區（手機底部加 padding 避免被底欄遮住） ── #}
+  <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-6 pb-24 sm:pb-8 sm:px-6 lg:px-8">
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="mt-auto border-t border-white/10 bg-fairway-dark/80">
-    <div class="mx-auto max-w-5xl px-4 py-8 text-center text-sm text-green-200/70 sm:px-6 lg:px-8">
-      <p class="font-brand text-base font-semibold tracking-wide text-champ-light">Maison Golf</p>
-      <p class="mt-1 text-xs text-green-200/55">你的私人高球會所 · 記分 · AI 教練 · 戰績分享</p>
-      <p class="mt-3">
-        <a href="{{ url_for('score_entry') }}" class="font-semibold text-champ hover:text-white transition-colors">立即錄分 →</a>
-      </p>
+  {# ── 桌面 Footer ── #}
+  <footer class="mt-auto hidden border-t border-white/10 bg-fairway-dark/80 sm:block">
+    <div class="mx-auto max-w-5xl px-4 py-6 text-center text-sm text-green-200/60 sm:px-6 lg:px-8">
+      <p class="font-brand text-sm font-semibold tracking-wide text-champ-light">Maison Golf</p>
+      <p class="mt-0.5 text-xs text-green-200/45">記分 · AI 教練 · 戰績分享</p>
     </div>
   </footer>
+
+  {# ── 手機底部導航列（只在登入後顯示） ── #}
+  {% if current_user.is_authenticated %}
+  <nav class="sm:hidden fixed bottom-0 inset-x-0 z-50 border-t border-white/10 bg-fairway-dark/97 backdrop-blur-xl shadow-[0_-4px_24px_rgba(0,0,0,0.4)]"
+       role="navigation" aria-label="主選單">
+    <div class="flex items-stretch justify-around px-1 py-1 safe-area-bottom">
+
+      {# 首頁 #}
+      <a href="{{ url_for('index') }}"
+         class="bottom-tab-item flex flex-col items-center justify-center gap-0.5 flex-1 py-2 px-1 rounded-xl transition-colors no-underline
+                {% if page == 'home' %}text-white bg-white/10{% else %}text-green-300/60 hover:text-white{% endif %}">
+        <svg class="h-6 w-6" fill="{% if page == 'home' %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/>
+        </svg>
+        <span class="text-[10px] font-semibold leading-none">首頁</span>
+      </a>
+
+      {# 進步 #}
+      <a href="{{ url_for('progress') }}"
+         class="bottom-tab-item flex flex-col items-center justify-center gap-0.5 flex-1 py-2 px-1 rounded-xl transition-colors no-underline
+                {% if page == 'progress' %}text-white bg-white/10{% else %}text-green-300/60 hover:text-white{% endif %}">
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/>
+        </svg>
+        <span class="text-[10px] font-semibold leading-none">進步</span>
+      </a>
+
+      {# 錄分 — 中間大按鈕 #}
+      <a href="{{ url_for('score_entry') }}"
+         class="bottom-tab-record flex flex-col items-center justify-center gap-0.5 flex-1 py-1 px-1 no-underline -mt-4"
+         aria-label="開始錄分">
+        <span class="flex h-14 w-14 items-center justify-center rounded-full
+                     bg-gradient-to-br from-fairway-light to-fairway shadow-lg shadow-fairway/40
+                     ring-4 ring-fairway-dark border-2 border-white/20
+                     transition active:scale-95
+                     {% if page == 'score' %}ring-gold/60 from-gold to-gold-light text-[#07150e]{% else %}text-white{% endif %}">
+          <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+          </svg>
+        </span>
+        <span class="mt-0.5 text-[10px] font-bold leading-none {% if page == 'score' %}text-gold-light{% else %}text-green-200/80{% endif %}">錄分</span>
+      </a>
+
+      {# 好友 #}
+      <a href="{{ url_for('friends.friends_home') }}"
+         class="bottom-tab-item flex flex-col items-center justify-center gap-0.5 flex-1 py-2 px-1 rounded-xl transition-colors no-underline
+                {% if page == 'friends' %}text-white bg-white/10{% else %}text-green-300/60 hover:text-white{% endif %}">
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+        </svg>
+        <span class="text-[10px] font-semibold leading-none">好友</span>
+      </a>
+
+      {# 我的 #}
+      <a href="{{ url_for('auth.profile') }}"
+         class="bottom-tab-item flex flex-col items-center justify-center gap-0.5 flex-1 py-2 px-1 rounded-xl transition-colors no-underline
+                {% if page == 'profile' %}text-white bg-white/10{% else %}text-green-300/60 hover:text-white{% endif %}">
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
+        </svg>
+        <span class="text-[10px] font-semibold leading-none">我的</span>
+      </a>
+
+    </div>
+  </nav>
+  {% endif %}
 
   {% include '_share_modal.html' %}
 
