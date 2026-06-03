@@ -4,7 +4,7 @@
 
 {# 續打草稿提示（由 JS 顯示） #}
 <a id="resume-draft" href="{{ url_for('score_entry') }}"
-   class="mb-6 hidden items-center justify-between gap-3 rounded-xl border border-zinc-300 px-4 py-3.5 no-underline transition hover:border-zinc-900">
+   class="mb-6 hidden items-center justify-between gap-3 rounded-xl border border-zinc-200 px-4 py-3.5 no-underline transition hover:border-zinc-400">
   <div class="min-w-0">
     <p class="text-sm font-medium text-zinc-900">繼續未完成的記分</p>
     <p id="resume-sub" class="mt-0.5 truncate text-xs text-zinc-400"></p>
@@ -12,12 +12,12 @@
   <span class="shrink-0 text-sm font-medium text-zinc-500">繼續 →</span>
 </a>
 
-{# 主按鈕 #}
-<section class="py-6 text-center">
+{# 主按鈕（縮小量體，仍是主行動） #}
+<section class="py-8 text-center">
   <p class="text-sm text-zinc-400">極簡記分 · 打完一場只要 30 秒</p>
   <a href="{{ url_for('score_entry') }}"
-     class="mt-5 flex w-full items-center justify-center gap-2.5 rounded-2xl bg-zinc-900 px-6 py-8 text-2xl font-semibold text-white no-underline transition active:scale-[0.99] hover:bg-zinc-700">
-    <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+     class="mt-6 inline-flex items-center justify-center gap-2 rounded-xl bg-zinc-900 px-7 py-4 text-base font-medium text-white no-underline transition active:scale-[0.99] hover:bg-zinc-700">
+    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
     開始新的一場球
   </a>
 </section>
@@ -28,7 +28,7 @@
     <h2 class="text-sm font-medium text-zinc-700">最近場次</h2>
     <a href="{{ url_for('history') }}" class="text-sm font-medium text-zinc-400 no-underline transition hover:text-zinc-900">查看全部 →</a>
   </div>
-  <div id="recent-list" class="divide-y divide-zinc-200 border-y border-zinc-200"></div>
+  <div id="recent-list" class="divide-y divide-zinc-100"></div>
 </section>
 
 {# 空狀態 #}

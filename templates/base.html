@@ -46,86 +46,75 @@
 </head>
 <body class="min-h-full flex flex-col bg-white font-sans text-zinc-900 antialiased">
 
-  {# ── 頂部 Header（極簡工具風：白底細線、文字 Logo） ── #}
-  <header class="sticky top-0 z-50 border-b border-zinc-200 bg-white/90 backdrop-blur">
-    <div class="mx-auto max-w-2xl px-5 py-3.5 sm:px-6">
+  {# ── 頂部 Header（極致輕量：極薄、純白、全文字） ── #}
+  <header class="sticky top-0 z-50 border-b border-zinc-100 bg-white/95 backdrop-blur">
+    <div class="mx-auto max-w-2xl px-5 py-2 sm:px-6">
       <div class="flex items-center justify-between gap-3">
 
         {# 文字 Logo（品牌極弱化） #}
         <a href="{{ url_for('index') }}"
-           class="text-sm font-semibold tracking-tight text-zinc-500 no-underline transition hover:text-zinc-900 shrink-0"
+           class="text-xs font-medium tracking-tight text-zinc-400 no-underline transition hover:text-zinc-900 shrink-0"
            aria-label="Maison Golf 首頁">
           Maison&nbsp;Golf
         </a>
 
-        {# 桌面中央導覽（手機改用底部列） #}
+        {# 桌面導覽：全文字、零色塊（手機改用底部列） #}
         <nav class="hidden sm:flex items-center gap-6" role="navigation" aria-label="主選單">
           {% from '_macros.html' import nav_link %}
           {{ nav_link(url_for('index'), '首頁', page == 'home') }}
+          {{ nav_link(url_for('score_entry'), '記分', page == 'score') }}
           {{ nav_link(url_for('history'), '歷史', page == 'history') }}
         </nav>
-
-        {# 右側主行動 #}
-        <div class="flex items-center gap-2">
-          <a href="{{ url_for('score_entry') }}"
-             class="hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 no-underline">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-            記分
-          </a>
-        </div>
 
       </div>
     </div>
   </header>
 
   {# ── 主內容區（手機底部加 padding 避免被底欄遮住） ── #}
-  <main class="mx-auto w-full max-w-2xl flex-1 px-5 py-8 pb-28 sm:pb-12 sm:px-6">
+  <main class="mx-auto w-full max-w-2xl flex-1 px-5 py-10 pb-24 sm:pb-14 sm:px-6">
     {% block content %}{% endblock %}
   </main>
 
   {# ── 桌面 Footer（極淡一行） ── #}
-  <footer class="mt-auto hidden border-t border-zinc-200 sm:block">
+  <footer class="mt-auto hidden border-t border-zinc-100 sm:block">
     <div class="mx-auto max-w-2xl px-6 py-6 text-center text-xs text-zinc-400">
       Maison Golf · 極簡記分
     </div>
   </footer>
 
-  {# ── 手機底部導航列（白底細線、單色） ── #}
-  <nav class="sm:hidden fixed bottom-0 inset-x-0 z-50 border-t border-zinc-200 bg-white/95 backdrop-blur"
+  {# ── 手機底部導航列（極輕：純白、細線、小圖示、等寬分頁） ── #}
+  <nav class="sm:hidden fixed bottom-0 inset-x-0 z-50 border-t border-zinc-100 bg-white/95 backdrop-blur"
        role="navigation" aria-label="主選單">
-    <div class="flex items-stretch justify-around px-2 py-1.5 safe-area-bottom">
+    <div class="flex items-stretch justify-around px-2 py-1 safe-area-bottom">
 
       {# 首頁 #}
       <a href="{{ url_for('index') }}"
-         class="flex flex-col items-center justify-center gap-1 flex-1 py-2 px-1 transition-colors no-underline
-                {% if page == 'home' %}text-zinc-900{% else %}text-zinc-400{% endif %}">
-        <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+         class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 px-1 transition-colors no-underline
+                {% if page == 'home' %}text-zinc-900{% else %}text-zinc-300{% endif %}">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/>
         </svg>
-        <span class="text-[10px] font-medium leading-none">首頁</span>
+        <span class="text-[10px] leading-none">首頁</span>
       </a>
 
-      {# 記分 — 中間黑色扁平圓鈕 #}
+      {# 記分 — 普通分頁（已扁平化） #}
       <a href="{{ url_for('score_entry') }}"
-         class="flex flex-col items-center justify-center gap-1 flex-1 py-1 px-1 no-underline -mt-3"
-         aria-label="開始記分">
-        <span class="flex h-12 w-12 items-center justify-center rounded-full border-2 border-white transition active:scale-95
-                     {% if page == 'score' %}bg-zinc-700{% else %}bg-zinc-900{% endif %} text-white">
-          <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
-          </svg>
-        </span>
-        <span class="mt-0.5 text-[10px] font-medium leading-none {% if page == 'score' %}text-zinc-900{% else %}text-zinc-400{% endif %}">記分</span>
+         class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 px-1 transition-colors no-underline
+                {% if page == 'score' %}text-zinc-900{% else %}text-zinc-300{% endif %}">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+        </svg>
+        <span class="text-[10px] leading-none">記分</span>
       </a>
 
       {# 歷史 #}
       <a href="{{ url_for('history') }}"
-         class="flex flex-col items-center justify-center gap-1 flex-1 py-2 px-1 transition-colors no-underline
-                {% if page == 'history' %}text-zinc-900{% else %}text-zinc-400{% endif %}">
-        <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+         class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 px-1 transition-colors no-underline
+                {% if page == 'history' %}text-zinc-900{% else %}text-zinc-300{% endif %}">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
         </svg>
-        <span class="text-[10px] font-medium leading-none">歷史</span>
+        <span class="text-[10px] leading-none">歷史</span>
       </a>
 
     </div>
