@@ -4,7 +4,7 @@
 流程：上傳紙本記分卡照片 → Pillow 轉正/增強/壓縮 → Grok Vision 讀出 18 洞 Par。
 環境變數：
   - XAI_API_KEY / GROK_API_KEY：xAI 金鑰（沿用 AI 教練同一把）
-  - GROK_VISION_MODEL：視覺模型（預設 grok-2-vision-1212）
+  - GROK_VISION_MODEL：視覺模型（預設 grok-4.3；grok-2-vision-1212 已於 2026-02-28 停用）
   - OCR_MOCK：設為 1/true 時，無金鑰也回傳一組模擬 Par，方便本機測試流程
 
 回傳結構：
@@ -19,14 +19,16 @@ import io
 import json
 import os
 import re
+import sys
 import urllib.error
 import urllib.request
 
 XAI_CHAT_URL = "https://api.x.ai/v1/chat/completions"
-VISION_MODEL = os.environ.get("GROK_VISION_MODEL", "grok-2-vision-1212")
+# grok-2-vision-1212 已於 2026-02-28 停用，改用現役視覺旗艦 grok-4.3（text+image→text）
+VISION_MODEL = os.environ.get("GROK_VISION_MODEL", "grok-4.3")
 
 HOLES = 18
-MAX_EDGE = 2000  # 壓縮後長邊像素：密集記分卡需要較高解析度才看得清小數字
+MAX_EDGE = 1600  # 壓縮後長邊像素：清楚又不致過大（避免 413／400）
 PAR_MIN, PAR_MAX = 3, 6
 TOTAL_MIN, TOTAL_MAX = 68, 74  # 常見 18 洞總 Par 範圍，用於合理性提醒
 
@@ -194,8 +196,27 @@ def describe_mode() -> str:
     return "停用（未設 XAI_API_KEY，會提示用戶改用手動模板）"
 
 
+def _xai_error_reason(raw: str) -> str:
+    """從 xAI 的錯誤 response body 取出可讀原因。"""
+    if not raw:
+        return ""
+    try:
+        data = json.loads(raw)
+        if isinstance(data, dict):
+            err = data.get("error")
+            if isinstance(err, dict):
+                return str(err.get("message") or err.get("code") or "").strip()
+            if isinstance(err, str):
+                return err.strip()
+            if data.get("message"):
+                return str(data["message"]).strip()
+    except (json.JSONDecodeError, TypeError):
+        pass
+    return raw.strip()[:200]
+
+
 def _call_vision(api_key: str, b64: str) -> tuple[str | None, str | None]:
-    """呼叫一次 Vision API，回 (content, error)。"""
+    """呼叫一次 Vision API，回 (content, error)。錯誤會印到 stderr 方便在 Render Logs 追查。"""
     payload = {
         "model": VISION_MODEL,
         "messages": [
@@ -206,20 +227,24 @@ def _call_vision(api_key: str, b64: str) -> tuple[str | None, str | None]:
                     {"type": "text", "text": _USER_TEXT},
                     {
                         "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{b64}",
-                            "detail": "high",
-                        },
+                        # 注意：不要加 xAI 不支援的欄位（例如 detail），否則會回 400
+                        "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
                     },
                 ],
             },
         ],
         "temperature": 0.0,
-        "max_tokens": 400,
+        # max_tokens 已被 xAI 標記 deprecated，改用 max_completion_tokens
+        "max_completion_tokens": 400,
     }
+    body_bytes = json.dumps(payload).encode("utf-8")
+    print(
+        f"[OCR] 呼叫 xAI Vision：model={VISION_MODEL} payload={len(body_bytes)//1024}KB",
+        file=sys.stderr, flush=True,
+    )
     req = urllib.request.Request(
         XAI_CHAT_URL,
-        data=json.dumps(payload).encode("utf-8"),
+        data=body_bytes,
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}",
@@ -231,10 +256,21 @@ def _call_vision(api_key: str, b64: str) -> tuple[str | None, str | None]:
             body = json.loads(resp.read().decode("utf-8"))
         return body["choices"][0]["message"]["content"], None
     except urllib.error.HTTPError as e:
-        return None, f"辨識服務錯誤（{e.code}），請改用模板"
-    except (urllib.error.URLError, TimeoutError):
+        try:
+            raw = e.read().decode("utf-8", "replace")
+        except Exception:
+            raw = ""
+        reason = _xai_error_reason(raw)
+        print(f"[OCR] xAI HTTP {e.code}：{raw[:500]}", file=sys.stderr, flush=True)
+        msg = f"辨識服務錯誤（{e.code}）"
+        if reason:
+            msg += f"：{reason[:120]}"
+        return None, msg
+    except (urllib.error.URLError, TimeoutError) as e:
+        print(f"[OCR] 連線錯誤：{e}", file=sys.stderr, flush=True)
         return None, "辨識服務連線逾時，請改用模板"
-    except (KeyError, json.JSONDecodeError):
+    except (KeyError, json.JSONDecodeError) as e:
+        print(f"[OCR] 回應解析失敗：{e}", file=sys.stderr, flush=True)
         return None, "辨識結果無法解析，請改用模板"
 
 
