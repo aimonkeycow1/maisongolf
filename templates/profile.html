@@ -1,342 +1,110 @@
 {% extends "base.html" %}
-{% from '_macros.html' import par_trend_badge, trophy_icon, cta_button %}
-{% from '_user_avatar.html' import user_avatar %}
 {% block title %}我的 · {{ user.display_label }}{% endblock %}
 {% block content %}
 
-{# ── 個人卡片 ── #}
-<section class="mb-5 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-fairway-dark/90 via-black/40 to-black/50 p-5 shadow-xl ring-1 ring-white/10 sm:p-7">
-  <div class="flex items-center gap-4">
-    {{ user_avatar(user, '2xl') }}
-    <div class="min-w-0 flex-1">
-      <h1 class="truncate text-xl font-bold text-white sm:text-2xl">{{ user.display_label }}</h1>
-      <p class="mt-0.5 text-xs text-green-200/50">加入於 {{ user.created_at.strftime('%Y-%m-%d') }}</p>
-      {% if user.home_course %}
-      <p class="mt-0.5 text-xs text-green-200/50">常用球場：{{ user.home_course }}</p>
-      {% endif %}
-    </div>
+{# 帳號 #}
+<header class="flex items-center gap-4 border-b border-zinc-200 pb-6">
+  <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-lg font-semibold text-white">
+    {{ user.display_label[:1]|upper }}
+  </span>
+  <div class="min-w-0">
+    <h1 class="truncate text-xl font-semibold text-zinc-900">{{ user.display_label }}</h1>
+    <p class="mt-0.5 text-xs text-zinc-400">
+      加入於 {{ user.created_at.strftime('%Y-%m-%d') }} · {{ rounds_rev|length }} 場
+    </p>
   </div>
+</header>
 
-  {# 4 格關鍵數字 #}
-  <div class="mt-5 grid grid-cols-3 gap-3">
-    <div class="rounded-xl bg-black/30 px-3 py-3 text-center ring-1 ring-white/10">
-      <p class="text-2xl font-black tabular-nums text-white">{{ rounds_rev|length }}</p>
-      <p class="mt-0.5 text-[11px] font-semibold text-green-200/55">場次</p>
-    </div>
-    <div class="rounded-xl bg-black/30 px-3 py-3 text-center ring-1 ring-white/10">
-      <p class="text-2xl font-black tabular-nums text-white">{{ friends_count }}</p>
-      <p class="mt-0.5 text-[11px] font-semibold text-green-200/55">好友</p>
-    </div>
-    <div class="rounded-xl bg-black/30 px-3 py-3 text-center ring-1 ring-white/10">
-      {% if user.handicap is not none %}
-      <p class="text-2xl font-black tabular-nums text-gold-light">{{ user.handicap }}</p>
-      <p class="mt-0.5 text-[11px] font-semibold text-green-200/55">差點</p>
-      {% else %}
-      <p class="text-2xl font-black text-green-200/25">—</p>
-      <p class="mt-0.5 text-[11px] font-semibold text-green-200/55">差點</p>
-      {% endif %}
-    </div>
-  </div>
+{# 續打 #}
+{% if in_progress %}
+<a href="{{ url_for('score_entry') }}"
+   class="mt-5 flex items-center justify-between rounded-xl border border-zinc-300 px-4 py-3.5 no-underline transition hover:border-zinc-900">
+  <span class="text-sm font-medium text-zinc-900">有一場記分未完成</span>
+  <span class="text-sm text-zinc-500">繼續 →</span>
+</a>
+{% endif %}
 
-  {% if in_progress %}
+{# 主操作 #}
+<div class="mt-5 flex gap-3">
   <a href="{{ url_for('score_entry') }}"
-     class="mt-4 flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-900/20 px-4 py-3 no-underline ring-1 ring-amber-500/20">
-    <span class="text-sm font-semibold text-amber-100">有一場記分未完成</span>
-    <span class="text-sm font-bold text-amber-200">繼續錄分 →</span>
+     class="flex flex-1 items-center justify-center rounded-xl bg-zinc-900 py-3 text-sm font-medium text-white no-underline transition hover:bg-zinc-700">
+    ＋ 開始記分
   </a>
-  {% endif %}
+  <a href="{{ url_for('history') }}"
+     class="flex items-center justify-center rounded-xl border border-zinc-300 px-5 py-3 text-sm font-medium text-zinc-700 no-underline transition hover:bg-zinc-50">
+    歷史
+  </a>
+</div>
 
-  {# 主要操作按鈕 #}
-  <div class="mt-4 flex gap-2">
-    <a href="{{ url_for('score_entry') }}"
-       class="flex flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-fairway-light to-fairway py-3 text-sm font-bold text-white shadow no-underline transition hover:brightness-110">
-      ⛳ 立即錄分
-    </a>
-    <form method="post" action="{{ url_for('auth.logout') }}" class="flex-none">
-      <button type="submit"
-              class="rounded-xl border border-red-500/35 bg-red-900/25 px-4 py-3 text-sm font-semibold text-red-200 hover:bg-red-900/40">
-        登出
-      </button>
-    </form>
-  </div>
+{# 打球資料 #}
+<section class="mt-8">
+  <h2 class="mb-3 text-sm font-medium text-zinc-700">打球資料</h2>
+  <form method="post" class="space-y-4">
+    <input type="hidden" name="action" value="settings">
+    <label class="block">
+      <span class="mb-1 block text-xs text-zinc-500">差點（0–54）</span>
+      <input type="number" name="handicap" min="0" max="54" step="0.1"
+             value="{{ user.handicap if user.handicap is not none else '' }}" placeholder="可留空"
+             class="w-full rounded-lg border border-zinc-300 px-3.5 py-2.5 text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-0">
+    </label>
+    <label class="block">
+      <span class="mb-1 block text-xs text-zinc-500">常用球場</span>
+      <input type="text" name="home_course" maxlength="120" value="{{ user.home_course or '' }}" placeholder="例如：滘西洲南場"
+             class="w-full rounded-lg border border-zinc-300 px-3.5 py-2.5 text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-0">
+    </label>
+    <div>
+      <span class="mb-1.5 block text-xs text-zinc-500">慣用手</span>
+      <div class="grid grid-cols-2 gap-2">
+        {% for val, label in [('right', '右手'), ('left', '左手')] %}
+        <label class="flex cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm
+                       {% if user.handedness == val %}border-zinc-900 text-zinc-900 font-medium{% else %}border-zinc-300 text-zinc-500{% endif %}">
+          <input type="radio" name="handedness" value="{{ val }}" {% if user.handedness == val %}checked{% endif %} class="accent-zinc-900">
+          {{ label }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+    <button type="submit"
+            class="w-full rounded-lg border border-zinc-300 py-2.5 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50">
+      儲存資料
+    </button>
+  </form>
 </section>
 
-{# ── Flash 消息 ── #}
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-  <div class="mb-4 space-y-2">
-    {% for category, msg in messages %}
-    <p class="rounded-xl border px-4 py-3 text-sm
-              {% if category == 'ok' %}border-emerald-500/40 bg-emerald-900/30 text-emerald-100
-              {% else %}border-red-500/40 bg-red-900/30 text-red-100{% endif %}">{{ msg }}</p>
-    {% endfor %}
-  </div>
-  {% endif %}
-{% endwith %}
+{# 變更密碼 #}
+<section class="mt-8">
+  <h2 class="mb-3 text-sm font-medium text-zinc-700">變更密碼</h2>
+  <form method="post" class="space-y-4">
+    <input type="hidden" name="action" value="password">
+    <label class="block">
+      <span class="mb-1 block text-xs text-zinc-500">目前密碼</span>
+      <input type="password" name="current_password" required autocomplete="current-password"
+             class="w-full rounded-lg border border-zinc-300 px-3.5 py-2.5 text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-0">
+    </label>
+    <label class="block">
+      <span class="mb-1 block text-xs text-zinc-500">新密碼（至少 6 字元）</span>
+      <input type="password" name="new_password" required minlength="6" autocomplete="new-password"
+             class="w-full rounded-lg border border-zinc-300 px-3.5 py-2.5 text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-0">
+    </label>
+    <label class="block">
+      <span class="mb-1 block text-xs text-zinc-500">確認新密碼</span>
+      <input type="password" name="new_password2" required minlength="6" autocomplete="new-password"
+             class="w-full rounded-lg border border-zinc-300 px-3.5 py-2.5 text-zinc-900 focus:border-zinc-900 focus:outline-none focus:ring-0">
+    </label>
+    <button type="submit"
+            class="w-full rounded-lg border border-zinc-300 py-2.5 text-sm font-medium text-zinc-900 transition hover:bg-zinc-50">
+      更新密碼
+    </button>
+  </form>
+</section>
 
-{# ── 可展開：數據總覽 ── #}
-<details class="group mb-3 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
-  <summary class="flex cursor-pointer list-none items-center justify-between px-5 py-4 select-none">
-    <div class="flex items-center gap-3">
-      <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-fairway/25 text-lg ring-1 ring-fairway/40">📊</span>
-      <div>
-        <p class="text-sm font-bold text-white">數據總覽</p>
-        <p class="text-[11px] text-green-200/50">{{ rounds_rev|length }} 場 · 最佳成績 · 球員排行</p>
-      </div>
-    </div>
-    <svg class="h-5 w-5 shrink-0 text-green-200/40 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-    </svg>
-  </summary>
-
-  <div class="border-t border-white/10 px-5 py-5 space-y-4">
-    {% if global_stats %}
-    <div class="grid grid-cols-3 gap-3">
-      <div class="rounded-xl bg-black/30 px-3 py-3 text-center ring-1 ring-white/10">
-        <p class="text-xl font-black tabular-nums text-white">{{ global_stats.total_rounds }}</p>
-        <p class="mt-0.5 text-[11px] text-green-200/55">總場次</p>
-      </div>
-      <div class="rounded-xl bg-black/30 px-3 py-3 text-center ring-1 ring-white/10">
-        <p class="text-xl font-black tabular-nums text-white">{{ global_stats.avg_score }}</p>
-        <p class="mt-0.5 text-[11px] text-green-200/55">平均桿數</p>
-      </div>
-      <div class="rounded-xl bg-black/30 px-3 py-3 text-center ring-1 ring-white/10">
-        <p class="text-xl font-black tabular-nums text-white">{{ global_stats.avg_to_par }}</p>
-        <p class="mt-0.5 text-[11px] text-green-200/55">平均比 Par</p>
-      </div>
-    </div>
-
-    <div class="grid gap-3 sm:grid-cols-2">
-      <div class="rounded-xl border border-emerald-500/25 bg-emerald-900/15 px-4 py-3.5 ring-1 ring-emerald-500/20">
-        <p class="text-[11px] font-bold uppercase tracking-wider text-emerald-300/80">最佳成績</p>
-        <div class="mt-1.5 flex items-end gap-2">
-          <p class="text-3xl font-black text-emerald-100">{{ global_stats.best.total }}</p>
-          {{ par_trend_badge(global_stats.best.to_par, 'sm') }}
-        </div>
-        <p class="mt-1 text-xs text-emerald-100/75">{{ global_stats.best.player }} · {{ global_stats.best.date }}</p>
-      </div>
-      <div class="rounded-xl border border-red-500/20 bg-red-900/10 px-4 py-3.5 ring-1 ring-red-500/15">
-        <p class="text-[11px] font-bold uppercase tracking-wider text-red-300/80">最高桿數</p>
-        <div class="mt-1.5 flex items-end gap-2">
-          <p class="text-3xl font-black text-red-100">{{ global_stats.worst.total }}</p>
-          {{ par_trend_badge(global_stats.worst.to_par, 'sm') }}
-        </div>
-        <p class="mt-1 text-xs text-red-100/75">{{ global_stats.worst.player }} · {{ global_stats.worst.date }}</p>
-      </div>
-    </div>
-
-    {% if player_rows %}
-    <div class="rounded-xl bg-black/25 px-4 py-4 ring-1 ring-white/10">
-      <p class="mb-3 text-xs font-bold uppercase tracking-wider text-green-200/60">球員排行（前 5）</p>
-      <ul class="space-y-2">
-        {% for row in player_rows %}
-        <li class="flex items-center justify-between text-sm">
-          <span class="font-semibold text-white">{{ loop.index }}. {{ row.name }}</span>
-          <span class="text-green-200/65">{{ row.rounds }} 場 · 均 {{ row.avg_total }} 桿</span>
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-    {% endif %}
-
-    <a href="{{ url_for('stats') }}" class="block text-center text-sm font-semibold text-gold-light no-underline hover:text-white">
-      查看完整統計 →
-    </a>
-    {% else %}
-    <p class="py-4 text-center text-sm text-green-200/55">完成第一場後會顯示統計。</p>
-    {% endif %}
-  </div>
-</details>
-
-{# ── 可展開：打球紀錄 ── #}
-<details class="group mb-3 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
-  <summary class="flex cursor-pointer list-none items-center justify-between px-5 py-4 select-none">
-    <div class="flex items-center gap-3">
-      <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-gold/20 text-lg ring-1 ring-gold/35">🏌️</span>
-      <div>
-        <p class="text-sm font-bold text-white">打球紀錄</p>
-        <p class="text-[11px] text-green-200/50">共 {{ rounds_rev|length }} 場歷史場次</p>
-      </div>
-    </div>
-    <svg class="h-5 w-5 shrink-0 text-green-200/40 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-    </svg>
-  </summary>
-
-  <div class="border-t border-white/10 px-5 py-5">
-    {% if rounds_rev %}
-    <ul class="space-y-2">
-      {% for r in rounds_rev %}
-      {% set best = r.players | sort(attribute='total') | first %}
-      {% set round_par = r.par_total or 69 %}
-      {% set to_par = best.to_par if best.to_par is not none else (best.total - round_par) %}
-      <li>
-        <a href="{{ url_for('round_detail', round_id=r.id) }}"
-           class="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 no-underline transition hover:border-gold/35 hover:bg-black/30">
-          <div class="min-w-0 flex-1">
-            <p class="text-sm font-semibold text-white">{{ r.date }}</p>
-            <p class="mt-0.5 truncate text-[11px] text-green-200/55">{{ r.course or '球場' }}{% if r.tee %} · {{ r.tee }}{% endif %}</p>
-          </div>
-          <div class="flex shrink-0 items-center gap-2">
-            {{ par_trend_badge(to_par, 'sm') }}
-            <span class="text-2xl font-black tabular-nums text-gold-light">{{ best.total }}</span>
-          </div>
-        </a>
-      </li>
-      {% endfor %}
-    </ul>
-    {% else %}
-    <div class="py-6 text-center">
-      <p class="mb-4 text-sm text-green-200/55">尚無打球紀錄</p>
-      {{ cta_button(url_for('score_entry'), '開始第一場', full=false) }}
-    </div>
-    {% endif %}
-  </div>
-</details>
-
-{# ── 可展開：個人設置 ── #}
-<details class="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"
-         {% if request.args.get('open') == 'settings' %}open{% endif %}>
-  <summary class="flex cursor-pointer list-none items-center justify-between px-5 py-4 select-none">
-    <div class="flex items-center gap-3">
-      <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-lg ring-1 ring-white/15">⚙️</span>
-      <div>
-        <p class="text-sm font-bold text-white">個人設置</p>
-        <p class="text-[11px] text-green-200/50">頭像 · 差點 · 密碼</p>
-      </div>
-    </div>
-    <svg class="h-5 w-5 shrink-0 text-green-200/40 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-    </svg>
-  </summary>
-
-  <div class="border-t border-white/10 px-5 py-5 space-y-4">
-
-    {# 頭像 #}
-    <div class="rounded-xl bg-black/30 p-4 ring-1 ring-white/10">
-      <p class="mb-3 text-xs font-bold uppercase tracking-wider text-gold-light">頭像</p>
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-        {{ user_avatar(user, 'lg') }}
-        <form method="post"
-              action="{{ url_for('auth.profile') }}#settings"
-              enctype="multipart/form-data"
-              class="min-w-0 flex-1 space-y-2">
-          <input type="hidden" name="action" value="avatar">
-          <input type="file" name="avatar" accept="image/jpeg,image/png,image/webp,image/*" required
-                 class="block w-full text-sm text-green-200/70 file:mr-3 file:rounded-lg file:border-0 file:bg-gold file:px-3 file:py-1.5 file:text-sm file:font-bold file:text-fairway-dark">
-          <button type="submit"
-                  class="w-full rounded-xl bg-gradient-to-r from-gold to-gold-light py-2.5 text-sm font-bold text-fairway-dark hover:brightness-110">
-            上傳頭像
-          </button>
-        </form>
-      </div>
-      {% if user.has_avatar %}
-      <form method="post" class="mt-2">
-        <input type="hidden" name="action" value="avatar_remove">
-        <button type="submit" class="text-xs text-red-300/80 hover:text-red-200">移除頭像</button>
-      </form>
-      {% endif %}
-    </div>
-
-    {# 打球資料 #}
-    <div class="rounded-xl bg-black/30 p-4 ring-1 ring-white/10">
-      <p class="mb-3 text-xs font-bold uppercase tracking-wider text-gold-light">打球資料</p>
-      <form method="post" class="space-y-3">
-        <input type="hidden" name="action" value="settings">
-        <div>
-          <label class="mb-1 block text-xs font-semibold text-green-200/65">差點（0–54）</label>
-          <input type="number" name="handicap" min="0" max="54" step="0.1"
-                 value="{{ user.handicap if user.handicap is not none else '' }}"
-                 placeholder="可留空"
-                 class="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-green-200/30 focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/30">
-        </div>
-        <div>
-          <label class="mb-1.5 block text-xs font-semibold text-green-200/65">慣用手</label>
-          <div class="grid grid-cols-2 gap-2">
-            {% for val, label in [('right', '右手'), ('left', '左手')] %}
-            <label class="flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 text-sm
-                           {% if user.handedness == val %}border-gold/50 bg-gold/15 text-gold-light{% else %}border-white/15 bg-black/20 text-green-200/70{% endif %}">
-              <input type="radio" name="handedness" value="{{ val }}" {% if user.handedness == val %}checked{% endif %} class="accent-gold">
-              {{ label }}
-            </label>
-            {% endfor %}
-          </div>
-        </div>
-        <div>
-          <label class="mb-1 block text-xs font-semibold text-green-200/65">常用球場</label>
-          <input type="text" name="home_course" maxlength="120"
-                 value="{{ user.home_course or '' }}"
-                 placeholder="例如：滘西洲南場"
-                 class="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white placeholder:text-green-200/30 focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/30">
-        </div>
-        <button type="submit"
-                class="w-full rounded-xl bg-gradient-to-r from-gold to-gold-light py-3 text-sm font-bold text-fairway-dark hover:brightness-110">
-          儲存資料
-        </button>
-      </form>
-    </div>
-
-    {# 變更密碼 #}
-    <div class="rounded-xl bg-black/30 p-4 ring-1 ring-white/10">
-      <p class="mb-3 text-xs font-bold uppercase tracking-wider text-green-200/55">變更密碼</p>
-      <form method="post" class="space-y-3">
-        <input type="hidden" name="action" value="password">
-        <div>
-          <label class="mb-1 block text-xs font-semibold text-green-200/65">目前密碼</label>
-          <input type="password" name="current_password" required autocomplete="current-password"
-                 class="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/30">
-        </div>
-        <div>
-          <label class="mb-1 block text-xs font-semibold text-green-200/65">新密碼（至少 6 字元）</label>
-          <input type="password" name="new_password" required minlength="6" autocomplete="new-password"
-                 class="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/30">
-        </div>
-        <div>
-          <label class="mb-1 block text-xs font-semibold text-green-200/65">確認新密碼</label>
-          <input type="password" name="new_password2" required minlength="6" autocomplete="new-password"
-                 class="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2.5 text-sm text-white focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/30">
-        </div>
-        <button type="submit"
-                class="w-full rounded-xl border border-white/20 bg-white/5 py-2.5 text-sm font-semibold text-white hover:bg-white/10">
-          更新密碼
-        </button>
-      </form>
-    </div>
-
-    {# 帳號資訊 + 管理好友 #}
-    <div class="rounded-xl bg-black/30 p-4 ring-1 ring-white/10">
-      <p class="mb-3 text-xs font-bold uppercase tracking-wider text-green-200/40">帳號資訊</p>
-      <dl class="space-y-2 text-sm">
-        <div class="flex justify-between gap-4">
-          <dt class="text-green-200/55">球友名稱</dt>
-          <dd class="font-semibold text-white">{{ user.username }}</dd>
-        </div>
-        {% if user.public_email %}
-        <div class="flex justify-between gap-4">
-          <dt class="text-green-200/55">Email</dt>
-          <dd class="truncate text-white">{{ user.public_email }}</dd>
-        </div>
-        {% endif %}
-        <div class="flex justify-between gap-4">
-          <dt class="text-green-200/55">建立日期</dt>
-          <dd class="text-white">{{ user.created_at.strftime('%Y-%m-%d') }}</dd>
-        </div>
-      </dl>
-      <a href="{{ url_for('friends.friends_home') }}"
-         class="mt-4 block text-center text-sm font-semibold text-gold-light no-underline hover:text-white">
-        管理好友 →
-      </a>
-    </div>
-
-    {# 登出（設置區底部也放一個） #}
-    <form method="post" action="{{ url_for('auth.logout') }}">
-      <button type="submit"
-              class="w-full rounded-xl border border-red-500/35 bg-red-900/25 py-3 text-sm font-bold text-red-200 hover:bg-red-900/40">
-        登出帳號
-      </button>
-    </form>
-    <p class="text-center text-[11px] text-green-200/40">公用或他人手機使用後請務必登出</p>
-  </div>
-</details>
+{# 登出 #}
+<form method="post" action="{{ url_for('auth.logout') }}" class="mt-8 border-t border-zinc-200 pt-6">
+  <button type="submit"
+          class="w-full rounded-lg border border-zinc-300 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50">
+    登出帳號
+  </button>
+  <p class="mt-2 text-center text-xs text-zinc-400">公用或他人手機使用後請務必登出</p>
+</form>
 
 {% endblock %}

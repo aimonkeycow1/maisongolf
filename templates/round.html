@@ -1,316 +1,106 @@
 {% extends "base.html" %}
-{% from '_macros.html' import score_cell_class, diff_text, to_par_text, score_name %}
-{% block title %}{{ round.date }} 記分卡{% endblock %}
+{% block title %}記分卡 · Maison Golf{% endblock %}
 {% block content %}
-<div id="round-page-root" data-round-id="{{ round.id }}" class="contents"></div>
 
-{# 完成一場的慶祝彈窗（confetti + 一鍵分享） #}
-{% if celebration %}
-<div id="celebrate-modal" class="fixed inset-0 z-[110] hidden items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-     role="dialog" aria-modal="true" aria-labelledby="celebrate-title" data-celebrate-close>
-  <div class="w-full max-w-md overflow-hidden rounded-3xl glass p-7 text-center shadow-2xl">
-    <p class="text-5xl">🎉</p>
-    <h2 id="celebrate-title" class="mt-3 font-brand text-3xl font-bold text-white">{{ celebration.headline }}</h2>
-    <p class="mt-1 font-serif text-sm text-champ-light/75">{{ celebration.player_name }} · 本場成績</p>
-
-    <div class="mt-5 flex items-end justify-center gap-3">
-      <span class="font-brand text-7xl font-bold leading-none gold-shimmer">{{ celebration.total }}</span>
-      <span class="mb-2 rounded-full bg-white/10 px-3 py-1 text-sm font-bold text-champ-light ring-1 ring-white/15">{{ to_par_text(celebration.to_par) }}</span>
-    </div>
-
-    {% if celebration.feats %}
-    <div class="mt-5 flex flex-wrap items-center justify-center gap-2">
-      {% for f in celebration.feats %}
-      <span class="inline-flex items-center gap-1.5 rounded-full border border-champ/35 bg-champ/10 px-3 py-1.5 text-xs font-semibold text-champ-light">
-        <span>{{ f.icon }}</span>{{ f.label }}
-      </span>
-      {% endfor %}
-    </div>
-    {% endif %}
-
-    {% if celebration.next_goal %}
-    <div class="mt-6 rounded-2xl border border-white/10 bg-black/25 p-4 text-left">
-      <p class="text-[11px] font-bold uppercase tracking-widest text-champ-light/70">下一個目標</p>
-      <div class="mt-2 flex items-center gap-3">
-        <span class="text-2xl">{{ celebration.next_goal.icon }}</span>
-        <div class="min-w-0 flex-1">
-          <p class="truncate text-sm font-bold text-white">{{ celebration.next_goal.name }}</p>
-          <p class="text-xs text-champ-light/70">還差一點 · {{ celebration.next_goal.hint }}</p>
-        </div>
-      </div>
-      <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-        <div class="h-full rounded-full bg-gradient-to-r from-champ to-champ-light" style="width: {{ celebration.next_goal.progress }}%"></div>
-      </div>
-    </div>
-    {% endif %}
-
-    <div class="mt-7 grid gap-2.5">
-      <button type="button"
-              class="share-content-trigger pulse-cta flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-champ to-champ-light px-5 py-3.5 text-base font-bold text-[#07150e] transition hover:brightness-105"
-              data-round-id="{{ round.id }}" data-share-tab="card" data-celebrate-close-btn data-celebrate-close>
-        <span aria-hidden="true">📱</span> 生成分享戰報
-      </button>
-      <button type="button" data-celebrate-close-btn data-celebrate-close
-              class="w-full rounded-xl border border-white/15 bg-black/25 px-5 py-3 text-sm font-semibold text-champ-light transition hover:bg-white/10">
-        查看完整記分卡
-      </button>
-    </div>
+<div id="round-root" data-round-id="{{ round_id }}">
+  <div id="round-missing" class="hidden py-16 text-center">
+    <p class="text-sm text-zinc-400">找不到這場紀錄</p>
+    <a href="{{ url_for('index') }}" class="mt-4 inline-block rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white no-underline hover:bg-zinc-700">回首頁</a>
   </div>
-</div>
-{% endif %}
-
-{# Hero #}
-{% set round_hero = '/static/img/' ~ (round.course_id ~ '.jpg' if round.course_id else 'hero.jpg') %}
-<section class="relative mb-6 overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10">
-  <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('{{ round_hero }}')"></div>
-  <div class="absolute inset-0 bg-gradient-to-r from-fairway-dark/95 via-fairway-dark/75 to-transparent"></div>
-  <div class="absolute inset-0 bg-gradient-to-t from-fairway-dark via-transparent to-transparent"></div>
-  <div class="relative px-6 py-10 sm:px-10 sm:py-14">
-    <p class="mb-2 text-xs font-semibold uppercase tracking-widest text-gold-light">Scorecard</p>
-    <h1 class="text-2xl font-bold text-white sm:text-3xl lg:text-4xl">{{ round.course }}</h1>
-    <p class="mt-2 text-green-100/80">
-      {{ round.date }} · {{ round.time }}{% if round.note %} · {{ round.note }}{% endif %}
-    </p>
-  </div>
-</section>
-
-{# 球場 + Tee 資訊條 #}
-<div class="mb-6 grid grid-cols-2 gap-3 rounded-2xl border border-gold/30 bg-fairway-dark/80 p-4 shadow-lg ring-1 ring-white/10 sm:grid-cols-4 sm:gap-4 sm:p-5">
-  <div class="col-span-2 sm:col-span-1">
-    <p class="text-[10px] font-bold uppercase tracking-widest text-gold-light/80">球場</p>
-    <p class="mt-1 font-semibold text-white text-sm sm:text-base">{{ round.course }}</p>
-  </div>
-  <div>
-    <p class="text-[10px] font-bold uppercase tracking-widest text-gold-light/80">發球台</p>
-    <p class="mt-1 text-lg font-bold text-white">{{ round.tee or '白梯' }}</p>
-  </div>
-  <div>
-    <p class="text-[10px] font-bold uppercase tracking-widest text-gold-light/80">總 Par</p>
-    <p class="mt-1 text-2xl font-black tabular-nums text-gold-light">{{ round.par_total }}</p>
-  </div>
-  <div>
-    <p class="text-[10px] font-bold uppercase tracking-widest text-gold-light/80">總碼數</p>
-    <p class="mt-1 text-2xl font-black tabular-nums text-white">
-      {{ round.yardage_total or '—' }}{% if round.yardage_total %} <span class="text-sm font-medium text-green-200/70">碼</span>{% endif %}
-    </p>
-  </div>
+  <div id="round-content" class="hidden"></div>
 </div>
 
-{# AI 教練 #}
-<section class="mb-8 overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950/50 via-fairway-dark/90 to-black/40 p-5 shadow-xl ring-1 ring-emerald-400/20 sm:p-7">
-  <div class="mb-4">
-    <p class="text-xs font-bold uppercase tracking-widest text-emerald-300/90">AI Coach</p>
-    <h2 class="mt-1 text-lg font-bold text-white sm:text-xl">賽後智能教練總結</h2>
-    <p class="mt-1 text-sm text-green-200/65">依本場記分卡分析亮點、待改進項目與練習建議</p>
-  </div>
-  {% set round_id = round.id %}
-  {% set players = ranked %}
-  {% include '_ai_coach_widget.html' %}
-</section>
+<script>
+(function () {
+  var root = document.getElementById("round-root");
+  var id = root.getAttribute("data-round-id");
+  var round = MG.getRound(id);
+  if (!round) {
+    document.getElementById("round-missing").classList.remove("hidden");
+    return;
+  }
+  var ranked = MG.rankedPlayers(round);
+  var pt = round.par_total || 0;
+  var e = MG.esc, tp = MG.toParText, cell = MG.scoreCellClass;
 
-{# ===== B3 同球場跨場次比較 ===== #}
-{% if course_cmp %}
-<section class="reveal mb-8 overflow-hidden rounded-2xl border border-champ/30 bg-gradient-to-br from-champ/10 via-black/25 to-black/40 p-5 shadow-xl ring-1 ring-white/10 sm:p-7">
-  <div class="mb-4">
-    <p class="text-xs font-bold uppercase tracking-widest text-champ-light/70">Course Comparison</p>
-    <h2 class="mt-1 text-lg font-bold text-white sm:text-xl">
-      上次 vs 這次 · {{ course_cmp.course }}
-    </h2>
-    <p class="mt-0.5 text-xs text-green-200/55">{{ course_cmp.prev_date }} → {{ course_cmp.current_date }}</p>
-  </div>
+  function holeGrid(holeResults, from, to) {
+    var html = '<div class="grid grid-cols-9 gap-1">';
+    holeResults.forEach(function (h) {
+      if (h.hole < from || h.hole > to) return;
+      html += '<div class="rounded p-1.5 text-center ' + cell(h.diff) + '">' +
+        '<p class="text-[9px] opacity-70">' + h.hole + '</p>' +
+        '<p class="text-base font-semibold tabular-nums leading-tight">' + h.score + '</p>' +
+        '<p class="text-[9px] opacity-70">P' + h.par + '</p>' +
+      '</div>';
+    });
+    return html + '</div>';
+  }
 
-  {# 總分對比 #}
-  <div class="mb-5 flex items-center gap-6">
-    <div class="text-center">
-      <p class="text-[11px] text-green-200/50">上次</p>
-      <p class="font-brand text-4xl font-black text-white/70">{{ course_cmp.prev_total }}</p>
-      <p class="text-xs text-green-200/40">{{ '+' if course_cmp.prev_to_par >= 0 else '' }}{{ course_cmp.prev_to_par }}</p>
-    </div>
-    <div class="flex flex-col items-center gap-1">
-      {% if course_cmp.improved %}
-      <span class="text-2xl">📉</span>
-      <span class="rounded-full bg-emerald-500/25 px-3 py-1 text-sm font-black text-emerald-300 ring-1 ring-emerald-400/40">
-        ▼ {{ (course_cmp.delta)|abs }} 桿
-      </span>
-      <p class="text-xs text-emerald-300/70">進步了！</p>
-      {% else %}
-      <span class="text-2xl">📈</span>
-      <span class="rounded-full bg-orange-500/20 px-3 py-1 text-sm font-bold text-orange-300 ring-1 ring-orange-400/30">
-        ▲ {{ course_cmp.delta }} 桿
-      </span>
-      <p class="text-xs text-orange-300/70">繼續加油</p>
-      {% endif %}
-    </div>
-    <div class="text-center">
-      <p class="text-[11px] text-green-200/50">這次</p>
-      <p class="font-brand text-4xl font-black {{ 'text-champ-light' if course_cmp.improved else 'text-white' }}">{{ course_cmp.curr_total }}</p>
-      <p class="text-xs {{ 'text-champ-light/70' if course_cmp.improved else 'text-green-200/40' }}">{{ '+' if course_cmp.curr_to_par >= 0 else '' }}{{ course_cmp.curr_to_par }}</p>
-    </div>
-  </div>
+  var html = "";
 
-  {# 逐洞比較（最多顯示前9洞） #}
-  {% if course_cmp.hole_diffs %}
-  <div class="space-y-1.5">
-    <p class="mb-2 text-xs font-semibold text-green-200/60">逐洞對比（負 = 進步，正 = 退步）</p>
-    <div class="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-      {% for h in course_cmp.hole_diffs[:9] %}
-      <div class="flex items-center justify-between rounded-xl px-3 py-2
-                  {% if h.diff < 0 %}border border-emerald-400/25 bg-emerald-500/10
-                  {% elif h.diff > 0 %}border border-red-400/20 bg-red-500/8
-                  {% else %}border border-white/10 bg-black/20{% endif %}">
-        <span class="text-xs text-green-200/60">#{{ h.hole }} P{{ h.par }}</span>
-        <span class="text-xs font-bold
-                     {% if h.diff < 0 %}text-emerald-300{% elif h.diff > 0 %}text-red-400{% else %}text-white/60{% endif %}">
-          {{ h.prev }} → {{ h.current }}
-          ({{ h.diff if h.diff != 0 else 'E' }})
-        </span>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-  {% endif %}
-</section>
-{% endif %}
+  // 標題
+  var meta = e(round.date || "");
+  if (round.time) meta += " · " + e(round.time);
+  if (round.note) meta += " · " + e(round.note);
+  html += '<header class="border-b border-zinc-200 pb-5">' +
+    '<p class="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Scorecard</p>' +
+    '<h1 class="mt-1 text-xl font-semibold text-zinc-900">' + e(round.course || "自訂球場") + '</h1>' +
+    '<p class="mt-1 text-sm text-zinc-500">' + meta + '</p>' +
+  '</header>';
 
-{# 社交分享 #}
-<section class="mb-8 overflow-hidden rounded-2xl border border-gold/40 bg-gradient-to-br from-gold/15 via-fairway-dark/90 to-black/50 p-5 shadow-xl ring-1 ring-gold/30 sm:p-7">
-  <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-    <div>
-      <p class="text-xs font-bold uppercase tracking-widest text-gold-light">Share Studio</p>
-      <h2 class="mt-1 text-lg font-bold text-white sm:text-xl">生成分享內容</h2>
-      <p class="mt-1 text-sm text-green-200/65">上傳球場照片或短片，一鍵製作朋友圈 / 小紅書 / 抖音素材</p>
-    </div>
-    <button type="button"
-            class="share-content-trigger inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-gold via-gold-light to-amber-300 px-6 py-3.5 text-sm font-black text-fairway-dark shadow-lg shadow-gold/25 transition hover:brightness-110"
-            data-round-id="{{ round.id }}"
-            data-share-tab="card">
-      <span aria-hidden="true">📱</span>
-      生成分享內容
-    </button>
-  </div>
-  <div class="grid gap-3 sm:grid-cols-2">
-    <button type="button"
-            class="share-content-trigger rounded-xl border border-gold/35 bg-black/25 px-4 py-3 text-left text-sm transition hover:border-gold/55 hover:bg-gold/10"
-            data-round-id="{{ round.id }}"
-            data-share-tab="photo">
-      <span class="font-bold text-gold-light">📷 照片模式</span>
-      <span class="mt-1 block text-xs text-green-200/55">高爾夫濾鏡 + 總桿疊字 · 4 種尺寸</span>
-    </button>
-    <button type="button"
-            class="share-content-trigger rounded-xl border border-sky-400/30 bg-black/25 px-4 py-3 text-left text-sm transition hover:border-sky-400/50 hover:bg-sky-950/30"
-            data-round-id="{{ round.id }}"
-            data-share-tab="video">
-      <span class="font-bold text-sky-200">🎬 視頻模式</span>
-      <span class="mt-1 block text-xs text-green-200/55">直式短片 · 文字特效 · 可選配樂</span>
-    </button>
-  </div>
-</section>
+  // 摘要
+  html += '<div class="mt-6 grid grid-cols-3 divide-x divide-zinc-200 rounded-xl border border-zinc-200 text-center">' +
+    '<div class="py-4"><p class="text-xs text-zinc-400">總 Par</p><p class="mt-1 text-xl font-semibold tabular-nums text-zinc-900">' + pt + '</p></div>' +
+    '<div class="py-4"><p class="text-xs text-zinc-400">洞數</p><p class="mt-1 text-xl font-semibold tabular-nums text-zinc-900">18</p></div>' +
+    '<div class="py-4"><p class="text-xs text-zinc-400">球員</p><p class="mt-1 text-xl font-semibold tabular-nums text-zinc-900">' + ranked.length + '</p></div>' +
+  '</div>';
 
-<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
-  <a href="{{ url_for('index') }}"
-     class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-green-100 transition hover:bg-white/10 hover:text-white no-underline">
-    ← 返回歷史列表
-  </a>
-  <a href="{{ url_for('score_entry') }}"
-     class="inline-flex items-center gap-2 rounded-xl bg-gold px-5 py-2.5 text-sm font-bold text-fairway-dark shadow-md transition hover:bg-gold-light no-underline">
-    + 開始新場次
-  </a>
-</div>
+  // 動作
+  html += '<div class="mt-5 flex items-center justify-between gap-3">' +
+    '<a href="/history" class="text-sm font-medium text-zinc-500 no-underline transition hover:text-zinc-900">← 歷史記錄</a>' +
+    '<a href="/score" class="inline-flex items-center gap-1.5 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white no-underline transition hover:bg-zinc-700">＋ 開始新的一場</a>' +
+  '</div>';
 
-{# 排名 #}
-<section class="mb-8 rounded-2xl bg-white/5 p-6 shadow-xl ring-1 ring-white/10 sm:p-8">
-  <h2 class="mb-6 text-xl font-bold text-white">本場排名</h2>
-  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-    {% for p in ranked %}
-    <div class="rounded-xl border p-5 text-center transition
-                {% if loop.index == 1 %}border-gold/50 bg-gradient-to-b from-gold/15 to-transparent shadow-lg{% else %}border-white/10 bg-black/20{% endif %}">
-      <div class="text-2xl">{% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}</div>
-      <p class="mt-2 font-bold text-white">{{ p.name }}</p>
-      <p class="mt-1 text-4xl font-bold tabular-nums text-fairway-light">{{ p.total }}</p>
-      <p class="mt-1 text-sm text-green-200/70">{{ to_par_text(p.to_par) }}</p>
-      <div class="mt-4 grid grid-cols-2 gap-2 border-t border-white/10 pt-4 text-center">
-        <div>
-          <p class="text-xs uppercase tracking-wide text-green-200/50">前九</p>
-          <p class="text-lg font-bold tabular-nums text-white">{{ p.front9 }}</p>
-        </div>
-        <div>
-          <p class="text-xs uppercase tracking-wide text-green-200/50">後九</p>
-          <p class="text-lg font-bold tabular-nums text-white">{{ p.back9 }}</p>
-        </div>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
-</section>
+  // 排名
+  html += '<section class="mt-8"><h2 class="mb-3 text-sm font-medium text-zinc-700">本場排名</h2><div class="space-y-2">';
+  ranked.forEach(function (p, i) {
+    html += '<div class="flex items-center gap-4 rounded-xl border p-4 ' + (i === 0 ? 'border-zinc-900' : 'border-zinc-200') + '">' +
+      '<span class="w-5 text-center text-sm font-medium text-zinc-400">' + (i + 1) + '</span>' +
+      '<div class="min-w-0 flex-1"><p class="truncate font-medium text-zinc-900">' + e(p.name) + '</p>' +
+        '<p class="mt-0.5 text-xs text-zinc-400">前九 ' + p.front9 + ' · 後九 ' + p.back9 + '</p></div>' +
+      '<div class="text-right"><p class="text-2xl font-semibold tabular-nums text-zinc-900 leading-none">' + p.total + '</p>' +
+        '<p class="mt-1 text-sm text-zinc-500">' + tp(p.to_par) + '</p></div>' +
+    '</div>';
+  });
+  html += '</div></section>';
 
-{# 圖例 #}
-<div class="mb-6 flex flex-wrap gap-3 text-xs sm:text-sm text-green-200/80">
-  <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-blue-600"></span>Eagle</span>
-  <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-green-700"></span>Birdie</span>
-  <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded border border-green-200 bg-white"></span>Par</span>
-  <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-orange-500"></span>Bogey</span>
-  <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-red-600"></span>Double+</span>
-</div>
+  // 圖例
+  html += '<div class="mt-6 flex flex-wrap items-center gap-4 text-xs text-zinc-400">' +
+    '<span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-zinc-900"></span>低於 Par</span>' +
+    '<span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-zinc-100 ring-1 ring-zinc-200"></span>Par</span>' +
+    '<span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-white ring-1 ring-zinc-200"></span>高於 Par</span>' +
+  '</div>';
 
-{# 每位球員記分卡 #}
-{% for p in ranked %}
-<article class="mb-8 overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-green-900/10">
+  // 每位球員記分卡
+  ranked.forEach(function (p) {
+    html += '<article class="mt-6 overflow-hidden rounded-2xl border border-zinc-200">' +
+      '<div class="flex items-end justify-between gap-4 border-b border-zinc-200 px-5 py-4">' +
+        '<div><h2 class="text-base font-semibold text-zinc-900">' + e(p.name) + '</h2>' +
+          '<p class="mt-0.5 text-xs text-zinc-400">Birdie ' + p.birdies + ' · Par ' + p.pars + ' · Bogey ' + p.bogeys + ' · Double+ ' + p.double_plus + '</p></div>' +
+        '<div class="text-right"><p class="text-3xl font-semibold tabular-nums text-zinc-900 leading-none">' + p.total + '</p>' +
+          '<p class="mt-1 text-xs text-zinc-500">' + tp(p.to_par) + '</p></div>' +
+      '</div>' +
+      '<div class="p-4">' +
+        '<p class="mb-2 text-[11px] font-medium uppercase tracking-widest text-zinc-400">前九</p>' + holeGrid(p.hole_results, 1, 9) +
+        '<p class="mb-2 mt-4 text-[11px] font-medium uppercase tracking-widest text-zinc-400">後九</p>' + holeGrid(p.hole_results, 10, 18) +
+      '</div>' +
+    '</article>';
+  });
 
-  {# 球員標題 + 總桿大字 #}
-  <div class="bg-fairway-dark px-6 py-5 sm:px-8">
-    <div class="flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h2 class="text-xl font-bold text-white sm:text-2xl">{{ p.name }}</h2>
-        <p class="mt-1 text-sm text-green-200/70">
-          Birdie {{ p.birdies }} · Par {{ p.pars }} · Bogey {{ p.bogeys }} · Double+ {{ p.double_plus }}
-        </p>
-      </div>
-      <div class="flex gap-6 sm:gap-10">
-        <div class="text-center">
-          <p class="text-xs font-medium uppercase tracking-wider text-gold-light">前九</p>
-          <p class="text-3xl font-bold tabular-nums text-white sm:text-4xl">{{ p.front9 }}</p>
-        </div>
-        <div class="text-center">
-          <p class="text-xs font-medium uppercase tracking-wider text-gold-light">後九</p>
-          <p class="text-3xl font-bold tabular-nums text-white sm:text-4xl">{{ p.back9 }}</p>
-        </div>
-        <div class="text-center border-l border-white/20 pl-6 sm:pl-10">
-          <p class="text-xs font-medium uppercase tracking-wider text-gold-light">總桿</p>
-          <p class="text-4xl font-bold tabular-nums text-gold-light sm:text-5xl">{{ p.total }}</p>
-          <p class="text-sm text-green-200/80">{{ to_par_text(p.to_par) }}</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="p-4 sm:p-6">
-  {# 前九 #}
-  <p class="mb-3 text-xs font-bold uppercase tracking-widest text-fairway-dark">前九洞</p>
-  <div class="grid grid-cols-3 gap-2 sm:grid-cols-5 md:grid-cols-9 sm:gap-3">
-    {% for h in p.hole_results if h.hole <= 9 %}
-    <div class="rounded-lg p-2 text-center sm:p-3 {{ score_cell_class(h.diff) }}">
-      <p class="text-[10px] font-medium opacity-80 sm:text-xs">H{{ h.hole }}</p>
-      <p class="my-1 text-2xl font-bold tabular-nums sm:text-3xl">{{ h.score }}</p>
-      <p class="text-[10px] opacity-75 sm:text-xs">Par {{ h.par }}</p>
-      <p class="mt-0.5 text-[10px] font-semibold sm:text-xs">{{ score_name(h.diff) }}</p>
-    </div>
-    {% endfor %}
-  </div>
-
-  {# 後九 #}
-  <p class="mb-3 mt-6 text-xs font-bold uppercase tracking-widest text-fairway-dark">後九洞</p>
-  <div class="grid grid-cols-3 gap-2 sm:grid-cols-5 md:grid-cols-9 sm:gap-3">
-    {% for h in p.hole_results if h.hole > 9 %}
-    <div class="rounded-lg p-2 text-center sm:p-3 {{ score_cell_class(h.diff) }}">
-      <p class="text-[10px] font-medium opacity-80 sm:text-xs">H{{ h.hole }}</p>
-      <p class="my-1 text-2xl font-bold tabular-nums sm:text-3xl">{{ h.score }}</p>
-      <p class="text-[10px] opacity-75 sm:text-xs">Par {{ h.par }}</p>
-      <p class="mt-0.5 text-[10px] font-semibold sm:text-xs">{{ score_name(h.diff) }}</p>
-    </div>
-    {% endfor %}
-  </div>
-  </div>
-</article>
-{% endfor %}
+  var content = document.getElementById("round-content");
+  content.innerHTML = html;
+  content.classList.remove("hidden");
+})();
+</script>
 
 {% endblock %}

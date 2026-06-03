@@ -1,17 +1,16 @@
 # Render 部署：https://render.com
 #
-# 重要：帳號資料必須存在「持久化資料庫」，不可只靠容器內 app.db（每次部署會清空）。
-# 本設定已綁定 PostgreSQL；首次部署後請在 Dashboard 確認 SECRET_KEY 已固定、勿刪除資料庫。
-
-databases:
-  - name: maisongolf-db
-    plan: free
-    databaseName: maisongolf
-    user: maisongolf
+# 版本：Maison Golf 極簡測試版（零登入 + 本地儲存）
+# - 場次／成績資料存在使用者「瀏覽器 localStorage」，伺服器不保存。
+# - 因此「不需要」PostgreSQL；容器內 SQLite 僅供框架初始化，重部署清空無妨。
+# - 拍照讀 Par 預設使用 OCR_MOCK（模擬資料），方便手機直接測試流程。
+#
+# 切換真實 Grok Vision 辨識：
+#   在 Render Dashboard → Environment 設定 XAI_API_KEY，並把 OCR_MOCK 改成 false。
 
 services:
   - type: web
-    name: kau-sai-golf
+    name: maisongolf
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
@@ -19,33 +18,18 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.7"
-      # ── 資料庫 ─────────────────────────────────────────────────────────────
-      # 從連結的 PostgreSQL 注入，勿寫死 value，以免覆蓋 Dashboard 手動設定的 DATABASE_URL
-      - key: DATABASE_URL
-        fromDatabase:
-          name: maisongolf-db
-          property: connectionString
-      # ── 安全密鑰 ───────────────────────────────────────────────────────────
-      # 僅在「第一次」建立服務時自動產生；之後請在 Dashboard 固定同一組值，勿隨部署刪除
+
+      # Flask session 密鑰（零登入也保留，無害）；首次建立時自動產生
       - key: SECRET_KEY
         generateValue: true
-      - key: SYNC_SECRET
-        generateValue: true
-      # ── 生產環境標記 ────────────────────────────────────────────────────────
-      - key: RENDER
+
+      # ── 拍照讀 Par ─────────────────────────────────────────────
+      # 測試版預設 true（模擬資料）。要用真實辨識：設 false 並提供 XAI_API_KEY。
+      - key: OCR_MOCK
         value: "true"
+      # - key: XAI_API_KEY
+      #   value: "YOUR_XAI_API_KEY_HERE"
+
       # 強制停用本機開發工具（測試面板）
       - key: DEV_TEST_MODE
         value: "0"
-      # ── AI 教練（選填） ────────────────────────────────────────────────────
-      # XAI_API_KEY / GROK_API_KEY：填入後 AI 教練改用 Grok API；不填則使用本地分析
-      # - key: XAI_API_KEY
-      #   value: "YOUR_XAI_API_KEY_HERE"
-      # ── 頭像 Cloudinary（選填但強烈建議填寫） ────────────────────────────
-      # 不填頭像存容器內，每次部署後消失
-      # - key: CLOUDINARY_CLOUD_NAME
-      #   value: "your_cloud_name"
-      # - key: CLOUDINARY_API_KEY
-      #   value: "your_api_key"
-      # - key: CLOUDINARY_API_SECRET
-      #   value: "your_api_secret"

@@ -778,6 +778,40 @@ def courses_catalog_full():
     return catalog
 
 
+CUSTOM_COURSE_ID = "custom"
+
+
+def make_custom_tee(pars, course_name=None, tee_name=None):
+    """
+    從自訂 18 洞 Par 建立合成 tee（極簡記分用，不依賴球場資料庫）。
+    回傳 (tee_dict, error_message)。
+    """
+    if not isinstance(pars, (list, tuple)) or len(pars) != 18:
+        return None, "需要 18 個洞的 Par"
+    norm = []
+    for i, p in enumerate(pars):
+        try:
+            v = int(p)
+        except (TypeError, ValueError):
+            return None, f"第 {i + 1} 洞 Par 格式錯誤"
+        if not 3 <= v <= 6:
+            return None, f"第 {i + 1} 洞 Par 需在 3～6 之間"
+        norm.append(v)
+    return {
+        "id": CUSTOM_COURSE_ID,
+        "name": (tee_name or "自訂").strip() or "自訂",
+        "pars": norm,
+        "yardages": [0] * 18,
+        "handicap": list(range(1, 19)),
+        "par_total": sum(norm),
+        "par_front": sum(norm[:9]),
+        "par_back": sum(norm[9:]),
+        "yardage_total": 0,
+        "course_id": CUSTOM_COURSE_ID,
+        "course_name": (course_name or "自訂球場").strip() or "自訂球場",
+    }, None
+
+
 def resolve_course_tee(course_id, tee_id):
     """回傳 (tee_dict, error_message)"""
     if not course_id or not tee_id:
@@ -788,8 +822,23 @@ def resolve_course_tee(course_id, tee_id):
     return tee, None
 
 
-def course_meta_for_round(course_id, tee_id):
-    """寫入 rounds.json 的球場資訊"""
+def course_meta_for_round(course_id, tee_id, pars=None, course_name=None):
+    """
+    寫入場次的球場資訊。
+    優先使用自訂 pars（極簡記分流程）；否則回退到球場資料庫。
+    """
+    if isinstance(pars, (list, tuple)) and len(pars) == 18:
+        tee, err = make_custom_tee(pars, course_name=course_name)
+        if not err:
+            return {
+                "course_id": tee["course_id"],
+                "course": tee["course_name"],
+                "tee_id": tee["id"],
+                "tee": tee["name"],
+                "par_total": tee["par_total"],
+                "yardage_total": tee["yardage_total"],
+                "pars": tee["pars"],
+            }
     tee, err = resolve_course_tee(course_id, tee_id)
     if err:
         return None

@@ -1,10 +1,9 @@
 {# 成績格顏色：Eagle 藍 / Birdie 綠 / Par 白 / Bogey 橙 / Double+ 紅 #}
+{# 單色工具風：深色 = 更好（Birdie+），淺灰 = Par，淡框 = 高於 Par #}
 {% macro score_cell_class(diff) -%}
-{%- if diff <= -2 -%}bg-blue-600 text-white shadow-sm ring-1 ring-blue-400/40
-{%- elif diff == -1 -%}bg-green-700 text-white shadow-sm ring-1 ring-green-500/40
-{%- elif diff == 0 -%}bg-white text-green-900 shadow-sm ring-1 ring-green-200
-{%- elif diff == 1 -%}bg-orange-500 text-white shadow-sm ring-1 ring-orange-400/40
-{%- else -%}bg-red-600 text-white shadow-sm ring-1 ring-red-400/40
+{%- if diff <= -1 -%}bg-zinc-900 text-white
+{%- elif diff == 0 -%}bg-zinc-100 text-zinc-900
+{%- else -%}bg-white text-zinc-400 ring-1 ring-zinc-200
 {%- endif -%}
 {%- endmacro %}
 
@@ -27,27 +26,12 @@
 {%- endif -%}
 {%- endmacro %}
 
+{# 單色相對 Par 標籤 #}
 {% macro par_trend_badge(to_par, size='md') -%}
 {%- set sm = size == 'sm' -%}
-<span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-bold tabular-nums ring-1
-             {% if sm %}text-xs{% else %}text-sm sm:text-base{% endif %}
-             {% if to_par < 0 %}bg-emerald-500/25 text-emerald-200 ring-emerald-400/40
-             {% elif to_par > 0 %}bg-red-500/20 text-red-200 ring-red-400/35
-             {% else %}bg-white/10 text-green-100 ring-white/20{% endif %}">
-  {% if to_par < 0 %}
-  <svg class="{% if sm %}h-3.5 w-3.5{% else %}h-4 w-4 sm:h-5 sm:w-5{% endif %}" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
-    <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"/>
-  </svg>
-  <span>{{ to_par }}</span>
-  {% elif to_par > 0 %}
-  <svg class="{% if sm %}h-3.5 w-3.5{% else %}h-4 w-4 sm:h-5 sm:w-5{% endif %}" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
-    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-  </svg>
-  <span>+{{ to_par }}</span>
-  {% else %}
-  <span class="{% if sm %}text-[10px]{% else %}text-xs{% endif %} uppercase tracking-wider opacity-80">E</span>
-  <span>Par</span>
-  {% endif %}
+<span class="inline-flex items-center rounded-md border border-zinc-200 bg-zinc-50 px-2 py-0.5 font-medium tabular-nums text-zinc-700
+             {% if sm %}text-xs{% else %}text-sm{% endif %}">
+  {% if to_par < 0 %}{{ to_par }}{% elif to_par > 0 %}+{{ to_par }}{% else %}E · Par{% endif %}
 </span>
 {%- endmacro %}
 
@@ -69,16 +53,11 @@
 </svg>
 {%- endmacro %}
 
+{# 單色文字導覽連結（active = 深字） #}
 {% macro nav_link(url, label, active, primary=false) -%}
 <a href="{{ url }}"
-   class="flex flex-1 items-center justify-center gap-1 rounded-xl px-2 py-2.5 text-[13px] font-bold transition-all sm:gap-1.5 sm:px-4 sm:py-3 sm:text-sm sm:flex-none sm:min-w-[5rem]
-          {% if active and primary %}bg-gold text-fairway-dark shadow-lg ring-2 ring-gold-light ring-offset-2 ring-offset-fairway-dark
-          {% elif active %}bg-white text-fairway-dark shadow-lg
-          {% elif primary %}bg-gold/90 text-fairway-dark shadow-md hover:bg-gold-light hover:shadow-lg
-          {% else %}bg-white/10 text-green-100 hover:bg-white/20 hover:text-white{% endif %}">
-  {% if primary and not active %}
-  <span class="text-base leading-none">+</span>
-  {% endif %}
+   class="text-sm font-medium no-underline transition-colors
+          {% if active %}text-zinc-900{% else %}text-zinc-400 hover:text-zinc-900{% endif %}">
   {{ label }}
 </a>
 {%- endmacro %}

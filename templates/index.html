@@ -1,255 +1,76 @@
 {% extends "base.html" %}
-{% from '_macros.html' import trophy_icon, par_trend_badge, sample_scorecard, ai_coach_preview %}
-{% block title %}首頁 · Maison Golf{% endblock %}
+{% block title %}Maison Golf · 極簡記分{% endblock %}
 {% block content %}
 
-{# ── 非本人提示條（訪客/公用裝置防護）── #}
-<div id="not-you-bar"
-     class="mb-4 hidden items-center justify-between gap-3 rounded-xl bg-amber-900/60 px-4 py-2.5 ring-1 ring-amber-400/30 text-sm text-amber-200">
-  <span>⚠️ 這不是你的帳戶？</span>
-  <a href="/logout"
-     class="rounded-lg bg-amber-500/80 px-3 py-1 font-semibold text-white hover:bg-amber-400 active:scale-95 transition">
-    立即登出
+{# 續打草稿提示（由 JS 顯示） #}
+<a id="resume-draft" href="{{ url_for('score_entry') }}"
+   class="mb-6 hidden items-center justify-between gap-3 rounded-xl border border-zinc-300 px-4 py-3.5 no-underline transition hover:border-zinc-900">
+  <div class="min-w-0">
+    <p class="text-sm font-medium text-zinc-900">繼續未完成的記分</p>
+    <p id="resume-sub" class="mt-0.5 truncate text-xs text-zinc-400"></p>
+  </div>
+  <span class="shrink-0 text-sm font-medium text-zinc-500">繼續 →</span>
+</a>
+
+{# 主按鈕 #}
+<section class="py-6 text-center">
+  <p class="text-sm text-zinc-400">極簡記分 · 打完一場只要 30 秒</p>
+  <a href="{{ url_for('score_entry') }}"
+     class="mt-5 flex w-full items-center justify-center gap-2.5 rounded-2xl bg-zinc-900 px-6 py-8 text-2xl font-semibold text-white no-underline transition active:scale-[0.99] hover:bg-zinc-700">
+    <svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+    開始新的一場球
   </a>
+</section>
+
+{# 最近場次（最多 3 場，由 JS 渲染） #}
+<section id="recent-wrap" class="mt-8 hidden">
+  <div class="mb-2 flex items-center justify-between">
+    <h2 class="text-sm font-medium text-zinc-700">最近場次</h2>
+    <a href="{{ url_for('history') }}" class="text-sm font-medium text-zinc-400 no-underline transition hover:text-zinc-900">查看全部 →</a>
+  </div>
+  <div id="recent-list" class="divide-y divide-zinc-200 border-y border-zinc-200"></div>
+</section>
+
+{# 空狀態 #}
+<div id="empty-state" class="mt-10 hidden text-center">
+  <p class="text-sm text-zinc-400">還沒有場次紀錄</p>
+  <p class="mt-1 text-xs text-zinc-300">點上面的按鈕，開始你的第一場</p>
 </div>
+
 <script>
-  /* 首次載入：顯示「不是你？」提示條 3 秒，讓用戶確認帳戶 */
-  (function () {
-    var key = "mg_seen_{{ current_user.id }}";
-    if (!sessionStorage.getItem(key)) {
-      sessionStorage.setItem(key, "1");
-      var bar = document.getElementById("not-you-bar");
-      if (bar) {
-        bar.classList.remove("hidden");
-        bar.classList.add("flex");
-        setTimeout(function () {
-          bar.style.transition = "opacity 0.5s";
-          bar.style.opacity = "0";
-          setTimeout(function () { bar.classList.add("hidden"); }, 500);
-        }, 6000);
-      }
-    }
-  })();
+(function () {
+  // 續打提示
+  var draft = MG.getDraft();
+  if (draft && Array.isArray(draft.players) && draft.players.length) {
+    var hole = (draft.hole_index || 0) + 1;
+    var course = (draft.note && draft.note.trim()) || "自訂球場";
+    document.getElementById("resume-sub").textContent = course + " · 第 " + hole + " 洞";
+    var a = document.getElementById("resume-draft");
+    a.classList.remove("hidden");
+    a.classList.add("flex");
+  }
+
+  // 最近場次
+  var rounds = MG.allRounds().slice().reverse();
+  if (!rounds.length) {
+    document.getElementById("empty-state").classList.remove("hidden");
+    return;
+  }
+  document.getElementById("recent-wrap").classList.remove("hidden");
+  var list = document.getElementById("recent-list");
+  list.innerHTML = rounds.slice(0, 3).map(function (r) {
+    var ranked = MG.rankedPlayers(r);
+    var best = ranked[0] || { total: 0, to_par: 0 };
+    return '<a href="/round/' + encodeURIComponent(r.id) + '" class="flex items-center gap-4 py-4 no-underline transition hover:opacity-70">' +
+      '<span class="w-12 text-center text-2xl font-semibold tabular-nums text-zinc-900">' + best.total + '</span>' +
+      '<div class="min-w-0 flex-1">' +
+        '<p class="truncate text-sm font-medium text-zinc-900">' + MG.esc(r.course || "自訂球場") + '</p>' +
+        '<p class="mt-0.5 text-xs text-zinc-400">' + MG.esc(r.date || "") + ' · ' + (r.players || []).length + ' 人</p>' +
+      '</div>' +
+      '<span class="inline-flex items-center rounded-md border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-xs font-medium tabular-nums text-zinc-700">' + MG.toParText(best.to_par) + '</span>' +
+    '</a>';
+  }).join("");
+})();
 </script>
-
-{# ── 歡迎區 ── #}
-<section class="mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-fairway/30 via-black/30 to-black/50 p-5 ring-1 ring-white/10 sm:p-7">
-  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-    <div>
-      <p class="text-sm text-green-200/60">歡迎回來</p>
-      <h1 class="mt-0.5 font-brand text-2xl font-bold text-white sm:text-3xl">
-        {{ current_user.username }}
-        {% if engagement and engagement.handicap_index is not none %}
-        <span class="ml-2 rounded-full bg-gold/20 px-3 py-0.5 text-sm font-bold text-gold-light ring-1 ring-gold/40">
-          差點 {{ "%.1f"|format(engagement.handicap_index) }}
-        </span>
-        {% endif %}
-      </h1>
-      {% if engagement %}
-      <p class="mt-1 text-xs text-green-200/50">
-        {{ engagement.level_icon }} {{ engagement.level_title }}
-        {% if engagement.streak_weeks > 0 %}
-        · 🔥 連續 {{ engagement.streak_weeks }} 週
-        {% endif %}
-      </p>
-      {% endif %}
-    </div>
-    {# 大錄分按鈕（只在手機版的歡迎區顯示，讓底部 tab 也能用） #}
-    <a href="{{ url_for('score_entry') }}"
-       class="sm:hidden flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fairway-light to-fairway px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-fairway/30 no-underline transition active:scale-[0.98]">
-      <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-      開始錄分
-    </a>
-    <a href="{{ url_for('score_entry') }}"
-       class="hidden sm:flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fairway-light to-fairway px-8 py-4 text-lg font-bold text-white shadow-lg shadow-fairway/30 no-underline transition hover:brightness-110 active:scale-[0.98]">
-      <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
-      ⛳ 開始錄分
-    </a>
-  </div>
-</section>
-
-{# ── 快速統計（本月 / 最近成績 / 本月目標） ── #}
-{% if engagement %}
-<div class="mb-6 grid grid-cols-3 gap-3">
-  <div class="rounded-2xl bg-white/5 p-4 text-center ring-1 ring-white/10">
-    <p class="text-[11px] font-semibold uppercase tracking-wider text-green-200/60">本月</p>
-    <p class="mt-1.5 text-3xl font-black tabular-nums text-white">{{ engagement.month_rounds }}</p>
-    <p class="text-[11px] text-green-200/50">/ {{ engagement.month_goal }} 場目標</p>
-    <div class="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
-      <div class="h-full rounded-full bg-gradient-to-r from-fairway to-fairway-light" style="width:{{ engagement.month_goal_pct }}%"></div>
-    </div>
-  </div>
-  <div class="rounded-2xl bg-white/5 p-4 text-center ring-1 ring-white/10">
-    <p class="text-[11px] font-semibold uppercase tracking-wider text-green-200/60">連勝週</p>
-    {% if engagement.streak_weeks > 0 %}
-    <p class="mt-1.5 text-3xl font-black tabular-nums text-orange-300">{{ engagement.streak_weeks }}</p>
-    <p class="text-[11px] {{ 'text-orange-300/80' if engagement.streak_status == 'at_risk' else 'text-green-200/50' }}">
-      {{ '快斷了！' if engagement.streak_status == 'at_risk' else '週連續' }}
-    </p>
-    {% else %}
-    <p class="mt-1.5 text-3xl font-black text-green-200/30">—</p>
-    <p class="text-[11px] text-green-200/50">本週開賽</p>
-    {% endif %}
-  </div>
-  <div class="rounded-2xl bg-white/5 p-4 text-center ring-1 ring-white/10">
-    <p class="text-[11px] font-semibold uppercase tracking-wider text-green-200/60">最近成績</p>
-    {% if engagement.last_score %}
-    <p class="mt-1.5 text-3xl font-black tabular-nums text-white">{{ engagement.last_score }}</p>
-    <p class="text-[11px] text-green-200/50">桿（上一場）</p>
-    {% else %}
-    <p class="mt-1.5 text-3xl font-black text-green-200/30">—</p>
-    <p class="text-[11px] text-green-200/50">尚無紀錄</p>
-    {% endif %}
-  </div>
-</div>
-{% endif %}
-
-{# ── 好友動態（有才顯示，摺疊式） ── #}
-{% if friend_feed %}
-<details class="group mb-6 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
-  <summary class="flex cursor-pointer list-none items-center justify-between px-5 py-4 select-none">
-    <div class="flex items-center gap-2">
-      <svg class="h-5 w-5 text-green-300/70" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
-      </svg>
-      <span class="text-sm font-bold text-white">球友動態</span>
-      <span class="rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-semibold text-green-200/70">{{ friend_feed|length }}</span>
-    </div>
-    <svg class="h-4 w-4 text-green-200/50 transition group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-    </svg>
-  </summary>
-  <div class="space-y-2 border-t border-white/10 px-5 py-4">
-    {% for item in friend_feed[:5] %}
-    <div class="flex items-center gap-3 rounded-xl bg-black/20 px-4 py-3">
-      <span class="shrink-0 text-xl">{{ item.icon }}</span>
-      <div class="min-w-0 flex-1">
-        <p class="truncate text-sm font-semibold text-white">
-          <span class="text-champ-light">{{ item.name }}</span>
-          {{ item.headline[item.headline.index(' '):] if ' ' in item.headline else item.headline }}
-        </p>
-        <p class="text-[11px] text-green-200/50">{{ item.sub }}</p>
-      </div>
-      {% if item.round_id %}
-      <a href="{{ url_for('round_detail', round_id=item.round_id) }}"
-         class="shrink-0 rounded-lg border border-white/15 px-2.5 py-1 text-[11px] font-semibold text-green-200/70 no-underline hover:bg-white/10">
-        看 →
-      </a>
-      {% endif %}
-    </div>
-    {% endfor %}
-    <a href="{{ url_for('friends.friends_home') }}"
-       class="block pt-1 text-center text-xs font-semibold text-champ hover:text-white no-underline">
-      查看所有好友 →
-    </a>
-  </div>
-</details>
-{% endif %}
-
-{# ── 歷史場次 ── #}
-<section>
-  <div class="mb-4 flex items-center justify-between">
-    <h2 class="text-lg font-bold text-white">我的場次</h2>
-    <span class="rounded-full bg-white/10 px-3 py-1 text-sm font-bold text-green-200">{{ rounds_rev|length }} 場</span>
-  </div>
-
-  {% if rounds_rev %}
-  <div class="space-y-3">
-    {% for r in rounds_rev %}
-    {% set best = r.players|sort(attribute='total')|first %}
-    {% set round_par = r.par_total if r.par_total is defined else par_total %}
-    {% set to_par = best.to_par if best.to_par is defined else (best.total - round_par) %}
-    <article class="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.05] transition hover:border-gold/40 hover:bg-white/[0.08]">
-      <a href="{{ url_for('round_detail', round_id=r.id) }}"
-         class="flex items-center gap-4 p-4 no-underline sm:p-5">
-
-        {# 左：總桿大字 #}
-        <div class="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-gold/30 to-gold/10 ring-1 ring-gold/40">
-          <span class="text-3xl font-black tabular-nums leading-none text-gold-light">{{ best.total }}</span>
-          <span class="text-[10px] font-semibold text-gold-light/60">桿</span>
-        </div>
-
-        {# 中：場次資訊 #}
-        <div class="min-w-0 flex-1">
-          <p class="truncate text-sm font-bold text-white">{{ r.course or course_name }}</p>
-          <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-green-200/55">
-            <time>{{ r.date }}</time>
-            {% if r.tee %}<span>· {{ r.tee }}</span>{% endif %}
-            <span>· {{ r.players|length }} 人</span>
-          </div>
-          <div class="mt-2 flex items-center gap-2">
-            {{ par_trend_badge(to_par, 'sm') }}
-            {% if r.players|length > 1 %}
-            <span class="inline-flex items-center gap-1 text-[11px] text-green-200/60">
-              {{ trophy_icon('h-3.5 w-3.5 text-gold-light') }}
-              {{ best.name }}
-            </span>
-            {% endif %}
-          </div>
-        </div>
-
-        {# 右：箭頭 #}
-        <svg class="h-5 w-5 shrink-0 text-green-200/30 transition group-hover:text-green-200/70" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-        </svg>
-      </a>
-
-      {# 操作列 #}
-      <div class="flex gap-2 border-t border-white/10 bg-black/20 px-4 py-3">
-        <button type="button"
-                class="share-content-trigger flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gold/35 bg-gold/10 py-2.5 text-sm font-bold text-gold-light transition hover:bg-gold/20"
-                data-round-id="{{ r.id }}"
-                data-share-tab="card">
-          <span aria-hidden="true">📱</span> 分享戰報
-        </button>
-        <button type="button"
-                class="ai-coach-trigger-standalone flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-emerald-400/30 bg-emerald-900/30 py-2.5 text-sm font-bold text-emerald-100 transition hover:bg-emerald-800/40"
-                data-round-id="{{ r.id }}">
-          <span aria-hidden="true">✨</span> AI 分析
-        </button>
-      </div>
-    </article>
-    {% endfor %}
-  </div>
-
-  {% else %}
-  {# 空狀態 — 示範讓新用戶安心 #}
-  <div class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-    <div class="mb-5 text-center">
-      <div class="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-fairway/20 text-3xl ring-1 ring-fairway/40">
-        ⛳
-      </div>
-      <h3 class="text-base font-bold text-white">還沒有場次紀錄</h3>
-      <p class="mt-1 text-sm text-green-200/60">打完一場，這裡就會出現你的戰績。下面是範例。</p>
-    </div>
-
-    <div class="mb-5">
-      <p class="mb-2 text-xs font-semibold text-green-200/70">記分卡長這樣 👇</p>
-      {{ sample_scorecard() }}
-    </div>
-
-    <div class="mb-4">
-      <p class="mb-2 text-xs font-semibold text-green-200/70">打完會收到 AI 教練分析 👇</p>
-      {{ ai_coach_preview() }}
-    </div>
-
-    <a href="{{ url_for('score_entry') }}"
-       class="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fairway-light to-fairway py-4 text-base font-bold text-white shadow-lg no-underline transition hover:brightness-110">
-      開始我的第一場 →
-    </a>
-  </div>
-  {% endif %}
-</section>
-
-{# ── 首頁 AI 教練彈層 ── #}
-<div id="ai-coach-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="ai-coach-modal-title">
-  <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-emerald-500/30 bg-fairway-dark shadow-2xl ring-1 ring-emerald-400/20">
-    <div class="sticky top-0 flex items-center justify-between border-b border-white/10 bg-fairway-dark/95 px-5 py-4 backdrop-blur">
-      <h3 id="ai-coach-modal-title" class="text-base font-bold text-white">✨ AI 教練分析</h3>
-      <button type="button" id="ai-coach-modal-close" class="rounded-lg border border-white/15 px-3 py-1 text-sm text-green-200 hover:bg-white/10">關閉</button>
-    </div>
-    <div id="ai-coach-modal-body" class="p-5"></div>
-  </div>
-</div>
 
 {% endblock %}

@@ -439,14 +439,20 @@ def repair_stuck_in_progress_rounds():
     return changed
 
 
-def build_round_record(players_stats, note="", course_id=None, tee_id=None, user_id=None):
+def build_round_record(
+    players_stats, note="", course_id=None, tee_id=None, user_id=None,
+    pars=None, course_name=None,
+):
     if user_id is None:
         raise ValueError("新增場次必須提供 user_id")
 
     now = datetime.now()
-    cid = course_id or DEFAULT_COURSE_ID
-    tid = tee_id or DEFAULT_TEE_ID
-    meta = course_meta_for_round(cid, tid)
+    # 極簡記分：優先用自訂 pars（拍照/模板），不依賴球場資料庫
+    meta = course_meta_for_round(course_id, tee_id, pars=pars, course_name=course_name)
+    if not meta:
+        cid = course_id or DEFAULT_COURSE_ID
+        tid = tee_id or DEFAULT_TEE_ID
+        meta = course_meta_for_round(cid, tid)
     if not meta:
         meta = course_meta_for_round(DEFAULT_COURSE_ID, DEFAULT_TEE_ID)
 
@@ -473,9 +479,13 @@ def build_round_record(players_stats, note="", course_id=None, tee_id=None, user
     return record
 
 
-def add_round(players_stats, note="", course_id=None, tee_id=None, user_id=None):
+def add_round(
+    players_stats, note="", course_id=None, tee_id=None, user_id=None,
+    pars=None, course_name=None,
+):
     record = build_round_record(
-        players_stats, note, course_id, tee_id, user_id=user_id
+        players_stats, note, course_id, tee_id, user_id=user_id,
+        pars=pars, course_name=course_name,
     )
     upsert_round_dict(record)
     return record["id"]
@@ -533,15 +543,19 @@ def upsert_in_progress_round(
     scores=None,
     hole_index=0,
     note="",
+    pars=None,
+    course_name=None,
 ):
     from models import db
 
     if user_id is None:
         raise ValueError("保存草稿必須提供 user_id")
-    if not course_id or not tee_id:
-        raise ValueError("保存草稿需要 course_id 與 tee_id")
 
-    meta = course_meta_for_round(course_id, tee_id)
+    has_custom_pars = isinstance(pars, (list, tuple)) and len(pars) == 18
+    if not has_custom_pars and (not course_id or not tee_id):
+        raise ValueError("保存草稿需要 18 洞 Par 或 course_id 與 tee_id")
+
+    meta = course_meta_for_round(course_id, tee_id, pars=pars, course_name=course_name)
     if not meta:
         raise ValueError("找不到球場/發球台資料")
 

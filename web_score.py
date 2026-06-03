@@ -1,6 +1,6 @@
 """網頁錄分：驗證與寫入資料庫（round_storage）"""
 
-from courses import resolve_course_tee
+from courses import resolve_course_tee, make_custom_tee
 from golf_utils import calc_player_stats
 
 MAX_PLAYERS = 8
@@ -89,7 +89,15 @@ def validate_score_submission(data):
 
     course_id = data.get("course_id", "")
     tee_id = data.get("tee_id", "")
-    tee, err = resolve_course_tee(course_id, tee_id)
+    course_name = data.get("course_name") or None
+
+    # 極簡記分：優先使用自訂 18 洞 Par（拍照/模板），不依賴球場資料庫
+    custom_pars = data.get("pars")
+    if isinstance(custom_pars, list) and len(custom_pars) == HOLES:
+        tee, err = make_custom_tee(custom_pars, course_name=course_name)
+    else:
+        custom_pars = None
+        tee, err = resolve_course_tee(course_id, tee_id)
     if err:
         return None, err
 
@@ -116,4 +124,6 @@ def validate_score_submission(data):
         "note": note.strip(),
         "course_id": course_id,
         "tee_id": tee_id,
+        "pars": tee["pars"] if custom_pars is not None else None,
+        "course_name": course_name,
     }, None

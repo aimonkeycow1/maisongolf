@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}歷史記錄 · Maison Golf{% endblock %}
+{% block content %}
+
+<div class="mb-4 flex items-baseline justify-between">
+  <h1 class="text-xl font-semibold text-zinc-900">歷史記錄</h1>
+  <span id="history-count" class="text-sm text-zinc-400"></span>
+</div>
+
+<div id="history-list" class="divide-y divide-zinc-200 border-y border-zinc-200 hidden"></div>
+
+<div id="history-empty" class="mt-10 hidden text-center">
+  <p class="text-sm text-zinc-400">還沒有場次紀錄</p>
+  <a href="{{ url_for('score_entry') }}" class="mt-4 inline-block rounded-lg bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white no-underline hover:bg-zinc-700">開始第一場</a>
+</div>
+
+<script>
+(function () {
+  var rounds = MG.allRounds().slice().reverse();
+  document.getElementById("history-count").textContent = rounds.length + " 場";
+  if (!rounds.length) {
+    document.getElementById("history-empty").classList.remove("hidden");
+    return;
+  }
+  var list = document.getElementById("history-list");
+  list.classList.remove("hidden");
+  list.innerHTML = rounds.map(function (r) {
+    var ranked = MG.rankedPlayers(r);
+    var best = ranked[0] || { total: 0, to_par: 0, name: "" };
+    var players = (r.players || []).length;
+    var sub = MG.esc(r.date || "");
+    if (r.note) sub += " · " + MG.esc(r.note);
+    sub += " · " + players + " 人";
+    if (players > 1) sub += " · " + MG.esc(best.name || "");
+    return '<a href="/round/' + encodeURIComponent(r.id) + '" class="flex items-center gap-4 py-4 no-underline transition hover:opacity-70">' +
+      '<span class="w-12 text-center text-2xl font-semibold tabular-nums text-zinc-900">' + best.total + '</span>' +
+      '<div class="min-w-0 flex-1">' +
+        '<p class="truncate text-sm font-medium text-zinc-900">' + MG.esc(r.course || "自訂球場") + '</p>' +
+        '<p class="mt-0.5 truncate text-xs text-zinc-400">' + sub + '</p>' +
+      '</div>' +
+      '<span class="inline-flex items-center rounded-md border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-xs font-medium tabular-nums text-zinc-700">' + MG.toParText(best.to_par) + '</span>' +
+    '</a>';
+  }).join("");
+})();
+</script>
+
+{% endblock %}

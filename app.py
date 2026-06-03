@@ -81,6 +81,9 @@ else:
     _sqlite_path = os.path.join(BASE_DIR, "app.db").replace("\\", "/")
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{_sqlite_path}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+# 本機開發（無 DATABASE_URL）：模板自動重載，改 HTML 不必重啟伺服器
+if not _database_url:
+    app.config["TEMPLATES_AUTO_RELOAD"] = True
 apply_security_config(app)
 
 db.init_app(app)
@@ -150,8 +153,7 @@ ensure_course_images()
 ensure_avatar_upload_dir()
 
 app.register_blueprint(auth_bp)
-app.register_blueprint(friends_bp)
-app.register_blueprint(challenges_bp)
+# 極簡版：好友／挑戰功能已隱藏（藍圖不註冊，檔案保留供日後啟用）
 if dev_tools_enabled():
     app.register_blueprint(dev_bp)
 
@@ -175,13 +177,31 @@ def _init_database():
 
 with app.app_context():
     _init_database()
-    if is_render_hosting() and not _database_url:
-        import logging
 
-        logging.warning(
-            "Render 未設定 DATABASE_URL：帳號使用容器內 SQLite，部署後會清空。"
-            "請建立 PostgreSQL 並在 Environment 設定 DATABASE_URL。"
-        )
+
+def _boot_banner():
+    """部署資訊：import 時即印出，gunicorn（Render Logs）與本機皆可見。"""
+    try:
+        from scorecard_vision import describe_mode
+        ocr_mode = describe_mode()
+    except Exception:
+        ocr_mode = "未知"
+    storage = "PostgreSQL" if _database_url else "容器內 SQLite（暫存，不保存場次）"
+    print("\n".join([
+        "",
+        "=" * 58,
+        "  ⛳ Maison Golf · 極簡測試版（零登入 + 本地儲存）",
+        "=" * 58,
+        "  場次與成績：存在使用者瀏覽器 localStorage（伺服器不保存）",
+        f"  伺服器資料庫：{storage}",
+        f"  拍照讀 Par：{ocr_mode}",
+        "  切換真實 OCR：在 Render 設 XAI_API_KEY，並把 OCR_MOCK 設為 false",
+        "=" * 58,
+        "",
+    ]), flush=True)
+
+
+_boot_banner()
 
 
 @app.route("/admin/sync", methods=["POST"])
@@ -199,76 +219,20 @@ def admin_sync():
 
 @app.route("/")
 def index():
-    # 訪客預覽：未登入者先看到公開落地頁（含範例記分卡與 AI 教練預告），先嚐甜頭再註冊
-    if not current_user.is_authenticated:
-        return render_template("landing.html", page="home")
-    rounds = _current_user_rounds()
-    engagement = compute_user_engagement(rounds, current_user)
-    friend_feed = get_friend_activity_feed(current_user, limit=8)
-    return render_template(
-        "index.html",
-        page="home",
-        rounds_rev=list(reversed(rounds)),
-        par_total=PAR_TOTAL,
-        course_name=COURSE_NAME,
-        hero_slides=list_hero_carousel_slides(),
-        engagement=engagement,
-        friend_feed=friend_feed,
-    )
+    # 零登入：首頁為空殼，最近場次由前端從 localStorage 渲染
+    return render_template("index.html", page="home")
 
 
-@app.route("/preview")
-def preview_gallery():
-    return render_template("preview_index.html")
-
-
-@app.route("/preview/<variant>")
-def preview_variant(variant):
-    allowed = {
-        "masters": "preview_masters.html",
-        "dusk": "preview_dusk.html",
-        "pro": "preview_pro.html",
-        "bplus": "preview_bplus.html",
-    }
-    tpl = allowed.get(variant)
-    if not tpl:
-        abort(404)
-    return render_template(tpl)
+@app.route("/history")
+def history():
+    # 零登入：歷史由前端從 localStorage 渲染
+    return render_template("history.html", page="history")
 
 
 @app.route("/round/<round_id>")
-@login_required
 def round_detail(round_id):
-    r = _current_user_round(round_id)
-    if not r:
-        abort(404)
-    rp = r.get("par_total") or PAR_TOTAL
-    ranked = []
-    for p in sorted(r["players"], key=lambda x: x["total"]):
-        row = dict(p)
-        if row.get("to_par") is None:
-            row["to_par"] = row.get("total", 0) - rp
-        ranked.append(row)
-
-    celebration = None
-    if request.args.get("celebrate"):
-        celebration = compute_round_celebration(
-            r, current_user, _current_user_rounds()
-        )
-
-    # B3 — 同球場跨場次比較
-    all_rounds = _current_user_rounds()
-    course_id = r.get("course_id") or r.get("course") or ""
-    course_cmp = compute_course_comparison(all_rounds, current_user, course_id) if course_id else None
-
-    return render_template(
-        "round.html",
-        page="home",
-        round=r,
-        ranked=ranked,
-        celebration=celebration,
-        course_cmp=course_cmp,
-    )
+    # 零登入：總結頁為空殼，依 round_id 由前端從 localStorage 渲染
+    return render_template("round.html", page="home", round_id=round_id)
 
 
 def _sync_secret_ok():
@@ -284,306 +248,28 @@ def _sync_secret_ok():
     return key == secret
 
 
-@app.route("/score", methods=["GET", "POST"])
-@login_required
+@app.route("/score")
 def score_entry():
-    """網頁多人同組錄分（雲端需 SYNC_SECRET）"""
-    secret_required = bool(os.environ.get("SYNC_SECRET", ""))
+    # 零登入：記分頁為空殼，草稿與儲存全部由前端 localStorage 管理
+    return render_template("score.html", page="score")
 
-    in_progress = get_in_progress_round_for_user(current_user.id)
-    if request.method == "GET":
-        friend_users = list_friends(current_user.id)
-        return render_template(
-            "score.html",
-            page="score",
-            courses_catalog=list_courses_for_web(),
-            courses_by_country=list_courses_by_country(),
-            courses_full=courses_catalog_full(),
-            secret_required=secret_required,
-            resume_draft=in_progress,
-            friends=[
-                {"username": u.username, "label": u.display_label}
-                for u in friend_users
-            ],
-            current_username=current_user.username or "",
-        )
 
-    if not _sync_secret_ok():
-        return jsonify({"ok": False, "error": "管理員密鑰錯誤或未填寫"}), 403
+@app.route("/score/read-scorecard", methods=["POST"])
+def score_read_scorecard():
+    """拍照讀 Par：上傳記分卡照片 → Grok Vision 回傳 18 洞 Par。"""
+    from scorecard_vision import read_scorecard_pars
 
-    data = request.get_json(force=True, silent=True)
-    result, err = validate_score_submission(data)
+    file = request.files.get("photo")
+    if not file:
+        return jsonify({"ok": False, "error": "沒有收到圖片"}), 400
+    image_bytes = file.read()
+    if not image_bytes:
+        return jsonify({"ok": False, "error": "圖片是空的"}), 400
+
+    result, err = read_scorecard_pars(image_bytes)
     if err:
-        return jsonify({"ok": False, "error": err}), 400
-
-    draft_round_id = data.get("round_id") or current_user.current_round_id
-    if draft_round_id:
-        done, done_err = complete_in_progress_round(
-            draft_round_id,
-            current_user.id,
-            note=result["note"],
-            players_stats=result["players_stats"],
-        )
-        if done_err:
-            rid = add_round(
-                result["players_stats"],
-                result["note"],
-                course_id=result["course_id"],
-                tee_id=result["tee_id"],
-                user_id=current_user.id,
-            )
-        else:
-            rid = done["id"]
-    else:
-        rid = add_round(
-            result["players_stats"],
-            result["note"],
-            course_id=result["course_id"],
-            tee_id=result["tee_id"],
-            user_id=current_user.id,
-        )
-    current_user.current_round_id = None
-    db.session.commit()
-    return jsonify({
-        "ok": True,
-        "id": rid,
-        "redirect": request.url_root.rstrip("/") + f"/round/{rid}?ai=1&share=1&celebrate=1",
-    })
-
-
-@app.route("/score/progress", methods=["POST"])
-@login_required
-def score_progress():
-    data = request.get_json(force=True, silent=True) or {}
-    round_id = data.get("round_id") or current_user.current_round_id
-    course_id = data.get("course_id")
-    tee_id = data.get("tee_id")
-    players = data.get("players") or []
-    scores = data.get("scores") or []
-    hole_index = int(data.get("hole_index") or 0)
-    note = data.get("note") or ""
-    if not isinstance(players, list) or not isinstance(scores, list):
-        return jsonify({"ok": False, "error": "草稿格式錯誤"}), 400
-    if data.get("force_new"):
-        abandon_in_progress_rounds(current_user.id)
-        round_id = None
-        current_user.current_round_id = None
-    draft = upsert_in_progress_round(
-        current_user.id,
-        round_id=round_id,
-        course_id=course_id,
-        tee_id=tee_id,
-        players=players,
-        scores=scores,
-        hole_index=hole_index,
-        note=note,
-    )
-    current_user.current_round_id = draft["id"]
-    db.session.commit()
-    return jsonify({"ok": True, "round_id": draft["id"]})
-
-
-@app.route("/score/next-hole-strategy", methods=["POST"])
-@login_required
-def score_next_hole_strategy():
-    data = request.get_json(force=True, silent=True) or {}
-    course_id = data.get("course_id")
-    tee_id = data.get("tee_id")
-    next_hole = int(data.get("next_hole") or 1)
-    scores = data.get("scores") or []
-    players = data.get("players") or []
-    tee, err = resolve_course_tee(course_id, tee_id)
-    if err:
-        return jsonify({"ok": False, "error": err}), 400
-    strategy = build_next_hole_strategy(
-        tee=tee,
-        next_hole=next_hole,
-        players=players,
-        scores=scores,
-    )
-    return jsonify({"ok": True, "strategy": strategy})
-
-
-@app.route("/ai_analysis", methods=["POST"])
-@login_required
-def ai_analysis():
-    """AI 教練賽後總結（Grok API 或本機模擬）"""
-    data = request.get_json(force=True, silent=True) or {}
-    round_id = data.get("round_id")
-    player_name = data.get("player_name") or None
-
-    if not round_id:
-        return jsonify({"ok": False, "error": "缺少 round_id"}), 400
-
-    r = _current_user_round(round_id)
-    if not r:
-        return jsonify({"ok": False, "error": "找不到該場次"}), 404
-
-    analysis, source = generate_coach_analysis(r, player_name=player_name)
-    if not analysis:
-        return jsonify({"ok": False, "error": "無法產生分析（球員資料不足）"}), 400
-
-    return jsonify({
-        "ok": True,
-        "analysis": analysis,
-        "source": source,
-        "player_name": player_name or sorted(r["players"], key=lambda p: p["total"])[0]["name"],
-    })
-
-
-@app.route("/share/meta/<round_id>")
-@login_required
-def share_meta(round_id):
-    """分享疊字用場次中繼資料"""
-    r = _current_user_round(round_id)
-    if not r:
-        return jsonify({"ok": False, "error": "找不到該場次"}), 404
-
-    player_name = request.args.get("player_name")
-    meta = build_share_meta(r, player_name=player_name)
-    if not meta:
-        return jsonify({"ok": False, "error": "場次無球員資料"}), 400
-
-    # 帶上目前使用者的差點指數（社交炫耀點）
-    prog = compute_progress(_current_user_rounds(), current_user)
-    meta["index"] = prog["index"] if prog else None
-
-    players = sorted(r["players"], key=lambda p: p["total"])
-    return jsonify({
-        "ok": True,
-        "meta": meta,
-        "players": [{"name": p["name"], "total": p["total"]} for p in players],
-        "photo_styles": list(PHOTO_STYLES),
-        "music_tracks": list_music_tracks(),
-    })
-
-
-@app.route("/share/photo", methods=["POST"])
-@login_required
-def share_photo():
-    """上傳照片並生成多風格分享圖"""
-    round_id = request.form.get("round_id")
-    if not round_id:
-        return jsonify({"ok": False, "error": "缺少 round_id"}), 400
-
-    r = _current_user_round(round_id)
-    if not r:
-        return jsonify({"ok": False, "error": "找不到該場次"}), 404
-
-    path, err = save_upload(request.files.get("photo"), "image")
-    if err:
-        return jsonify({"ok": False, "error": err}), 400
-
-    meta = build_share_meta(r, player_name=request.form.get("player_name"))
-    styles_raw = request.form.get("styles", "")
-    styles = [s.strip() for s in styles_raw.split(",") if s.strip()] or None
-
-    images, gen_err = generate_photo_variants(path, meta, styles=styles)
-    if gen_err:
-        return jsonify({"ok": False, "error": gen_err}), 500
-    if not images:
-        return jsonify({"ok": False, "error": "無法生成分享圖"}), 500
-
-    return jsonify({
-        "ok": True,
-        "images": images,
-        "meta": meta,
-    })
-
-
-@app.route("/share/video", methods=["POST"])
-@login_required
-def share_video():
-    """上傳短視頻並合成抖音風格短片"""
-    round_id = request.form.get("round_id")
-    if not round_id:
-        return jsonify({"ok": False, "error": "缺少 round_id"}), 400
-
-    r = _current_user_round(round_id)
-    if not r:
-        return jsonify({"ok": False, "error": "找不到該場次"}), 404
-
-    path, err = save_upload(request.files.get("video"), "video")
-    if err:
-        return jsonify({"ok": False, "error": err}), 400
-
-    meta = build_share_meta(r, player_name=request.form.get("player_name"))
-    music_id = request.form.get("music_id") or None
-    try:
-        duration = int(request.form.get("duration", "25"))
-    except (TypeError, ValueError):
-        duration = 25
-
-    url, gen_err = generate_share_video(path, meta, music_id=music_id, duration_sec=duration)
-    if gen_err:
-        return jsonify({"ok": False, "error": gen_err}), 500
-
-    return jsonify({
-        "ok": True,
-        "video_url": url,
-        "meta": meta,
-        "duration_sec": max(15, min(30, duration)),
-    })
-
-
-@app.route("/stats")
-@login_required
-def stats():
-    rounds = _current_user_rounds()
-    return render_template(
-        "stats.html",
-        page="stats",
-        player_rows=get_player_stats_table(rounds),
-        hard_holes=get_hardest_holes(rounds),
-        global_stats=get_global_round_stats(rounds),
-    )
-
-
-@app.route("/progress")
-@login_required
-def progress():
-    rounds = _current_user_rounds()
-    data = compute_progress(rounds, current_user)
-
-    # 好友差點排行榜
-    friends = list_friends(current_user.id)
-    leaderboard = compute_friends_leaderboard(friends, current_user, data) if data else None
-
-    # 剛解鎖成就／里程碑慶祝（URL 帶 ?prev_rounds=N 時觸發，由前端在新場次完成後設定）
-    prev_rounds_raw = request.args.get("prev_rounds")
-    try:
-        prev_rounds = int(prev_rounds_raw) if prev_rounds_raw is not None else None
-    except (TypeError, ValueError):
-        prev_rounds = None
-    newly_earned = compute_newly_earned(prev_rounds, data)
-
-    hole_data = compute_hole_analysis(rounds, current_user)
-
-    return render_template(
-        "progress.html",
-        page="progress",
-        progress=data,
-        leaderboard=leaderboard,
-        newly_earned=newly_earned,
-        hole_data=hole_data,
-    )
-
-
-@app.route("/year-review")
-@app.route("/year-review/<int:year>")
-@login_required
-def year_review(year: int | None = None):
-    rounds = _current_user_rounds()
-    data = compute_year_review(rounds, current_user, year)
-    available_years = sorted(set(
-        int(r["date"][:4]) for r in rounds if r.get("date") and len(r["date"]) >= 4
-    ), reverse=True) if rounds else []
-    return render_template(
-        "year_review.html",
-        page="progress",
-        review=data,
-        available_years=available_years,
-    )
+        return jsonify({"ok": False, "error": err}), 422
+    return jsonify({"ok": True, **result})
 
 
 def local_ip():
@@ -598,14 +284,10 @@ def local_ip():
 
 
 if __name__ == "__main__":
+    # 本機開發用；Render 以 gunicorn app:app 啟動，不會進入這裡
     port = int(os.environ.get("PORT", 5050))
     ip = local_ip()
-    print("\n" + "=" * 50)
-    print("  ⛳ Maison Golf · 網頁版已啟動")
-    print("=" * 50)
     print(f"  本機打開：  http://127.0.0.1:{port}")
-    print(f"  手機同 WiFi： http://{ip}:{port}")
-    print("  把第二條網址貼到 WhatsApp 群即可分享（訪客需各自登入，不會共用帳號）")
-    print("  按 Ctrl+C 停止伺服器")
-    print("=" * 50 + "\n")
+    print(f"  手機同 WiFi： http://{ip}:{port}（零登入，打開即用）")
+    print("  按 Ctrl+C 停止伺服器\n")
     app.run(host="0.0.0.0", port=port, debug=False)

@@ -1,952 +1,550 @@
 {% extends "base.html" %}
-{% block title %}選擇球場 · 開始新場次{% endblock %}
+{% block title %}記分 · Maison Golf{% endblock %}
 {% block content %}
 
-<section class="relative mb-6 overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10">
-  <div class="hero-bg-image absolute inset-0"></div>
-  <div class="absolute inset-0 bg-gradient-to-r from-fairway-dark/95 to-fairway-dark/60"></div>
-  <div class="relative px-6 py-10 sm:px-10">
-    <p class="mb-2 text-xs font-semibold uppercase tracking-widest text-gold-light">New Round</p>
-    <h1 class="text-2xl font-bold text-white sm:text-3xl">開始新場次</h1>
-    <p id="hero-subtitle" class="mt-2 text-green-100/80">請先選擇國家，再選球場與發球台</p>
-  </div>
-</section>
+<div id="score-app">
 
-{# 已選球場摘要條 #}
-<div id="selection-banner" class="mb-6 hidden rounded-xl border border-gold/40 bg-fairway-dark/90 px-5 py-4 shadow-lg ring-1 ring-gold/20">
-  <div class="flex flex-wrap items-center justify-between gap-3">
+  {# ───────── 步驟一：快速設定 Par ───────── #}
+  <section id="step-setup" class="space-y-8">
+    <header>
+      <h1 class="text-xl font-semibold text-zinc-900">新的一場</h1>
+      <p class="mt-1 text-sm text-zinc-500">拍記分卡自動讀取 Par，或用常用模板</p>
+    </header>
+
+    {# 拍照讀 Par #}
     <div>
-      <p class="text-xs font-semibold uppercase tracking-wider text-gold-light">目前場次</p>
-      <p id="banner-course" class="text-lg font-bold text-white"></p>
-      <p id="banner-tee" class="text-sm text-green-100/80"></p>
-    </div>
-    <button type="button" id="btn-change-course"
-            class="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-green-100 hover:bg-white/10">
-      更換球場
-    </button>
-  </div>
-</div>
-
-<div id="score-app" class="space-y-6">
-
-  {# Step 1：選擇國家 #}
-  <section id="step-country" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8">
-    <div class="mb-6 flex items-center justify-between">
-      <h2 class="text-lg font-bold text-fairway-dark">選擇國家</h2>
-      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">第 1 步</span>
-    </div>
-    <p class="mb-6 text-sm text-green-600">共 {{ courses_by_country|length }} 個國家 · {{ courses_catalog|length }} 個球場</p>
-    <div class="grid gap-4 sm:grid-cols-2">
-      {% for group in courses_by_country %}
-      <button type="button" data-country="{{ group.country }}"
-              class="country-card group flex items-center gap-4 rounded-2xl border-2 border-green-100 p-5 text-left transition hover:border-fairway hover:bg-green-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-fairway">
-        <span class="text-4xl leading-none">{{ group.flag }}</span>
-        <div class="flex-1 min-w-0">
-          <p class="text-xl font-bold text-fairway-dark group-hover:text-fairway">{{ group.country }}</p>
-          {% if group.subtitle %}
-          <p class="text-xs text-green-600">{{ group.subtitle }}</p>
-          {% endif %}
-          <p class="mt-1 text-sm font-medium text-green-700">{{ group.count }} 個球場可選 →</p>
-        </div>
+      <input type="file" id="scorecard-file" accept="image/*" capture="environment" class="hidden">
+      <button type="button" id="btn-camera"
+              class="flex w-full items-center justify-center gap-2.5 rounded-xl bg-zinc-900 py-4 text-base font-medium text-white transition active:scale-[0.99] hover:bg-zinc-700 disabled:opacity-60">
+        <svg id="cam-icon" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z"/><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z"/></svg>
+        <svg id="cam-spinner" class="hidden h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/><path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z"/></svg>
+        <span id="cam-label">拍記分卡，自動讀 Par</span>
       </button>
-      {% endfor %}
-    </div>
-  </section>
 
-  {# Step 2：選擇球場 #}
-  <section id="step-course" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8" hidden>
-    <div class="mb-2 flex items-center justify-between">
-      <h2 class="text-lg font-bold text-fairway-dark">選擇球場</h2>
-      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">第 2 步</span>
-    </div>
-    <p id="course-country-label" class="mb-5 flex items-center gap-2 text-sm font-medium text-green-700"></p>
-    <div id="course-grid" class="grid gap-4 sm:grid-cols-2"></div>
-    <button type="button" id="btn-back-country"
-            class="mt-6 text-sm font-semibold text-fairway hover:text-fairway-dark">
-      ← 返回選擇國家
-    </button>
-  </section>
-
-  {# Step 3：選擇 Tee #}
-  <section id="step-tee" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8" hidden>
-    <div class="mb-2 flex items-center justify-between">
-      <h2 class="text-lg font-bold text-fairway-dark">選擇發球台</h2>
-      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">第 3 步</span>
-    </div>
-    <p id="tee-course-name" class="mb-5 text-sm text-green-600"></p>
-    <div id="tee-grid" class="grid gap-3 sm:grid-cols-2"></div>
-    <button type="button" id="btn-back-course"
-            class="mt-5 text-sm font-semibold text-fairway hover:text-fairway-dark">
-      ← 返回選擇球場
-    </button>
-  </section>
-
-  {# Step 4：球友設定 #}
-  <section id="step-setup" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8" hidden>
-    <div class="mb-6 flex items-center justify-between">
-      <h2 class="text-lg font-bold text-fairway-dark">球友設定</h2>
-      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">第 4 步</span>
+      {# 上傳後：縮圖預覽 + 結果 / 錯誤 + fallback #}
+      <div id="ocr-panel" class="mt-3 hidden rounded-xl border border-zinc-200 p-3">
+        <div class="flex gap-3">
+          <img id="ocr-thumb" alt="記分卡預覽" class="hidden h-20 w-20 shrink-0 rounded-lg object-cover ring-1 ring-zinc-200">
+          <div class="min-w-0 flex-1">
+            <p id="ocr-status" class="text-sm text-zinc-700"></p>
+            <div id="ocr-actions" class="mt-2 flex flex-wrap gap-2">
+              <button type="button" id="btn-retake"
+                      class="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50">重新拍照</button>
+              <button type="button" id="btn-use-template"
+                      class="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:bg-zinc-50">改用 Par 72 模板</button>
+            </div>
+          </div>
+        </div>
+        <p id="ocr-warn" class="mt-2 hidden rounded-lg bg-zinc-100 px-3 py-2 text-xs leading-relaxed text-zinc-700"></p>
+      </div>
     </div>
 
-    <label class="mb-4 block">
-      <span class="mb-2 block text-sm font-medium text-green-800">今天幾位球友？</span>
-      <select id="player-count"
-              class="w-full rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-900 focus:border-fairway focus:outline-none focus:ring-2 focus:ring-fairway/30">
-        {% for n in range(1, 9) %}
-        <option value="{{ n }}" {% if n == 4 %}selected{% endif %}>{{ n }} 位</option>
-        {% endfor %}
-      </select>
-    </label>
-
-    <div id="friend-quick-wrap" class="mb-4 hidden rounded-xl border border-green-100 bg-green-50/60 p-4">
-      <span class="mb-1 block text-sm font-medium text-green-800">快捷選擇好友</span>
-      <p class="mb-3 text-xs text-green-600">點一下填入目前欄位；若未點任何欄位，則填入第一個空白名稱。</p>
-      <div id="friend-chips" class="flex flex-wrap gap-2"></div>
+    {# 常用模板 #}
+    <div>
+      <p class="mb-2 text-sm font-medium text-zinc-700">常用模板</p>
+      <div class="grid grid-cols-3 gap-2">
+        <button type="button" class="par-template rounded-lg border border-zinc-300 py-2.5 text-sm font-medium text-zinc-700 transition hover:border-zinc-900 hover:text-zinc-900" data-template="72">Par 72</button>
+        <button type="button" class="par-template rounded-lg border border-zinc-300 py-2.5 text-sm font-medium text-zinc-700 transition hover:border-zinc-900 hover:text-zinc-900" data-template="71">Par 71</button>
+        <button type="button" class="par-template rounded-lg border border-zinc-300 py-2.5 text-sm font-medium text-zinc-700 transition hover:border-zinc-900 hover:text-zinc-900" data-template="70">Par 70</button>
+      </div>
     </div>
-    <p id="friend-quick-empty" class="mb-4 hidden text-xs text-green-600">
-      尚無好友可選。
-      <a href="{{ url_for('friends.friends_home') }}" class="font-semibold text-fairway underline hover:text-fairway-light">前往好友</a>
-      新增後即可在此快捷填入。
-    </p>
 
-    <div id="player-names" class="mb-4 space-y-3"></div>
+    {# Par 編輯網格 #}
+    <div>
+      <div class="mb-2 flex items-baseline justify-between">
+        <p class="text-sm font-medium text-zinc-700">逐洞 Par <span class="font-normal text-zinc-400">點一下調整</span></p>
+        <p class="text-sm text-zinc-500">總 Par <span id="par-total-label" class="font-semibold tabular-nums text-zinc-900">72</span></p>
+      </div>
+      <div id="par-grids" class="space-y-2 rounded-lg transition-all">
+        <div id="par-grid-front" class="grid grid-cols-9 gap-1"></div>
+        <div id="par-grid-back" class="grid grid-cols-9 gap-1"></div>
+      </div>
+    </div>
 
-    <label class="mb-4 block">
-      <span class="mb-2 block text-sm font-medium text-green-800">備註（可留空）</span>
-      <input type="text" id="round-note" placeholder="例：6/1 天晴"
-             class="w-full rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-900 placeholder:text-green-400 focus:border-fairway focus:outline-none focus:ring-2 focus:ring-fairway/30">
-    </label>
+    {# 球友 #}
+    <div>
+      <div class="mb-2 flex items-center justify-between">
+        <p class="text-sm font-medium text-zinc-700">球友</p>
+        <button type="button" id="btn-add-player"
+                class="text-sm font-medium text-zinc-500 transition hover:text-zinc-900">＋ 加球友</button>
+      </div>
+      <div id="player-list" class="space-y-2"></div>
 
-    {% if secret_required %}
-    <label class="mb-6 block">
-      <span class="mb-2 block text-sm font-medium text-green-800">管理員密鑰</span>
-      <input type="password" id="sync-key" placeholder="Render 的 SYNC_SECRET" autocomplete="off"
-             class="w-full rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-900 focus:border-fairway focus:outline-none focus:ring-2 focus:ring-fairway/30">
-      <span class="mt-1 block text-xs text-green-600">與同步腳本使用的是同一組密鑰</span>
-    </label>
-    {% endif %}
+      <label class="mt-4 flex cursor-pointer items-center justify-between border-t border-zinc-200 pt-4">
+        <span class="text-sm text-zinc-600">記錄推桿數（可選）</span>
+        <input type="checkbox" id="track-putts" class="h-5 w-9 cursor-pointer appearance-none rounded-full bg-zinc-200 transition-all checked:bg-zinc-900 relative after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all checked:after:left-[1.125rem]">
+      </label>
+
+      <label class="mt-3 block">
+        <span class="mb-1 block text-sm text-zinc-600">備註（可留空）</span>
+        <input type="text" id="round-note" placeholder="例：6/1 天晴"
+               class="w-full rounded-lg border border-zinc-300 px-3.5 py-2.5 text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-0">
+      </label>
+    </div>
 
     <button type="button" id="btn-start"
-            class="w-full rounded-xl bg-fairway py-3.5 text-base font-semibold text-white shadow-lg transition hover:bg-fairway-light">
-      開始逐洞記分 →
+            class="w-full rounded-xl bg-zinc-900 py-4 text-base font-medium text-white transition active:scale-[0.99] hover:bg-zinc-700">
+      開始記分
     </button>
   </section>
 
-  {# Step 2：逐洞記分 #}
-  <section id="step-holes" class="rounded-2xl bg-white p-5 shadow-xl ring-1 ring-green-900/10 sm:p-7" hidden>
-    <div class="mb-3 flex items-center justify-between">
-      <h2 class="text-lg font-bold text-fairway-dark">逐洞記分</h2>
-      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">第 2 步</span>
+  {# ───────── 步驟二：逐洞記分 ───────── #}
+  <section id="step-holes" hidden>
+    <div class="mb-4 h-px bg-zinc-200">
+      <div id="progress-bar" class="h-px bg-zinc-900 transition-all duration-300" style="width:0%"></div>
     </div>
-    <div class="mb-1 h-2 overflow-hidden rounded-full bg-green-100">
-      <div id="progress-bar" class="h-full rounded-full bg-gradient-to-r from-fairway to-gold transition-all duration-500" style="width:0%"></div>
+
+    <div class="text-center">
+      <p id="hole-counter" class="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">第 1 洞</p>
+      <p id="hole-par" class="mt-1 text-3xl font-semibold tabular-nums text-zinc-900">Par 4</p>
     </div>
-    <p id="hole-counter" class="mb-4 text-2xl font-black text-fairway-dark">第 1 洞 / 18</p>
-    <div id="hole-info" class="mb-4"></div>
-    <article id="next-hole-strategy-card" class="mt-4 rounded-xl border border-blue-200 bg-blue-50/80 p-4 hidden">
-      <p id="strategy-title" class="text-base font-bold text-blue-900"></p>
-      <p id="strategy-subtitle" class="mt-1 text-xs font-semibold text-blue-700"></p>
-      <p id="strategy-summary" class="mt-3 text-sm leading-relaxed text-blue-900"></p>
-      <ul class="mt-3 space-y-2 text-sm text-blue-900">
-        <li><span class="font-bold">路線：</span><span id="strategy-shot-plan"></span></li>
-        <li><span class="font-bold">選桿：</span><span id="strategy-club-plan"></span></li>
-        <li><span class="font-bold">風險：</span><span id="strategy-risk-control"></span></li>
-        <li><span class="font-bold">節奏：</span><span id="strategy-momentum"></span></li>
-      </ul>
-    </article>
-    <div id="hole-inputs" class="mt-4 space-y-6"></div>
-    {# 實時對決板：顯示各球手目前總桿 #}
-    <div id="live-standings" class="mt-5 hidden">
-      <p class="mb-2 text-[11px] font-bold uppercase tracking-widest text-fairway">⚔️ 目前比分</p>
-      <div id="live-standings-rows" class="grid gap-2"></div>
+
+    <div id="hole-cards" class="mt-6 space-y-3"></div>
+
+    {# 即時比分（多人） #}
+    <div id="live-standings" class="mt-5 hidden border-t border-zinc-200 pt-4">
+      <p class="mb-2 text-xs font-medium uppercase tracking-widest text-zinc-400">目前比分</p>
+      <div id="live-rows" class="space-y-1.5"></div>
     </div>
 
     <div class="mt-6 flex gap-3">
       <button type="button" id="btn-prev" disabled
-              class="flex items-center justify-center gap-1.5 rounded-xl border-2 border-green-200 bg-green-50 px-5 py-3.5 font-bold text-fairway-dark disabled:opacity-30 transition">
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+              class="flex items-center justify-center gap-1.5 rounded-xl border border-zinc-300 px-6 py-4 text-base font-medium text-zinc-700 disabled:opacity-30 transition active:scale-[0.98]">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
         上一洞
       </button>
       <button type="button" id="btn-next"
-              class="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-fairway py-3.5 font-bold text-white shadow-lg transition hover:bg-fairway-light active:scale-[0.99]">
+              class="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-zinc-900 py-4 text-base font-medium text-white transition active:scale-[0.98] hover:bg-zinc-700">
         下一洞
-        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
       </button>
+    </div>
+    <p class="mt-3 text-center text-xs text-zinc-400">← 左右滑動可切換洞次 →</p>
+  </section>
+
+  {# ───────── 步驟三：總結 ───────── #}
+  <section id="step-review" hidden class="space-y-6">
+    <header>
+      <h1 class="text-xl font-semibold text-zinc-900">本場總結</h1>
+    </header>
+    <div id="review-board" class="space-y-2"></div>
+    <p id="submit-error" class="hidden rounded-lg border border-zinc-300 bg-zinc-50 px-4 py-3 text-sm text-zinc-700"></p>
+    <div class="flex gap-3">
+      <button type="button" id="btn-back-edit"
+              class="rounded-xl border border-zinc-300 px-6 py-4 font-medium text-zinc-700 transition active:scale-[0.98]">← 修改</button>
+      <button type="button" id="btn-save"
+              class="flex-1 rounded-xl bg-zinc-900 py-4 text-base font-medium text-white transition active:scale-[0.99] hover:bg-zinc-700">儲存</button>
     </div>
   </section>
 
-  {# Step 3：確認 #}
-  <section id="step-review" class="rounded-2xl bg-white p-6 shadow-xl ring-1 ring-green-900/10 sm:p-8" hidden>
-    <div class="mb-6 flex items-center justify-between">
-      <h2 class="text-lg font-bold text-fairway-dark">確認成績</h2>
-      <span class="rounded-full bg-fairway/10 px-3 py-1 text-xs font-semibold text-fairway">第 3 步</span>
-    </div>
-    <div id="review-board"></div>
-    <p id="submit-error" class="mt-4 hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"></p>
-    <div class="mt-6 flex flex-wrap gap-3">
-      <button type="button" id="btn-back-edit"
-              class="flex-1 min-w-[120px] rounded-xl border border-green-200 bg-green-50 py-3 font-semibold text-fairway-dark">
-        ← 修改成績
-      </button>
-      <button type="button" id="btn-save"
-              class="flex-1 min-w-[160px] rounded-xl bg-fairway py-3 font-semibold text-white shadow hover:bg-fairway-light">
-        存入並查看記分卡
-      </button>
-    </div>
-  </section>
 </div>
 
 <script>
-const CATALOG = {{ courses_full|tojson }};
-const COUNTRIES = {{ courses_by_country|tojson }};
-const SECRET_REQUIRED = {{ secret_required|tojson }};
-const RESUME_DRAFT = {{ resume_draft|tojson }};
-const FRIENDS = {{ friends|tojson }};
-const MY_USERNAME = {{ current_username|tojson }};
+const READ_SCORECARD_URL = "{{ url_for('score_read_scorecard') }}";
 
 (function () {
   const HOLES = 18;
-  const STEPS = ["country", "course", "tee", "setup", "holes", "review"];
+  const MIN_SCORE = 1, MAX_SCORE = 15;
+  const STEPS = ["setup", "holes", "review"];
 
-  let selectedCountry = null;
-  let courseId = null;
-  let teeId = null;
-  let activeTee = null;
+  const PAR_TEMPLATES = {
+    "72": [4,4,3,5,4,4,3,4,5, 4,3,4,5,4,4,3,4,5],
+    "71": [4,4,3,5,4,4,3,4,4, 4,3,4,5,4,4,3,4,5],
+    "70": [4,4,3,5,4,4,3,4,4, 4,3,4,4,4,4,3,4,5],
+  };
+
+  let pars = PAR_TEMPLATES["72"].slice();
   let players = [];
   let scores = [];
+  let putts = [];
+  let trackPutts = false;
   let holeIndex = 0;
-  let currentRoundId = null;
 
   const el = (id) => document.getElementById(id);
 
-  const SCORE_TW = {
-    eagle: "bg-blue-600 text-white",
-    birdie: "bg-green-700 text-white",
-    par: "bg-white text-green-900 ring-1 ring-green-200",
-    bogey: "bg-orange-500 text-white",
-    bad: "bg-red-600 text-white",
-  };
-
-  function scoreKey(diff) {
-    if (diff <= -2) return "eagle";
-    if (diff === -1) return "birdie";
-    if (diff === 0) return "par";
-    if (diff === 1) return "bogey";
-    return "bad";
+  function showStep(name) {
+    STEPS.forEach((s) => { const n = el(`step-${s}`); if (n) n.hidden = s !== name; });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  // 單色成績標籤：深 = 好，淡 = 差
+  function badgeClass(diff) {
+    if (diff <= -1) return "text-zinc-900 font-semibold";
+    if (diff === 0) return "text-zinc-500";
+    return "text-zinc-400";
+  }
   function scoreLabel(diff) {
     const n = { "-3": "信天翁", "-2": "Eagle", "-1": "Birdie", "0": "Par", "1": "Bogey", "2": "Double" };
-    const k = String(diff);
-    return n[k] || (diff > 0 ? `+${diff}` : String(diff));
+    return n[String(diff)] || (diff > 0 ? `+${diff}` : String(diff));
   }
+  function toParStr(d) { return d === 0 ? "E" : d > 0 ? `+${d}` : String(d); }
 
-  function showStep(name) {
-    STEPS.forEach((s) => {
-      const node = el(`step-${s}`);
-      if (node) node.hidden = s !== name;
-    });
-  }
+  /* ───────── Par 設定 ───────── */
+  function parTotal() { return pars.reduce((a, b) => a + b, 0); }
 
-  function updateBanner() {
-    const banner = el("selection-banner");
-    if (!activeTee) {
-      banner.classList.add("hidden");
-      if (!selectedCountry) {
-        el("hero-subtitle").textContent = "請先選擇國家";
-      } else if (!courseId) {
-        el("hero-subtitle").textContent = `已選 ${selectedCountry} · 請選擇球場`;
-      } else {
-        el("hero-subtitle").textContent = "請選擇發球台";
-      }
-      return;
-    }
-    banner.classList.remove("hidden");
-    el("banner-course").textContent = `${selectedCountry} · ${CATALOG[courseId].name}`;
-    el("banner-tee").textContent =
-      `${activeTee.name} · Par ${activeTee.par_total} · ${activeTee.yardage_total} 碼`;
-    el("hero-subtitle").textContent =
-      `${CATALOG[courseId].name} · ${activeTee.name}`;
-  }
-
-  function renderCourseGrid(countryName) {
-    const group = COUNTRIES.find((g) => g.country === countryName);
-    const grid = el("course-grid");
-    grid.innerHTML = "";
-    if (!group) return;
-
-    el("course-country-label").innerHTML =
-      `<span class="text-xl">${group.flag}</span> ${group.country} · 請選擇球場`;
-
-    group.courses.forEach((c) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.dataset.courseId = c.id;
-      btn.className =
-        "course-card group relative overflow-hidden rounded-2xl border-2 border-green-100 text-left transition hover:border-fairway hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-fairway";
-      const tee0 = c.tees[0];
-      btn.innerHTML = `
-        <div class="relative h-36 overflow-hidden">
-          <div class="absolute inset-0 bg-cover bg-center transition group-hover:scale-105"
-               style="background-image: url('${c.hero_image}')"></div>
-          <div class="absolute inset-0 bg-gradient-to-t from-fairway-dark/95 via-fairway-dark/50 to-transparent"></div>
-          <div class="absolute bottom-0 left-0 right-0 p-4">
-            <p class="text-xs text-gold-light">${c.location}</p>
-            <p class="text-lg font-bold text-white">${c.name}</p>
-          </div>
-        </div>
-        <div class="p-4">
-          <p class="text-sm leading-relaxed text-green-700">${c.description}</p>
-          <p class="mt-3 text-xs font-semibold text-fairway">
-            Par ${tee0.par_total} · ${tee0.yardage_total} 碼 · ${c.tees.length} 種 Tee →
-          </p>
-        </div>`;
-      btn.addEventListener("click", () => selectCourse(c.id));
-      grid.appendChild(btn);
-    });
-  }
-
-  function selectCountry(countryName) {
-    selectedCountry = countryName;
-    courseId = null;
-    teeId = null;
-    activeTee = null;
-    document.querySelectorAll(".country-card").forEach((btn) => {
-      const on = btn.dataset.country === countryName;
-      btn.classList.toggle("border-fairway", on);
-      btn.classList.toggle("bg-green-50", on);
-      btn.classList.toggle("ring-2", on);
-      btn.classList.toggle("ring-fairway", on);
-    });
-    renderCourseGrid(countryName);
-    showStep("course");
-    updateBanner();
-  }
-
-  function selectCourse(cid) {
-    courseId = cid;
-    teeId = null;
-    activeTee = null;
-    const course = CATALOG[cid];
-    el("tee-course-name").textContent = `${selectedCountry} · ${course.name}`;
-    const grid = el("tee-grid");
-    grid.innerHTML = "";
-    Object.values(course.tees).forEach((tee) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className =
-        "tee-card rounded-xl border-2 border-green-100 p-5 text-left transition hover:border-fairway hover:bg-green-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-fairway";
-      btn.innerHTML = `
-        <p class="text-lg font-bold text-fairway-dark">${tee.name}</p>
-        <div class="mt-3 flex gap-6">
-          <div>
-            <p class="text-xs uppercase tracking-wide text-green-600">總 Par</p>
-            <p class="text-2xl font-black tabular-nums text-fairway-dark">${tee.par_total}</p>
-          </div>
-          <div>
-            <p class="text-xs uppercase tracking-wide text-green-600">總碼數</p>
-            <p class="text-2xl font-black tabular-nums text-fairway-dark">${tee.yardage_total}</p>
-          </div>
-        </div>
-        <p class="mt-3 text-xs font-semibold text-fairway">選擇此發球台 →</p>`;
-      btn.addEventListener("click", () => selectTee(tee.id));
-      grid.appendChild(btn);
-    });
-    showStep("tee");
-    updateBanner();
-  }
-
-  function selectTee(tid) {
-    teeId = tid;
-    activeTee = CATALOG[courseId].tees[tid];
-    updateBanner();
-    showStep("setup");
-  }
-
-  function resetCourseSelection() {
-    selectedCountry = null;
-    courseId = teeId = null;
-    activeTee = null;
-    document.querySelectorAll(".country-card").forEach((c) => {
-      c.classList.remove("border-fairway", "bg-green-50", "ring-2", "ring-fairway");
-    });
-    showStep("country");
-    updateBanner();
-  }
-
-  function fillPlayerName(name) {
-    if (!name) return;
-    const inputs = [...document.querySelectorAll(".player-name-input")];
-    const active = document.activeElement;
-    if (active && active.classList.contains("player-name-input")) {
-      active.value = name;
-      return;
-    }
-    const empty = inputs.find((inp) => !inp.value.trim());
-    if (empty) empty.value = name;
-    else if (inputs.length) inputs[inputs.length - 1].value = name;
-  }
-
-  function attachFriendSelect(sel, input) {
-    FRIENDS.forEach((f) => {
-      const opt = document.createElement("option");
-      opt.value = f.username;
-      opt.textContent = f.label || f.username;
-      sel.appendChild(opt);
-    });
-    sel.addEventListener("change", () => {
-      if (sel.value) {
-        input.value = sel.value;
-        sel.value = "";
+  function renderParGrid() {
+    [["par-grid-front", 0, 9], ["par-grid-back", 9, 18]].forEach(([gid, start, end]) => {
+      const grid = el(gid);
+      grid.innerHTML = "";
+      for (let i = start; i < end; i++) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.dataset.i = i;
+        b.className = "par-cell flex flex-col items-center rounded-md border border-zinc-200 py-1.5 transition active:scale-95 hover:border-zinc-900";
+        b.innerHTML = `<span class="text-[9px] text-zinc-400">${i + 1}</span>
+                       <span class="par-val text-base font-semibold tabular-nums text-zinc-900">${pars[i]}</span>`;
+        b.addEventListener("click", () => {
+          pars[i] = pars[i] >= 6 ? 3 : pars[i] + 1;
+          b.querySelector(".par-val").textContent = pars[i];
+          el("par-total-label").textContent = parTotal();
+        });
+        grid.appendChild(b);
       }
     });
+    el("par-total-label").textContent = parTotal();
   }
 
-  function initFriendQuickPick() {
-    const wrap = el("friend-quick-wrap");
-    const emptyHint = el("friend-quick-empty");
-    const chips = el("friend-chips");
-    if (!wrap || !chips) return;
-
-    const hasFriends = FRIENDS.length > 0;
-    wrap.classList.toggle("hidden", !hasFriends);
-    if (emptyHint) emptyHint.classList.toggle("hidden", hasFriends);
-
-    if (!hasFriends) return;
-
-    chips.innerHTML = "";
-    const addChip = (label, username) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.dataset.username = username;
-      btn.className =
-        "friend-chip rounded-full border border-fairway/30 bg-white px-3 py-1.5 text-sm font-medium text-fairway-dark shadow-sm transition hover:border-fairway hover:bg-fairway/10";
-      btn.textContent = label;
-      chips.appendChild(btn);
-    };
-
-    if (MY_USERNAME) addChip(`我（${MY_USERNAME}）`, MY_USERNAME);
-    FRIENDS.forEach((f) => addChip(f.label || f.username, f.username));
-
-    chips.onclick = (e) => {
-      const btn = e.target.closest(".friend-chip");
-      if (btn) fillPlayerName(btn.dataset.username);
-    };
+  function applyTemplate(key) {
+    if (PAR_TEMPLATES[key]) { pars = PAR_TEMPLATES[key].slice(); renderParGrid(); }
   }
 
-  function buildPlayerNames() {
-    const n = parseInt(el("player-count").value, 10);
-    const box = el("player-names");
-    const prev = [...box.querySelectorAll(".player-name-input")].map((inp) => inp.value);
+  let thumbUrl = null;
+
+  function setCameraLoading(on) {
+    el("btn-camera").disabled = on;
+    el("cam-icon").classList.toggle("hidden", on);
+    el("cam-spinner").classList.toggle("hidden", !on);
+    el("cam-label").textContent = on ? "讀取中…約 5–10 秒" : "拍記分卡，自動讀 Par";
+  }
+
+  function showThumb(file) {
+    const img = el("ocr-thumb");
+    if (thumbUrl) URL.revokeObjectURL(thumbUrl);
+    thumbUrl = URL.createObjectURL(file);
+    img.src = thumbUrl;
+    img.classList.remove("hidden");
+  }
+
+  function flashParGrid() {
+    const grids = el("par-grids");
+    grids.scrollIntoView({ behavior: "smooth", block: "center" });
+    grids.classList.add("ring-2", "ring-zinc-900", "ring-offset-2");
+    setTimeout(() => grids.classList.remove("ring-2", "ring-zinc-900", "ring-offset-2"), 1400);
+  }
+
+  async function uploadScorecard(file) {
+    el("ocr-panel").classList.remove("hidden");
+    el("ocr-warn").classList.add("hidden");
+    showThumb(file);
+    const status = el("ocr-status");
+    status.className = "text-sm text-zinc-500";
+    status.textContent = "辨識中…請稍候";
+    setCameraLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append("photo", file);
+      const res = await fetch(READ_SCORECARD_URL, { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "讀取失敗");
+
+      pars = data.pars.slice(0, HOLES);
+      renderParGrid();
+
+      const pct = data.confidence != null ? Math.round(data.confidence * 100) : null;
+      const low = pct != null && pct < 60;
+      const warns = Array.isArray(data.warnings) ? data.warnings : [];
+
+      status.className = "text-sm font-medium text-zinc-900";
+      status.textContent = pct != null
+        ? `已讀取 Par（信心 ${pct}%）` + (low ? "，信心偏低，請逐洞核對" : "，請核對下方數字")
+        : "已讀取 Par，請核對下方數字";
+
+      const warn = el("ocr-warn");
+      if (low || warns.length) {
+        warn.innerHTML = (low ? "⚠ 辨識信心偏低，請務必逐洞核對。<br>" : "") +
+          warns.map((w) => MG.esc(w)).join("<br>");
+        warn.classList.remove("hidden");
+      }
+      flashParGrid();
+    } catch (e) {
+      status.className = "text-sm text-zinc-700";
+      status.textContent = (e.message || "讀取失敗");
+      const warn = el("ocr-warn");
+      warn.textContent = "可以「重新拍照」（建議正對、光線充足、填滿畫面），或直接「改用 Par 72 模板」再手動微調。";
+      warn.classList.remove("hidden");
+    } finally {
+      setCameraLoading(false);
+    }
+  }
+
+  /* ───────── 球友設定 ───────── */
+  function renderPlayers() {
+    const box = el("player-list");
     box.innerHTML = "";
-    const hasFriendPick = FRIENDS.length > 0;
-    for (let i = 0; i < n; i++) {
-      const wrap = document.createElement("label");
-      wrap.className = "block";
-      const title = document.createElement("span");
-      title.className = "mb-1 block text-sm font-medium text-green-800";
-      title.textContent = `第 ${i + 1} 位`;
-      wrap.appendChild(title);
-
+    players.forEach((name, i) => {
       const row = document.createElement("div");
       row.className = "flex gap-2";
-      const input = document.createElement("input");
-      input.type = "text";
-      input.className =
-        "player-name-input min-w-0 flex-1 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-green-900 focus:border-fairway focus:outline-none focus:ring-2 focus:ring-fairway/30";
-      input.placeholder = `球友 ${i + 1}`;
-      input.value = prev[i] || (i === 0 && MY_USERNAME ? MY_USERNAME : "");
-      row.appendChild(input);
-
-      if (hasFriendPick) {
-        const sel = document.createElement("select");
-        sel.className =
-          "friend-pick-select w-[7.5rem] shrink-0 rounded-lg border border-green-200 bg-white px-2 py-3 text-sm text-green-900 focus:border-fairway focus:outline-none focus:ring-2 focus:ring-fairway/30";
-        const placeholder = document.createElement("option");
-        placeholder.value = "";
-        placeholder.textContent = "從好友選";
-        sel.appendChild(placeholder);
-        attachFriendSelect(sel, input);
-        row.appendChild(sel);
-      }
-
-      wrap.appendChild(row);
-      box.appendChild(wrap);
-    }
+      row.innerHTML = `
+        <input type="text" data-i="${i}" value="${MG.esc(name)}" placeholder="球友 ${i + 1}"
+          class="player-name min-w-0 flex-1 rounded-lg border border-zinc-300 px-3.5 py-2.5 text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none focus:ring-0">
+        ${players.length > 1 ? `<button type="button" data-rm="${i}" class="shrink-0 rounded-lg border border-zinc-200 px-3 text-zinc-400 hover:text-zinc-900 hover:border-zinc-400" aria-label="移除">✕</button>` : ""}`;
+      box.appendChild(row);
+    });
+    box.querySelectorAll(".player-name").forEach((inp) => {
+      inp.addEventListener("input", () => { players[+inp.dataset.i] = inp.value; });
+    });
+    box.querySelectorAll("[data-rm]").forEach((btn) => {
+      btn.addEventListener("click", () => { players.splice(+btn.dataset.rm, 1); renderPlayers(); });
+    });
   }
 
+  /* ───────── 逐洞記分 ───────── */
   function startScoring() {
-    if (!activeTee) {
-      alert("請先選擇球場與發球台");
-      return;
-    }
-    players = [...document.querySelectorAll(".player-name-input")].map(
-      (inp, i) => inp.value.trim() || `球友${i + 1}`
-    );
-    scores = players.map(() => Array(HOLES).fill(null));
+    players = players.map((n, i) => (n || "").trim() || `球友${i + 1}`);
+    if (!players.length) players = ["球友1"];
+    MG.setName(players[0]);
+    trackPutts = el("track-putts").checked;
+    scores = players.map(() => pars.slice());
+    putts = players.map(() => Array(HOLES).fill(0));
     holeIndex = 0;
-    currentRoundId = null;
     showStep("holes");
     renderHole();
-    saveProgress(0, true).catch(() => {});
+    saveDraft();
   }
 
-  function showStrategyCard(strategy) {
-    const card = el("next-hole-strategy-card");
-    if (!strategy) {
-      card.classList.add("hidden");
-      return;
-    }
-    el("strategy-title").textContent = strategy.title || "下一洞策略";
-    el("strategy-subtitle").textContent = strategy.subtitle || "";
-    el("strategy-summary").textContent = strategy.summary || "";
-    el("strategy-shot-plan").textContent = strategy.shot_plan || "";
-    el("strategy-club-plan").textContent = strategy.club_plan || "";
-    el("strategy-risk-control").textContent = strategy.risk_control || "";
-    el("strategy-momentum").textContent = strategy.momentum || "";
-    card.classList.remove("hidden");
-  }
-
-  async function saveProgress(nextHoleIndex = holeIndex, forceNew = false) {
-    const payload = {
-      round_id: currentRoundId,
-      course_id: courseId,
-      tee_id: teeId,
-      players,
-      scores,
-      hole_index: nextHoleIndex,
-      note: el("round-note").value.trim(),
-      force_new: forceNew,
-    };
-    const res = await fetch("{{ url_for('score_progress') }}", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (!res.ok || !data.ok) throw new Error(data.error || "草稿保存失敗");
-    currentRoundId = data.round_id;
-  }
-
-  async function fetchNextHoleStrategy(nextHole) {
-    if (nextHole > HOLES) {
-      showStrategyCard(null);
-      return;
-    }
-    const payload = { course_id: courseId, tee_id: teeId, next_hole: nextHole, players, scores };
-    const res = await fetch("{{ url_for('score_next_hole_strategy') }}", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (res.ok && data.ok) showStrategyCard(data.strategy);
-  }
+  function clampScore(v) { return Math.max(MIN_SCORE, Math.min(MAX_SCORE, v)); }
 
   function renderHole() {
-    const h = holeIndex + 1;
-    const par = activeTee.pars[holeIndex];
-    const yard = activeTee.yardages[holeIndex];
-    const hcp = activeTee.handicap[holeIndex];
-    const section = holeIndex < 9 ? "前九洞（1–9）" : "後九洞（10–18）";
-
-    el("hole-counter").textContent = `第 ${h} 洞 / 18`;
+    const par = pars[holeIndex];
+    el("hole-counter").textContent = `第 ${holeIndex + 1} 洞`;
+    el("hole-par").textContent = `Par ${par}`;
     el("progress-bar").style.width = `${((holeIndex + 1) / HOLES) * 100}%`;
-    el("hole-info").innerHTML = `
-      <div class="mb-1 text-xs font-semibold text-green-600/70">${section}</div>
-      <div class="grid grid-cols-3 gap-3 rounded-xl bg-fairway-dark p-4 text-center text-white">
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-wider text-gold-light/70">Par</p>
-          <p class="mt-0.5 text-3xl font-black tabular-nums">${par}</p>
-        </div>
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-wider text-gold-light/70">碼數</p>
-          <p class="mt-0.5 text-3xl font-black tabular-nums">${yard}</p>
-        </div>
-        <div>
-          <p class="text-xs font-semibold uppercase tracking-wider text-gold-light/70">HCP</p>
-          <p class="mt-0.5 text-3xl font-black tabular-nums">${hcp}</p>
-        </div>
-      </div>`;
 
-    const container = el("hole-inputs");
-    container.innerHTML = "";
-
-    // Quick-tap labels: show score name under each button
-    const SCORE_NAMES = {
-      "-3": "信天翁", "-2": "Eagle", "-1": "Birdie", "0": "Par",
-      "1": "Bogey", "2": "Double", "3": "Triple"
-    };
-    function getScoreName(diff) {
-      return SCORE_NAMES[String(diff)] || (diff > 0 ? `+${diff}` : String(diff));
-    }
-
-    function tapBtnClasses(selected, diff) {
-      const base = "tap-btn flex flex-col items-center justify-center gap-0.5 min-h-[64px] rounded-xl py-2 text-base font-black shadow-md transition touch-manipulation active:scale-[0.97] ";
-      const colorMap = {
-        "-3": "bg-purple-600 text-white", "-2": "bg-blue-600 text-white",
-        "-1": "bg-green-700 text-white", "0": "bg-white text-green-900 ring-1 ring-green-200",
-        "1": "bg-orange-500 text-white", "2": "bg-red-600 text-white"
-      };
-      if (selected) {
-        const selColor = colorMap[String(diff)] || "bg-gold text-fairway-dark";
-        return base + selColor + " ring-4 ring-gold-light ring-offset-2 ring-offset-white scale-[1.04] shadow-xl";
-      }
-      return base + "bg-fairway-dark/90 text-white hover:brightness-110 border border-white/10";
-    }
-
+    const box = el("hole-cards");
+    box.innerHTML = "";
     players.forEach((name, pi) => {
       const val = scores[pi][holeIndex];
-      const diff = val !== null ? val - par : null;
-      const key = diff !== null ? scoreKey(diff) : "";
-      const q1 = Math.max(1, par - 2); // Eagle or better (for par3: 1, par4: 2, par5: 3)
-      const q2 = Math.max(1, par - 1); // Birdie
-      const q3 = par;                   // Par
-      const q4 = par + 1;               // Bogey
-      const q5 = par + 2;               // Double
-      const row = document.createElement("div");
-      row.className = "rounded-xl border border-green-100 bg-white p-4 mb-3 last:mb-0";
-      row.innerHTML = `
-        <div class="mb-3 flex items-center justify-between">
-          <p class="font-bold text-fairway-dark text-base">${name}</p>
-          <span data-hint="${pi}" class="score-hint rounded-full px-3 py-1 text-sm font-semibold ${diff !== null ? SCORE_TW[key] : "invisible"}">${diff !== null ? scoreLabel(diff) : "—"}</span>
+      const diff = val - par;
+      const card = document.createElement("div");
+      card.className = "rounded-2xl border border-zinc-200 p-4";
+      card.innerHTML = `
+        <div class="mb-1 flex items-center justify-between">
+          <p class="truncate text-sm font-medium text-zinc-700">${MG.esc(name)}</p>
+          <span class="score-badge text-xs ${badgeClass(diff)}">${scoreLabel(diff)}</span>
         </div>
-        <div class="mb-3 grid grid-cols-5 gap-1.5">
-          <button type="button" data-pi="${pi}" data-val="${q1}" data-diff="${q1 - par}"
-            class="${tapBtnClasses(val !== null && val === q1, q1 - par)}">
-            <span>${q1}</span>
-            <span class="text-[10px] font-semibold leading-none opacity-75">${getScoreName(q1 - par)}</span>
-          </button>
-          <button type="button" data-pi="${pi}" data-val="${q2}" data-diff="${q2 - par}"
-            class="${tapBtnClasses(val !== null && val === q2, q2 - par)}">
-            <span>${q2}</span>
-            <span class="text-[10px] font-semibold leading-none opacity-75">${getScoreName(q2 - par)}</span>
-          </button>
-          <button type="button" data-pi="${pi}" data-val="${q3}" data-diff="${q3 - par}"
-            class="${tapBtnClasses(val !== null && val === q3, q3 - par)}">
-            <span>${q3}</span>
-            <span class="text-[10px] font-semibold leading-none opacity-75">${getScoreName(q3 - par)}</span>
-          </button>
-          <button type="button" data-pi="${pi}" data-val="${q4}" data-diff="${q4 - par}"
-            class="${tapBtnClasses(val !== null && val === q4, q4 - par)}">
-            <span>${q4}</span>
-            <span class="text-[10px] font-semibold leading-none opacity-75">${getScoreName(q4 - par)}</span>
-          </button>
-          <button type="button" data-pi="${pi}" data-val="${q5}" data-diff="${q5 - par}"
-            class="${tapBtnClasses(val !== null && val === q5, q5 - par)}">
-            <span>${q5}</span>
-            <span class="text-[10px] font-semibold leading-none opacity-75">${getScoreName(q5 - par)}</span>
-          </button>
+        <div class="flex items-center justify-between gap-3">
+          <button type="button" data-step="-1" data-pi="${pi}" class="score-step flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-zinc-300 text-2xl font-light text-zinc-700 active:scale-90 transition">−</button>
+          <span class="score-num min-w-[3rem] text-center text-5xl font-semibold tabular-nums text-zinc-900">${val}</span>
+          <button type="button" data-step="1" data-pi="${pi}" class="score-step flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-2xl font-light text-white active:scale-90 transition">＋</button>
         </div>
-        <div class="flex items-center gap-3">
-          <label class="text-xs font-semibold text-green-700">其他桿數：</label>
-          <input type="number" min="1" max="20" data-pi="${pi}" value="${val !== null ? val : ""}" placeholder="輸入"
-            class="score-input w-24 rounded-lg border-2 border-fairway-dark/30 bg-green-50 px-3 py-2 text-center text-xl font-bold text-fairway-dark focus:border-fairway-dark focus:outline-none focus:ring-2 focus:ring-fairway-dark/35">
-        </div>`;
-      container.appendChild(row);
+        ${trackPutts ? `
+        <div class="mt-3 flex items-center justify-between border-t border-zinc-100 pt-3">
+          <span class="text-sm text-zinc-500">推桿</span>
+          <div class="flex items-center gap-3">
+            <button type="button" data-pstep="-1" data-pi="${pi}" class="putt-step flex h-8 w-8 items-center justify-center rounded-full border border-zinc-300 text-lg font-light text-zinc-700 active:scale-90">−</button>
+            <span class="putt-num w-6 text-center text-lg font-semibold tabular-nums text-zinc-900">${putts[pi][holeIndex]}</span>
+            <button type="button" data-pstep="1" data-pi="${pi}" class="putt-step flex h-8 w-8 items-center justify-center rounded-full border border-zinc-300 text-lg font-light text-zinc-700 active:scale-90">＋</button>
+          </div>
+        </div>` : ""}`;
+      box.appendChild(card);
     });
 
-    container.querySelectorAll(".tap-btn").forEach((btn) => {
-      btn.addEventListener("click", () => setScore(+btn.dataset.pi, +btn.dataset.val));
+    box.querySelectorAll(".score-step").forEach((btn) => {
+      btn.addEventListener("click", () => changeScore(+btn.dataset.pi, +btn.dataset.step));
     });
-    container.querySelectorAll(".score-input").forEach((inp) => {
-      function applyInput() {
-        const v = parseInt(inp.value, 10);
-        if (Number.isFinite(v) && v >= 1 && v <= 20) setScore(+inp.dataset.pi, v);
-      }
-      inp.addEventListener("change", applyInput);
-      inp.addEventListener("input", applyInput);
+    box.querySelectorAll(".putt-step").forEach((btn) => {
+      btn.addEventListener("click", () => changePutts(+btn.dataset.pi, +btn.dataset.pstep));
     });
 
     el("btn-prev").disabled = holeIndex === 0;
     const nextBtn = el("btn-next");
-    if (holeIndex === HOLES - 1) {
-      nextBtn.innerHTML = `查看總成績 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>`;
-      nextBtn.classList.add("bg-gold", "hover:bg-gold-light");
-      nextBtn.classList.remove("bg-fairway", "hover:bg-fairway-light");
-    } else {
-      nextBtn.innerHTML = `下一洞 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>`;
-      nextBtn.classList.add("bg-fairway", "hover:bg-fairway-light");
-      nextBtn.classList.remove("bg-gold", "hover:bg-gold-light");
-    }
+    nextBtn.innerHTML = holeIndex === HOLES - 1
+      ? `查看總結 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>`
+      : `下一洞 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>`;
     updateLiveStandings();
   }
 
-  function setScore(pi, val) {
-    if (val < 1 || val > 20) return;
-    scores[pi][holeIndex] = val;
-    const par = activeTee.pars[holeIndex];
-    const diff = val - par;
-    const key = scoreKey(diff);
-    const inp = document.querySelector(`.score-input[data-pi="${pi}"]`);
-    const hint = document.querySelector(`.score-hint[data-hint="${pi}"]`);
-    if (inp) inp.value = val;
-    if (hint) {
-      hint.textContent = scoreLabel(diff);
-      hint.className = `score-hint rounded-full px-3 py-1 text-sm font-semibold ${SCORE_TW[key]}`;
-    }
+  function changeScore(pi, step) {
+    const par = pars[holeIndex];
+    const v = clampScore(scores[pi][holeIndex] + step);
+    scores[pi][holeIndex] = v;
+    const card = el("hole-cards").children[pi];
+    card.querySelector(".score-num").textContent = v;
+    const diff = v - par;
+    const badge = card.querySelector(".score-badge");
+    badge.textContent = scoreLabel(diff);
+    badge.className = `score-badge text-xs ${badgeClass(diff)}`;
     updateLiveStandings();
+    saveDraft();
+  }
+
+  function changePutts(pi, step) {
+    const v = Math.max(0, Math.min(10, putts[pi][holeIndex] + step));
+    putts[pi][holeIndex] = v;
+    el("hole-cards").children[pi].querySelector(".putt-num").textContent = v;
+    saveDraft();
   }
 
   function updateLiveStandings() {
-    const container = document.getElementById("live-standings");
-    const rows = document.getElementById("live-standings-rows");
-    if (!container || !rows || !players || !activeTee) return;
-
-    // 計算各球手：已填洞數 + 目前總桿 + to-par
-    const entries = players.map((name, pi) => {
-      let total = 0, filled = 0;
-      scores[pi].forEach((s, hi) => {
-        if (s !== null && s >= 1) { total += s; filled++; }
-      });
-      const parSoFar = activeTee.pars.slice(0, filled).reduce((a, b) => a + b, 0);
-      const toPar = filled > 0 ? total - parSoFar : null;
-      return { name, total, filled, toPar, pi };
-    });
-
-    // 只有至少一人有成績才顯示
-    if (entries.every(e => e.filled === 0)) { container.classList.add("hidden"); return; }
-    container.classList.remove("hidden");
-
-    // 排序：已打洞者按 to-par 排；未打者排末
-    const sorted = [...entries].sort((a, b) => {
-      if (a.filled === 0 && b.filled === 0) return 0;
-      if (a.filled === 0) return 1;
-      if (b.filled === 0) return -1;
-      return a.toPar - b.toPar;
-    });
-
-    rows.innerHTML = sorted.map((e, rank) => {
-      const toParStr = e.toPar === null ? "—"
-        : e.toPar === 0 ? "E"
-        : e.toPar > 0 ? `+${e.toPar}`
-        : String(e.toPar);
-      const toParColor = e.toPar === null ? "text-green-700/50"
-        : e.toPar <= -2 ? "text-blue-700 font-black"
-        : e.toPar === -1 ? "text-green-700 font-bold"
-        : e.toPar === 0 ? "text-green-800 font-semibold"
-        : e.toPar === 1 ? "text-orange-600"
-        : "text-red-600";
-      const crown = rank === 0 && e.filled > 0 ? "👑 " : "";
-      const holesLabel = e.filled > 0 ? `${e.filled}洞` : "未開始";
-      const bg = rank === 0 && e.filled > 0
-        ? "bg-gradient-to-r from-gold/20 to-transparent border-gold/40"
-        : "bg-green-50 border-green-100";
-      return `<div class="flex items-center gap-3 rounded-xl border ${bg} px-4 py-2.5">
-        <span class="w-5 text-sm font-bold text-fairway-dark text-center">${rank + 1}</span>
-        <span class="flex-1 truncate text-sm font-bold text-fairway-dark">${crown}${e.name}</span>
-        <span class="text-xs text-green-600/70">${holesLabel}</span>
-        <span class="w-14 text-right text-sm font-bold text-fairway-dark">${e.filled > 0 ? e.total : "—"}</span>
-        <span class="w-10 text-right text-sm ${toParColor}">${toParStr}</span>
+    const wrap = el("live-standings");
+    if (players.length < 2) { wrap.classList.add("hidden"); return; }
+    wrap.classList.remove("hidden");
+    const through = holeIndex + 1;
+    const parThrough = pars.slice(0, through).reduce((a, b) => a + b, 0);
+    const rows = players.map((name, pi) => {
+      const total = scores[pi].slice(0, through).reduce((a, b) => a + b, 0);
+      return { name, total, toPar: total - parThrough };
+    }).sort((a, b) => a.toPar - b.toPar);
+    el("live-rows").innerHTML = rows.map((r, i) => {
+      return `<div class="flex items-center gap-2 text-sm">
+        <span class="w-4 text-center font-medium text-zinc-400">${i + 1}</span>
+        <span class="flex-1 truncate ${i === 0 ? 'font-semibold text-zinc-900' : 'text-zinc-600'}">${MG.esc(r.name)}</span>
+        <span class="tabular-nums text-zinc-400">${r.total}</span>
+        <span class="w-10 text-right font-medium tabular-nums text-zinc-900">${toParStr(r.toPar)}</span>
       </div>`;
     }).join("");
   }
 
-  function allFilled() {
-    return scores.every((row) => row.every((s) => s !== null && s >= 1));
+  function gotoHole(idx) {
+    if (idx < 0 || idx >= HOLES) return;
+    holeIndex = idx;
+    renderHole();
+    saveDraft();
   }
 
-  /** 只檢查「目前這一洞」每位球友是否已有有效桿數（進入下一洞前用） */
-  function currentHoleFilled() {
-    return scores.every((row) => {
-      const s = row[holeIndex];
-      return s !== null && s !== undefined && !Number.isNaN(s) && s >= 1;
+  /* ───────── 草稿（localStorage） ───────── */
+  function saveDraft() {
+    MG.saveDraft({
+      pars: pars, players: players, scores: scores, putts: putts,
+      hole_index: holeIndex, note: el("round-note").value.trim(), track_putts: trackPutts,
     });
   }
 
-  function calcTotal(pi) {
-    return scores[pi].reduce((a, b) => a + (Number(b) || 0), 0);
+  function courseNameFromNote() {
+    return el("round-note").value.trim() || "自訂球場";
   }
 
-  /** 送出存檔前：18 洞皆轉為整數 1–20 */
-  function normalizeScoreRow(row, playerName) {
-    if (!Array.isArray(row) || row.length !== HOLES) {
-      throw new Error(`${playerName} 的桿數資料不完整`);
-    }
-    return row.map((s, hi) => {
-      if (s === null || s === undefined || (typeof s === "string" && !s.trim())) {
-        throw new Error(`${playerName} 第 ${hi + 1} 洞尚未填寫`);
-      }
-      const n =
-        typeof s === "number" && Number.isFinite(s)
-          ? Math.trunc(s)
-          : parseInt(String(s).trim(), 10);
-      if (!Number.isFinite(n) || n < 1 || n > 20) {
-        throw new Error(`${playerName} 第 ${hi + 1} 洞桿數需在 1～20 之間`);
-      }
-      return n;
-    });
-  }
-
-  function buildPlayersPayload() {
-    return players.map((name, i) => {
-      const label = (name || `球友${i + 1}`).trim();
-      return { name: label, scores: normalizeScoreRow(scores[i], label) };
-    });
-  }
-
-  async function showReview() {
-    if (!currentHoleFilled()) {
-      alert("請為每位球友填完本洞桿數");
-      return;
-    }
-    if (holeIndex < HOLES - 1) {
-      try {
-        await saveProgress(holeIndex + 1);
-        await fetchNextHoleStrategy(holeIndex + 2);
-      } catch (e) {
-        alert(e.message || "保存進度失敗，請稍後再試");
-        return;
-      }
-      holeIndex++;
-      renderHole();
-      return;
-    }
-    if (!allFilled()) {
-      alert("尚有洞次未完成，請逐洞檢查");
-      return;
-    }
-    try {
-      await saveProgress(HOLES, false);
-    } catch (e) {
-      alert(e.message || "保存進度失敗，請稍後再試");
-      return;
-    }
+  function showReview() {
     showStep("review");
-    const parTotal = activeTee.par_total;
-    const ranked = players
-      .map((name, i) => ({ name, total: calcTotal(i) }))
-      .sort((a, b) => a.total - b.total);
+    saveDraft();
+    const pt = parTotal();
+    const ranked = players.map((name, i) => ({
+      name, total: scores[i].reduce((a, b) => a + b, 0),
+    })).sort((a, b) => a.total - b.total);
 
-    el("review-board").innerHTML = `
-      <p class="mb-4 rounded-lg bg-green-50 px-4 py-2 text-center text-sm font-medium text-fairway-dark">
-        ${CATALOG[courseId].name} · ${activeTee.name} · Par ${parTotal}
-      </p>
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        ${ranked.map((p, i) => `
-          <div class="rounded-xl border p-4 text-center ${i === 0 ? "border-gold/50 bg-gold/5" : "border-green-100 bg-green-50"}">
-            <p class="text-2xl">${i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}</p>
-            <p class="mt-1 font-bold text-fairway-dark">${p.name}</p>
-            <p class="text-3xl font-bold tabular-nums text-fairway">${p.total}</p>
-            <p class="text-sm text-green-700">${p.total - parTotal >= 0 ? "+" : ""}${p.total - parTotal}</p>
-          </div>`).join("")}
+    el("review-board").innerHTML = ranked.map((p, i) => {
+      const d = p.total - pt;
+      return `<div class="flex items-center gap-4 rounded-2xl border border-zinc-200 p-4 ${i === 0 ? 'border-zinc-900' : ''}">
+        <span class="w-5 text-center text-sm font-medium text-zinc-400">${i + 1}</span>
+        <span class="flex-1 truncate font-medium text-zinc-900">${MG.esc(p.name)}</span>
+        <div class="text-right">
+          <p class="text-2xl font-semibold tabular-nums text-zinc-900 leading-none">${p.total}</p>
+          <p class="mt-1 text-sm text-zinc-500">${toParStr(d)}</p>
+        </div>
       </div>`;
+    }).join("") + `<p class="pt-1 text-center text-sm text-zinc-400">總 Par ${pt}</p>`;
     el("submit-error").classList.add("hidden");
   }
 
-  async function saveRound() {
+  function saveRound() {
     const errEl = el("submit-error");
     errEl.classList.add("hidden");
-    let playersPayload;
-    try {
-      playersPayload = buildPlayersPayload();
-    } catch (e) {
-      errEl.textContent = e.message || "桿數格式錯誤";
-      errEl.classList.remove("hidden");
-      return;
-    }
-    const payload = {
-      round_id: currentRoundId,
-      course_id: courseId,
-      tee_id: teeId,
-      note: el("round-note").value.trim(),
-      players: playersPayload,
-    };
-    if (SECRET_REQUIRED) {
-      payload.sync_key = el("sync-key").value.trim();
-      if (!payload.sync_key) {
-        errEl.textContent = "請填寫管理員密鑰";
-        errEl.classList.remove("hidden");
-        return;
-      }
-    }
     const btn = el("btn-save");
-    btn.disabled = true;
-    btn.textContent = "存檔中…";
+    btn.disabled = true; btn.textContent = "儲存中…";
     try {
-      const res = await fetch("{{ url_for('score_entry') }}", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const round = MG.addRound({
+        course_name: courseNameFromNote(),
+        note: el("round-note").value.trim(),
+        pars: pars,
+        players: players.map((name, i) => ({ name, scores: scores[i].slice(), putts: putts[i].slice() })),
       });
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error || "存檔失敗");
-      currentRoundId = null;
-      window.location.href = data.redirect || `/round/${data.id}`;
+      MG.clearDraft();
+      window.location.href = `/round/${round.id}`;
     } catch (e) {
-      errEl.textContent = e.message || "網路錯誤";
-      errEl.classList.remove("hidden");
-      btn.disabled = false;
-      btn.textContent = "存入並查看記分卡";
+      errEl.textContent = (e && e.message) || "儲存失敗"; errEl.classList.remove("hidden");
+      btn.disabled = false; btn.textContent = "儲存";
     }
   }
 
-  document.querySelectorAll(".country-card").forEach((btn) => {
-    btn.addEventListener("click", () => selectCountry(btn.dataset.country));
-  });
-  el("btn-back-country").addEventListener("click", () => {
-    selectedCountry = null;
-    courseId = teeId = null;
-    activeTee = null;
-    document.querySelectorAll(".country-card").forEach((c) => {
-      c.classList.remove("border-fairway", "bg-green-50", "ring-2", "ring-fairway");
-    });
-    showStep("country");
-    updateBanner();
-  });
-  el("btn-back-course").addEventListener("click", () => {
-    if (selectedCountry) {
-      courseId = teeId = null;
-      activeTee = null;
-      renderCourseGrid(selectedCountry);
-      showStep("course");
-      updateBanner();
-    } else {
-      showStep("country");
-    }
-  });
-  el("btn-change-course").addEventListener("click", resetCourseSelection);
-  el("player-count").addEventListener("change", buildPlayerNames);
-  el("btn-start").addEventListener("click", startScoring);
-  el("btn-prev").addEventListener("click", () => {
-    if (holeIndex > 0) {
-      holeIndex--;
-      renderHole();
-    }
-  });
-  el("btn-next").addEventListener("click", showReview);
-  el("btn-back-edit").addEventListener("click", () => {
-    holeIndex = HOLES - 1;
-    showStep("holes");
-    renderHole();
-  });
-  el("btn-save").addEventListener("click", saveRound);
+  /* ───────── 左右滑動切換 ───────── */
+  function attachSwipe() {
+    const zone = el("step-holes");
+    let x0 = null, y0 = null;
+    zone.addEventListener("touchstart", (e) => { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+    zone.addEventListener("touchend", (e) => {
+      if (x0 === null) return;
+      const dx = e.changedTouches[0].clientX - x0;
+      const dy = e.changedTouches[0].clientY - y0;
+      if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        if (dx < 0 && holeIndex < HOLES - 1) gotoHole(holeIndex + 1);
+        else if (dx > 0 && holeIndex > 0) gotoHole(holeIndex - 1);
+      }
+      x0 = y0 = null;
+    }, { passive: true });
+  }
 
-  function resumeFromDraft(draft) {
-    if (!draft || !draft.course_id || !draft.tee_id) return false;
-    const course = CATALOG[draft.course_id];
-    if (!course || !course.tees[draft.tee_id]) return false;
-    courseId = draft.course_id;
-    teeId = draft.tee_id;
-    activeTee = course.tees[teeId];
-    selectedCountry = course.country || null;
-    players = (draft.draft_players || []).slice();
-    scores = (draft.draft_scores || []).map((row) => (Array.isArray(row) ? row.slice(0, HOLES) : Array(HOLES).fill(null)));
-    holeIndex = Number.isInteger(draft.draft_hole_index) ? Math.max(0, Math.min(HOLES - 1, draft.draft_hole_index)) : 0;
-    currentRoundId = draft.id || null;
-    if (typeof draft.note === "string") el("round-note").value = draft.note;
-    updateBanner();
+  /* ───────── 續打草稿 ───────── */
+  function resumeFromDraft(d) {
+    if (!d) return false;
+    if (!Array.isArray(d.pars) || d.pars.length !== HOLES) return false;
+    if (!Array.isArray(d.players) || !d.players.length) return false;
+    pars = d.pars.slice();
+    players = d.players.slice();
+    trackPutts = !!d.track_putts;
+    scores = (d.scores || []).map((row) =>
+      Array.isArray(row) && row.length === HOLES ? row.map((s) => clampScore(parseInt(s, 10) || pars[0])) : pars.slice());
+    while (scores.length < players.length) scores.push(pars.slice());
+    putts = (d.putts || []).map((row) =>
+      Array.isArray(row) && row.length === HOLES ? row.map((s) => parseInt(s, 10) || 0) : Array(HOLES).fill(0));
+    while (putts.length < players.length) putts.push(Array(HOLES).fill(0));
+    holeIndex = Number.isInteger(d.hole_index) ? Math.max(0, Math.min(HOLES - 1, d.hole_index)) : 0;
+    if (typeof d.note === "string") el("round-note").value = d.note;
+    el("track-putts").checked = trackPutts;
     showStep("holes");
     renderHole();
-    fetchNextHoleStrategy(holeIndex + 1).catch(() => {});
     return true;
   }
 
-  initFriendQuickPick();
-  buildPlayerNames();
-  if (!resumeFromDraft(RESUME_DRAFT)) {
-    showStep("country");
-  }
+  /* ───────── 綁定 ───────── */
+  el("btn-camera").addEventListener("click", () => el("scorecard-file").click());
+  el("scorecard-file").addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) uploadScorecard(e.target.files[0]);
+  });
+  el("btn-retake").addEventListener("click", () => {
+    el("scorecard-file").value = "";
+    el("scorecard-file").click();
+  });
+  el("btn-use-template").addEventListener("click", () => {
+    applyTemplate("72");
+    const status = el("ocr-status");
+    status.className = "text-sm font-medium text-zinc-900";
+    status.textContent = "已套用 Par 72，請依實際球場點一下調整每洞";
+    el("ocr-warn").classList.add("hidden");
+    flashParGrid();
+  });
+  document.querySelectorAll(".par-template").forEach((b) => {
+    b.addEventListener("click", () => applyTemplate(b.dataset.template));
+  });
+  el("btn-add-player").addEventListener("click", () => {
+    if (players.length >= 8) return;
+    players.push("");
+    renderPlayers();
+  });
+  el("btn-start").addEventListener("click", startScoring);
+  el("btn-prev").addEventListener("click", () => gotoHole(holeIndex - 1));
+  el("btn-next").addEventListener("click", () => {
+    if (holeIndex < HOLES - 1) gotoHole(holeIndex + 1);
+    else showReview();
+  });
+  el("btn-back-edit").addEventListener("click", () => { showStep("holes"); renderHole(); });
+  el("btn-save").addEventListener("click", saveRound);
+
+  /* ───────── 初始 ───────── */
+  players = [MG.getName() || ""];
+  renderParGrid();
+  renderPlayers();
+  attachSwipe();
+  if (!resumeFromDraft(MG.getDraft())) showStep("setup");
 })();
 </script>
 {% endblock %}
