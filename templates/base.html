@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#166534">
-  <meta name="description" content="Maison Golf · 你的私人高球會所：逐洞記分、AI 教練講評、戰績分享與球友排行榜。">
-  <title>{% block title %}Maison Golf · 你的私人高球會所{% endblock %}</title>
+  <meta name="theme-color" content="#ffffff">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="description" content="Maison Golf · 極簡高爾夫記分工具：拍照讀 Par、逐洞快速記分。">
+  <title>{% block title %}Maison Golf · 極簡記分{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -47,7 +48,7 @@
 <body class="min-h-full flex flex-col bg-white font-sans text-zinc-900 antialiased">
 
   {# ── 頂部 Header（極致輕量：極薄、純白、全文字） ── #}
-  <header class="sticky top-0 z-50 border-b border-zinc-100 bg-white/95 backdrop-blur">
+  <header class="sticky top-0 z-50 border-b border-zinc-100 bg-white">
     <div class="mx-auto max-w-2xl px-5 py-2 sm:px-6">
       <div class="flex items-center justify-between gap-3">
 
@@ -83,7 +84,7 @@
   </footer>
 
   {# ── 手機底部導航列（極輕：純白、細線、小圖示、等寬分頁） ── #}
-  <nav class="sm:hidden fixed bottom-0 inset-x-0 z-50 border-t border-zinc-100 bg-white/95 backdrop-blur"
+  <nav class="sm:hidden fixed bottom-0 inset-x-0 z-50 border-t border-zinc-100 bg-white"
        role="navigation" aria-label="主選單">
     <div class="flex items-stretch justify-around px-2 py-1 safe-area-bottom">
 
