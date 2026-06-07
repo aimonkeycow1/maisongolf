@@ -6,6 +6,7 @@
 import os
 import shutil
 import socket
+from io import BytesIO
 
 from flask import Flask, render_template, abort, request, jsonify, redirect, url_for, flash
 from flask_login import (
@@ -286,6 +287,73 @@ def _voice_course_catalog():
 def voice_score_entry():
     # 語音優先記分：仍採 localStorage-first，手動記分保留作為備援
     return render_template("voice.html", page="voice", course_catalog=_voice_course_catalog())
+
+
+def _voice_transcription_prompt(course="", tee="", hole="", players=""):
+    parts = [
+        "這是一段高爾夫球場上的記分語音，請轉成繁體中文。",
+        "常見詞包括：一桿進洞、抓鷹、抓鳥、小鳥、保帕、柏忌、雙柏忌、三上兩推、二上一推、罰桿、OB。",
+        "請保留人名、洞號、桿數、推桿數，不要自行補成完整句子。",
+    ]
+    if course:
+        parts.append(f"目前球場：{course}。")
+    if tee:
+        parts.append(f"目前 Tee：{tee}。")
+    if hole:
+        parts.append(f"目前洞號：第 {hole} 洞。")
+    if players:
+        parts.append(f"同組球友：{players}。")
+    parts.append("例句：小舒抓鳥了，小王三上兩推，小陳保帕。")
+    return "\n".join(parts)
+
+
+@app.route("/voice/transcribe", methods=["POST"])
+def voice_transcribe():
+    """短句語音轉文字：有 OPENAI_API_KEY 時使用 OpenAI，否則讓前端降級。"""
+    if not os.environ.get("OPENAI_API_KEY"):
+        return jsonify({
+            "ok": False,
+            "error": "語音 AI 尚未設定，請先配置 OPENAI_API_KEY。",
+            "fallback": "browser",
+        }), 503
+
+    audio = request.files.get("audio")
+    if not audio:
+        return jsonify({"ok": False, "error": "沒有收到語音"}), 400
+
+    audio_bytes = audio.read()
+    if not audio_bytes:
+        return jsonify({"ok": False, "error": "語音是空的"}), 400
+
+    try:
+        from openai import OpenAI
+    except Exception:
+        return jsonify({"ok": False, "error": "伺服器尚未安裝 OpenAI 語音套件"}), 500
+
+    filename = audio.filename or "voice.webm"
+    mimetype = audio.mimetype or "audio/webm"
+    prompt = _voice_transcription_prompt(
+        course=request.form.get("course", ""),
+        tee=request.form.get("tee", ""),
+        hole=request.form.get("hole", ""),
+        players=request.form.get("players", ""),
+    )
+
+    try:
+        client = OpenAI()
+        result = client.audio.transcriptions.create(
+            model=os.environ.get("OPENAI_TRANSCRIBE_MODEL", "gpt-4o-mini-transcribe"),
+            file=(filename, BytesIO(audio_bytes), mimetype),
+            language="zh",
+            prompt=prompt,
+        )
+        text = (getattr(result, "text", None) or "").strip()
+        if not text:
+            return jsonify({"ok": False, "error": "語音沒有辨識出文字"}), 422
+        return jsonify({"ok": True, "text": text, "engine": "openai"})
+    except Exception as exc:
+        print(f"voice_transcribe failed: {exc}", flush=True)
+        return jsonify({"ok": False, "error": "語音辨識暫時失敗，請重說一次或改用文字"}), 502
 
 
 @app.route("/score/read-scorecard", methods=["POST"])

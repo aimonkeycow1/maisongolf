@@ -17,6 +17,10 @@
   let pending = null;
   let recognition = null;
   let recognizing = false;
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let recording = false;
+  let fallbackNoticeShown = false;
 
   function todayParts() {
     const d = new Date();
@@ -297,6 +301,109 @@
     node.classList.remove("hidden");
   }
 
+  function setVoiceStatus(msg) {
+    el("voice-support").textContent = msg || "";
+  }
+
+  function preferredAudioType() {
+    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) return "";
+    const types = [
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/mp4",
+      "audio/mpeg",
+    ];
+    return types.find((type) => MediaRecorder.isTypeSupported(type)) || "";
+  }
+
+  function voiceContextForm(blob) {
+    const form = new FormData();
+    const type = blob.type || "audio/webm";
+    const ext = type.includes("mp4") ? "m4a" : type.includes("mpeg") ? "mp3" : "webm";
+    form.append("audio", blob, "hole-" + (round.current_hole || 1) + "." + ext);
+    form.append("course", round.course || "");
+    form.append("tee", round.tee || "");
+    form.append("hole", String(round.current_hole || 1));
+    form.append("players", (round.players || []).map((p) => p.name).join("、"));
+    return form;
+  }
+
+  async function transcribeRecordedAudio(blob) {
+    setVoiceStatus("正在整理語音...");
+    el("mic-btn").disabled = true;
+    try {
+      const res = await fetch("/voice/transcribe", {
+        method: "POST",
+        body: voiceContextForm(blob),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        if (data.fallback === "browser" && recognition) {
+          setVoiceStatus("AI 語音尚未設定，暫時使用瀏覽器收音。");
+          if (!fallbackNoticeShown) {
+            fallbackNoticeShown = true;
+            showError("AI 語音尚未設定；下一次按麥克風會改用瀏覽器收音");
+          }
+          return;
+        }
+        showError(data.error || "語音辨識暫時失敗，可以重說或直接打字");
+        setVoiceStatus("");
+        return;
+      }
+      el("voice-transcript").value = data.text || "";
+      setVoiceStatus("AI 已聽寫完成，請確認解析結果");
+      parseCurrentTranscript();
+    } catch (err) {
+      showError("網路或語音服務暫時不穩，可以重說或直接打字");
+      setVoiceStatus("");
+    } finally {
+      el("mic-btn").disabled = false;
+      el("mic-label").textContent = "按一下開始錄音";
+      el("mic-btn").classList.remove("ring-4", "ring-zinc-200");
+    }
+  }
+
+  async function startRecording() {
+    const nav = window.navigator || {};
+    if (!nav.mediaDevices || !nav.mediaDevices.getUserMedia || !window.MediaRecorder) {
+      startBrowserRecognition();
+      return;
+    }
+    try {
+      const stream = await nav.mediaDevices.getUserMedia({ audio: true });
+      audioChunks = [];
+      const mimeType = preferredAudioType();
+      mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size) audioChunks.push(event.data);
+      };
+      mediaRecorder.onstop = () => {
+        stream.getTracks().forEach((track) => track.stop());
+        recording = false;
+        el("mic-label").textContent = "正在辨識...";
+        const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || "audio/webm" });
+        if (!blob.size) {
+          showError("沒有收到聲音，可以再按一次重說");
+          setVoiceStatus("");
+          return;
+        }
+        transcribeRecordedAudio(blob);
+      };
+      mediaRecorder.start();
+      recording = true;
+      el("mic-label").textContent = "錄音中，再按一下結束";
+      el("mic-btn").classList.add("ring-4", "ring-zinc-200");
+      setVoiceStatus("說完本洞成績後，再按一下麥克風");
+    } catch (err) {
+      showError("麥克風權限未開啟，可以改用文字輸入");
+      setVoiceStatus("");
+    }
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && recording) mediaRecorder.stop();
+  }
+
   function confirmHole() {
     if (!round || !pending || !pending.entries.length) return;
     const hole = Math.max(1, Math.min(HOLES, pending.hole || round.current_hole || 1));
@@ -373,7 +480,7 @@
 
   function setupRecognition() {
     if (!SpeechRecognition) {
-      el("voice-support").textContent = "此瀏覽器不支援直接語音輸入，可先用文字輸入測試同一套流程。";
+      setVoiceStatus("可錄一小段語音由 AI 轉文字；若瀏覽器不支援錄音，可先用文字輸入測試。");
       return;
     }
     recognition = new SpeechRecognition();
@@ -387,7 +494,7 @@
     };
     recognition.onend = () => {
       recognizing = false;
-      el("mic-label").textContent = "按一下，說本洞成績";
+      el("mic-label").textContent = "按一下開始錄音";
       el("mic-btn").classList.remove("ring-4", "ring-zinc-200");
     };
     recognition.onerror = () => showError("語音沒有收清楚，可以重說或直接打字");
@@ -396,6 +503,16 @@
       el("voice-transcript").value = text;
       parseCurrentTranscript();
     };
+    setVoiceStatus("按一下錄音，說完再按一下；AI 未設定時會降級用瀏覽器收音。");
+  }
+
+  function startBrowserRecognition() {
+    if (!recognition) {
+      showError("這個瀏覽器不能直接收音，請在下方輸入一句測試");
+      return;
+    }
+    if (recognizing) recognition.stop();
+    else recognition.start();
   }
 
   function bind() {
@@ -426,12 +543,9 @@
       showSetup();
     });
     el("mic-btn").addEventListener("click", () => {
-      if (!recognition) {
-        showError("這個瀏覽器不能直接收音，請在下方輸入一句測試");
-        return;
-      }
-      if (recognizing) recognition.stop();
-      else recognition.start();
+      if (recording) stopRecording();
+      else if (fallbackNoticeShown) startBrowserRecognition();
+      else startRecording();
     });
   }
 

@@ -15,6 +15,15 @@
 
   function normalizeText(text) {
     return String(text || "")
+      .replace(/左鳥|左鸟|抓烏|抓乌|小烏|小乌/g, "抓鳥")
+      .replace(/老英|老應|抓英|抓應/g, "抓鷹")
+      .replace(/保趴|保怕|補帕/g, "保帕")
+      .replace(/柏技|柏忌忌|bogie/gi, "柏忌")
+      .replace(/兩腿|二腿|兩退|二退/g, "兩推")
+      .replace(/一腿|一退/g, "一推")
+      .replace(/三腿|三退/g, "三推")
+      .replace(/四腿|四退/g, "四推")
+      .replace(/五腿|五退/g, "五推")
       .replace(/[，。；;、]/g, " ")
       .replace(/\s+/g, " ")
       .trim();
