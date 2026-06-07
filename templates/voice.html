@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}語音記分 · Maison Golf{% endblock %}
+{% block content %}
+
+<section id="setup-panel" class="hidden space-y-7">
+  <header>
+    <p class="text-sm text-zinc-400">語音優先記分</p>
+    <h1 class="mt-1 text-2xl font-semibold text-zinc-900">不用低頭，說一句就記好</h1>
+  </header>
+
+  <div class="rounded-2xl border border-zinc-200 p-4">
+    <label class="block">
+      <span class="text-sm font-medium text-zinc-700">一句話開局</span>
+      <textarea id="setup-speech" rows="3"
+                placeholder="例：今天打清水灣，球友有小明、小王、小陳、小李"
+                class="mt-2 w-full resize-none rounded-xl border border-zinc-300 px-3.5 py-3 text-zinc-900 placeholder:text-zinc-300 focus:border-zinc-900 focus:outline-none focus:ring-0"></textarea>
+    </label>
+    <div class="mt-4 grid gap-3 sm:grid-cols-2">
+      <label class="block">
+        <span class="text-xs font-medium text-zinc-500">球場</span>
+        <input id="course-name" type="text" placeholder="自訂球場"
+               class="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-zinc-900 placeholder:text-zinc-300 focus:border-zinc-900 focus:outline-none focus:ring-0">
+      </label>
+      <label class="block">
+        <span class="text-xs font-medium text-zinc-500">球友</span>
+        <input id="player-names" type="text" placeholder="小明、小王、小陳"
+               class="mt-1 w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-zinc-900 placeholder:text-zinc-300 focus:border-zinc-900 focus:outline-none focus:ring-0">
+      </label>
+    </div>
+    <p id="course-match" class="mt-3 hidden rounded-lg bg-zinc-100 px-3 py-2 text-xs leading-relaxed text-zinc-700"></p>
+    <p id="setup-error" class="mt-3 hidden text-sm text-zinc-600"></p>
+  </div>
+
+  <button type="button" id="start-voice-round"
+          class="w-full rounded-xl bg-zinc-900 py-4 text-base font-medium text-white transition active:scale-[0.99] hover:bg-zinc-700">
+    開始第 1 洞
+  </button>
+  <a href="{{ url_for('score_entry') }}" class="block text-center text-sm font-medium text-zinc-400 no-underline transition hover:text-zinc-900">改用手動記分</a>
+</section>
+
+<section id="round-panel" class="hidden space-y-6">
+  <div class="h-px bg-zinc-200">
+    <div id="voice-progress" class="h-px bg-zinc-900 transition-all duration-300" style="width:0%"></div>
+  </div>
+
+  <header class="flex items-start justify-between gap-4">
+    <div>
+      <p id="voice-course" class="text-sm text-zinc-400"></p>
+      <p id="voice-tee" class="text-xs text-zinc-300"></p>
+      <h1 id="voice-hole" class="mt-1 text-4xl font-semibold tracking-tight text-zinc-900">第 1 洞</h1>
+    </div>
+    <div class="rounded-lg border border-zinc-200 px-3 py-2 text-right">
+      <p class="text-[10px] text-zinc-400">同組</p>
+      <p id="voice-player-count" class="text-sm font-medium text-zinc-900"></p>
+    </div>
+  </header>
+
+  <button type="button" id="mic-btn"
+          class="flex aspect-square w-full max-w-[18rem] items-center justify-center rounded-full bg-zinc-900 text-white transition active:scale-[0.98] mx-auto">
+    <span class="flex flex-col items-center gap-3">
+      <svg class="h-16 w-16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a3.75 3.75 0 003.75-3.75V6a3.75 3.75 0 10-7.5 0v9A3.75 3.75 0 0012 18.75z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12.75v2.25a7.5 7.5 0 01-15 0v-2.25M12 22.5v-3.75"/>
+      </svg>
+      <span id="mic-label" class="text-sm font-medium">按住場面，說本洞成績</span>
+    </span>
+  </button>
+
+  <p id="voice-support" class="text-center text-xs leading-relaxed text-zinc-400"></p>
+
+  <div>
+    <textarea id="voice-transcript" rows="3"
+              placeholder="例：小明三上二推，小王二上一推，小陳三上三推"
+              class="w-full resize-none rounded-xl border border-zinc-300 px-3.5 py-3 text-zinc-900 placeholder:text-zinc-300 focus:border-zinc-900 focus:outline-none focus:ring-0"></textarea>
+    <div class="mt-3 grid grid-cols-2 gap-3">
+      <button type="button" id="parse-text" class="rounded-xl border border-zinc-300 py-3 text-sm font-medium text-zinc-700">解析這一句</button>
+      <button type="button" id="finish-round" class="rounded-xl bg-zinc-900 py-3 text-sm font-medium text-white">今天打完了</button>
+    </div>
+    <p id="parse-error" class="mt-3 hidden rounded-lg bg-zinc-100 px-3 py-2 text-sm text-zinc-700"></p>
+  </div>
+
+  <div id="pending-panel" class="hidden"></div>
+
+  <section>
+    <div class="mb-2 flex items-center justify-between">
+      <h2 class="text-sm font-medium text-zinc-700">目前比分</h2>
+      <button type="button" id="abandon-voice" class="text-xs font-medium text-zinc-300 transition hover:text-zinc-700">放棄草稿</button>
+    </div>
+    <div id="voice-standings" class="divide-y divide-zinc-100"></div>
+  </section>
+</section>
+
+<section id="finish-panel" class="hidden space-y-6">
+  <header>
+    <p class="text-sm text-zinc-400">本場完成</p>
+    <h1 class="mt-1 text-2xl font-semibold text-zinc-900">語音記分已整理好</h1>
+  </header>
+  <div id="finish-list" class="divide-y divide-zinc-100 rounded-2xl border border-zinc-200 px-4"></div>
+  <div class="grid grid-cols-2 gap-3">
+    <button type="button" id="back-to-round" class="rounded-xl border border-zinc-300 py-3 text-sm font-medium text-zinc-700">回去修改</button>
+    <button type="button" id="save-final-round" class="rounded-xl bg-zinc-900 py-3 text-sm font-medium text-white">儲存總結</button>
+  </div>
+</section>
+
+<script>
+  window.MG_COURSE_CATALOG = {{ course_catalog|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/golf-speech-parser.js') }}"></script>
+<script src="{{ url_for('static', filename='js/voice-round.js') }}"></script>
+
+{% endblock %}

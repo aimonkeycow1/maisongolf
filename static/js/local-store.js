@@ -8,6 +8,7 @@
 
   var KEY_ROUNDS = "mg_rounds";
   var KEY_DRAFT = "mg_draft";
+  var KEY_VOICE_DRAFT = "mg_voice_draft";
   var KEY_NAME = "mg_pname";
   var HOLES = 18;
 
@@ -73,6 +74,9 @@
     var pars = (input.pars || []).slice(0, HOLES);
     var round = {
       id: genId(),
+      course_id: input.course_id || null,
+      tee_id: input.tee_id || null,
+      tee: input.tee || "",
       course: input.course_name || input.course || "自訂球場",
       date: input.date || parts.date,
       time: input.time || parts.time,
@@ -84,6 +88,9 @@
         scores: (p.scores || []).slice(0, HOLES).map((s) => parseInt(s, 10) || 0),
         putts: (p.putts || []).slice(0, HOLES).map((s) => parseInt(s, 10) || 0),
       })),
+      input_mode: input.input_mode || "manual",
+      voice_holes: input.voice_holes || [],
+      voice_transcripts: input.voice_transcripts || [],
       created_at: new Date().toISOString(),
     };
     var list = allRounds();
@@ -98,7 +105,19 @@
     try {
       localStorage.removeItem(KEY_ROUNDS);
       localStorage.removeItem(KEY_DRAFT);
+      localStorage.removeItem(KEY_VOICE_DRAFT);
     } catch (e) {}
+  }
+
+  /* ───────── 語音草稿 ───────── */
+  function getVoiceDraft() { return read(KEY_VOICE_DRAFT, null); }
+  function saveVoiceDraft(draft) {
+    if (!draft) return clearVoiceDraft();
+    draft.updated_at = new Date().toISOString();
+    return write(KEY_VOICE_DRAFT, draft);
+  }
+  function clearVoiceDraft() {
+    try { localStorage.removeItem(KEY_VOICE_DRAFT); } catch (e) {}
   }
 
   /* ───────── 統計計算 ───────── */
@@ -128,6 +147,7 @@
       return {
         name: p.name, scores: scores, putts: p.putts || [],
         front9: front9, back9: back9, total: total, to_par: total - parTotal,
+        total_putts: (p.putts || []).reduce((a, b) => a + (parseInt(b, 10) || 0), 0),
         birdies: birdies, pars: parsCount, bogeys: bogeys, double_plus: doublePlus,
         hole_results: holeResults,
       };
@@ -156,6 +176,7 @@
     getDraft: getDraft, saveDraft: saveDraft, clearDraft: clearDraft,
     allRounds: allRounds, getRound: getRound, addRound: addRound,
     deleteRound: deleteRound, clearAll: clearAll,
+    getVoiceDraft: getVoiceDraft, saveVoiceDraft: saveVoiceDraft, clearVoiceDraft: clearVoiceDraft,
     rankedPlayers: rankedPlayers,
     scoreCellClass: scoreCellClass, toParText: toParText, esc: esc,
   };

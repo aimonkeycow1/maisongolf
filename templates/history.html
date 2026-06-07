@@ -28,14 +28,16 @@
     var ranked = MG.rankedPlayers(r);
     var best = ranked[0] || { total: 0, to_par: 0, name: "" };
     var players = (r.players || []).length;
+    var isVoice = r.input_mode === "voice";
     var sub = MG.esc(r.date || "");
     if (r.note) sub += " · " + MG.esc(r.note);
     sub += " · " + players + " 人";
+    if (isVoice) sub += " · 已記 " + ((r.voice_holes || []).length || r.voice_recorded_holes || 0) + " 洞";
     if (players > 1) sub += " · " + MG.esc(best.name || "");
     return '<a href="/round/' + encodeURIComponent(r.id) + '" class="flex items-center gap-4 py-4 no-underline transition hover:opacity-70">' +
       '<span class="w-12 text-center text-2xl font-semibold tabular-nums text-zinc-900">' + best.total + '</span>' +
       '<div class="min-w-0 flex-1">' +
-        '<p class="truncate text-sm font-medium text-zinc-900">' + MG.esc(r.course || "自訂球場") + '</p>' +
+        '<p class="truncate text-sm font-medium text-zinc-900">' + (isVoice ? '<span class="mr-1 rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] text-zinc-500">語音</span>' : '') + MG.esc(r.course || "自訂球場") + '</p>' +
         '<p class="mt-0.5 truncate text-xs text-zinc-400">' + sub + '</p>' +
       '</div>' +
       '<span class="inline-flex items-center rounded-md border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-xs font-medium tabular-nums text-zinc-700">' + MG.toParText(best.to_par) + '</span>' +

@@ -254,6 +254,40 @@ def score_entry():
     return render_template("score.html", page="score")
 
 
+def _voice_course_catalog():
+    """語音頁只需要球場名稱、tee 名稱與 18 洞 Par，避免完整 catalog 混入不可 JSON 化欄位。"""
+    catalog = {}
+    for cid, course in courses_catalog_full().items():
+        tees = {}
+        for tid, tee in (course.get("tees") or {}).items():
+            pars = tee.get("pars") or []
+            if len(pars) != 18:
+                continue
+            tees[tid] = {
+                "id": str(tid),
+                "name": str(tee.get("name") or tid),
+                "name_en": str(tee.get("name_en") or ""),
+                "pars": [int(p) for p in pars],
+                "par_total": int(tee.get("par_total") or sum(pars)),
+            }
+        if not tees:
+            continue
+        catalog[cid] = {
+            "id": str(cid),
+            "name": str(course.get("name") or cid),
+            "name_en": str(course.get("name_en") or ""),
+            "location": str(course.get("location") or ""),
+            "tees": tees,
+        }
+    return catalog
+
+
+@app.route("/voice")
+def voice_score_entry():
+    # 語音優先記分：仍採 localStorage-first，手動記分保留作為備援
+    return render_template("voice.html", page="voice", course_catalog=_voice_course_catalog())
+
+
 @app.route("/score/read-scorecard", methods=["POST"])
 def score_read_scorecard():
     """拍照讀 Par：上傳記分卡照片 → Grok Vision 回傳 18 洞 Par。"""

@@ -63,7 +63,8 @@
         <nav class="hidden sm:flex items-center gap-6" role="navigation" aria-label="主選單">
           {% from '_macros.html' import nav_link %}
           {{ nav_link(url_for('index'), '首頁', page == 'home') }}
-          {{ nav_link(url_for('score_entry'), '記分', page == 'score') }}
+          {{ nav_link(url_for('voice_score_entry'), '語音', page == 'voice') }}
+          {{ nav_link(url_for('score_entry'), '手動', page == 'score') }}
           {{ nav_link(url_for('history'), '歷史', page == 'history') }}
         </nav>
 
@@ -98,6 +99,17 @@
         <span class="text-[10px] leading-none">首頁</span>
       </a>
 
+      {# 語音 #}
+      <a href="{{ url_for('voice_score_entry') }}"
+         class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 px-1 transition-colors no-underline
+                {% if page == 'voice' %}text-zinc-900{% else %}text-zinc-300{% endif %}">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a3.75 3.75 0 003.75-3.75V6a3.75 3.75 0 10-7.5 0v9A3.75 3.75 0 0012 18.75z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12.75v2.25a7.5 7.5 0 01-15 0v-2.25M12 22.5v-3.75"/>
+        </svg>
+        <span class="text-[10px] leading-none">語音</span>
+      </a>
+
       {# 記分 — 普通分頁（已扁平化） #}
       <a href="{{ url_for('score_entry') }}"
          class="flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 px-1 transition-colors no-underline
@@ -105,7 +117,7 @@
         <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
         </svg>
-        <span class="text-[10px] leading-none">記分</span>
+        <span class="text-[10px] leading-none">手動</span>
       </a>
 
       {# 歷史 #}
