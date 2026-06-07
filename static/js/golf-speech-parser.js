@@ -54,6 +54,43 @@
     return "(\\d+|[零〇一壹兩二貳三參四肆五伍六陸七柒八捌九玖十拾]{1,3})";
   }
 
+  function pad(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  function dateString(date) {
+    return date.getFullYear() + "-" + pad(date.getMonth() + 1) + "-" + pad(date.getDate());
+  }
+
+  function parseSetupDate(text, now) {
+    const base = now || new Date();
+    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+    if (/明天|聽日/.test(text)) d.setDate(d.getDate() + 1);
+    else if (/昨天|尋日|琴日/.test(text)) d.setDate(d.getDate() - 1);
+
+    const monthDay = text.match(new RegExp(numberPattern() + "\\s*月\\s*" + numberPattern() + "\\s*(?:日|號|号)?"));
+    if (monthDay) {
+      const month = toNumber(monthDay[1]);
+      const day = toNumber(monthDay[2]);
+      if (month && day) return dateString(new Date(base.getFullYear(), month - 1, day));
+    }
+    return dateString(d);
+  }
+
+  function parseSetupTime(text) {
+    const n = numberPattern();
+    const m = text.match(new RegExp("(上午|早上|朝早|中午|下午|下晝|晚上|夜晚)?\\s*" + n + "\\s*(?:點|点|時|时)(?:\\s*" + n + "\\s*分?)?"));
+    if (!m) return "";
+    let hour = toNumber(m[2]);
+    const minute = m[3] ? toNumber(m[3]) : 0;
+    if (hour == null || minute == null) return "";
+    const period = m[1] || "";
+    if (/下午|下晝|晚上|夜晚/.test(period) && hour < 12) hour += 12;
+    if (/中午/.test(period) && hour < 11) hour += 12;
+    if (hour > 23 || minute > 59) return "";
+    return pad(hour) + ":" + pad(minute);
+  }
+
   function findHole(text) {
     const n = numberPattern();
     const m = text.match(new RegExp(n + "\\s*(?:號)?\\s*洞"));
@@ -185,14 +222,34 @@
   function parseSetup(text) {
     const normalized = normalizeText(text);
     let course = "";
-    const courseMatch = normalized.match(/(?:打|在|去)(.+?)(?:球場|高爾夫|，|,| 有| 球友|$)/);
-    if (courseMatch) course = courseMatch[1].trim() + (normalized.includes("球場") ? "球場" : "");
-    const peopleMatch = normalized.match(/(?:球友|同組|有)(.+)$/);
-    const peopleText = peopleMatch ? peopleMatch[1].replace(/^[有是為:：\s]+/, "") : "";
-    const players = peopleMatch
-      ? peopleText.split(/[、,\s和跟與]+/).map((x) => x.trim()).filter(Boolean)
+    const courseMatch = normalized.match(/(?:打|在|去)(.+?)(?:球場|高爾夫|白梯|藍梯|蓝梯|紅梯|红梯|黃梯|黄梯|黑梯|，|,| 有| 球友| 同組| 和| 跟| 與|$)/);
+    if (courseMatch) {
+      course = courseMatch[1]
+        .replace(/^(今天|今日|聽日|明天|昨天|尋日|琴日|上午|早上|朝早|中午|下午|下晝|晚上|夜晚|\d+點|\d+点|\d+時|\d+时|\S+月\S+日)\s*/, "")
+        .trim();
+      if (course && /球場|高爾夫/.test(normalized) && !/球場|高爾夫/.test(course)) course += "球場";
+    }
+
+    let peopleText = "";
+    const peopleMatch = normalized.match(/(?:球友|同組|同组|朋友|有)(.+)$/);
+    if (peopleMatch) peopleText = peopleMatch[1];
+    else {
+      const afterCourse = normalized.match(/(?:和|跟|與|同)(.+?)(?:一起|一齊|去|打|$)/);
+      if (afterCourse) peopleText = afterCourse[1];
+    }
+    peopleText = peopleText
+      .replace(/^[有是為:：\s]+/, "")
+      .replace(/(?:一起|一齊|開球|打球|打高爾夫|打高尔夫).*$/, "");
+    const players = peopleText
+      ? peopleText.split(/[、,\s和跟與]+/).map((x) => x.trim()).filter(Boolean).slice(0, 8)
       : [];
-    return { course, players };
+    return {
+      course,
+      players,
+      date: parseSetupDate(normalized),
+      time: parseSetupTime(normalized),
+      normalized,
+    };
   }
 
   global.MaisonGolfSpeech = {

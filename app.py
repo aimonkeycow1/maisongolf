@@ -289,7 +289,15 @@ def voice_score_entry():
     return render_template("voice.html", page="voice", course_catalog=_voice_course_catalog())
 
 
-def _voice_transcription_prompt(course="", tee="", hole="", players=""):
+def _voice_transcription_prompt(course="", tee="", hole="", players="", purpose="hole"):
+    if purpose == "setup":
+        return "\n".join([
+            "這是一段高爾夫開局設定語音，請轉成繁體中文。",
+            "使用者會說出打球日期、時間、球場、Tee、同組球友。",
+            "常見球場包括：滘西洲東場、滘西洲南場、滘西洲北場、清水灣、粉嶺。",
+            "請保留人名、球場名、日期、時間、Tee，不要自行補成完整句子。",
+            "例句：今天下午兩點打滘西洲東場，白梯，球友有小舒、小王、小陳。",
+        ])
     parts = [
         "這是一段高爾夫球場上的記分語音，請轉成繁體中文。",
         "常見詞包括：一桿進洞、抓鷹、抓鳥、小鳥、保帕、柏忌、雙柏忌、三上兩推、二上一推、罰桿、OB。",
@@ -337,6 +345,7 @@ def voice_transcribe():
         tee=request.form.get("tee", ""),
         hole=request.form.get("hole", ""),
         players=request.form.get("players", ""),
+        purpose=request.form.get("purpose", "hole"),
     )
 
     try:

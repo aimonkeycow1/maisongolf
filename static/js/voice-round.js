@@ -16,10 +16,12 @@
   let round = FORCE_NEW_ROUND ? null : (MG.getVoiceDraft() || null);
   let pending = null;
   let recognition = null;
+  let setupRecognizer = null;
   let recognizing = false;
   let mediaRecorder = null;
   let audioChunks = [];
   let recording = false;
+  let recordingPurpose = "";
   let fallbackNoticeShown = false;
 
   function todayParts() {
@@ -120,18 +122,19 @@
     node.classList.remove("hidden");
   }
 
-  function newRound(course, players, courseMatch) {
+  function newRound(course, players, courseMatch, setupInfo) {
     const parts = todayParts();
+    const info = setupInfo || {};
     const pars = courseMatch ? courseMatch.pars.slice() : DEFAULT_PARS.slice();
     return {
-      id: "v_" + parts.date.replace(/-/g, "") + "_" + parts.time.replace(":", "") + "_" + Math.random().toString(36).slice(2, 7),
+      id: "v_" + (info.date || parts.date).replace(/-/g, "") + "_" + (info.time || parts.time).replace(":", "") + "_" + Math.random().toString(36).slice(2, 7),
       input_mode: "voice",
       course_id: courseMatch ? courseMatch.course_id : null,
       tee_id: courseMatch ? courseMatch.tee_id : null,
       tee: courseMatch ? courseMatch.tee_name : "自訂",
       course: (courseMatch && courseMatch.course_name) || course || "自訂球場",
-      date: parts.date,
-      time: parts.time,
+      date: info.date || parts.date,
+      time: info.time || parts.time,
       pars,
       par_total: pars.reduce((a, b) => a + b, 0),
       players: players.map((name) => ({ name, scores: Array(HOLES).fill(0), putts: Array(HOLES).fill(0) })),
@@ -151,6 +154,9 @@
     el("setup-panel").classList.remove("hidden");
     el("round-panel").classList.add("hidden");
     el("finish-panel").classList.add("hidden");
+    const parts = todayParts();
+    if (!el("round-date").value) el("round-date").value = parts.date;
+    if (!el("round-time").value) el("round-time").value = parts.time;
   }
 
   function showRound() {
@@ -295,6 +301,27 @@
     renderPending();
   }
 
+  function showSetupError(msg) {
+    const node = el("setup-error");
+    node.textContent = msg;
+    node.classList.remove("hidden");
+  }
+
+  function applySetupSpeech() {
+    const setupText = el("setup-speech").value.trim();
+    const parsed = MaisonGolfSpeech.parseSetup(setupText);
+    if (parsed.date) el("round-date").value = parsed.date;
+    if (parsed.time) el("round-time").value = parsed.time;
+    if (parsed.course && !el("course-name").value.trim()) el("course-name").value = parsed.course;
+    if (parsed.players && parsed.players.length && !el("player-names").value.trim()) {
+      el("player-names").value = parsed.players.join("、");
+    }
+    const course = el("course-name").value.trim() || parsed.course;
+    renderCourseMatch(detectCourseAndTee(setupText, course));
+    el("setup-error").classList.add("hidden");
+    return parsed;
+  }
+
   function showError(msg) {
     const node = el("parse-error");
     node.textContent = msg;
@@ -303,6 +330,10 @@
 
   function setVoiceStatus(msg) {
     el("voice-support").textContent = msg || "";
+  }
+
+  function setSetupVoiceStatus(msg) {
+    el("setup-voice-support").textContent = msg || "";
   }
 
   function preferredAudioType() {
@@ -316,57 +347,80 @@
     return types.find((type) => MediaRecorder.isTypeSupported(type)) || "";
   }
 
-  function voiceContextForm(blob) {
+  function voiceContextForm(blob, purpose) {
     const form = new FormData();
     const type = blob.type || "audio/webm";
     const ext = type.includes("mp4") ? "m4a" : type.includes("mpeg") ? "mp3" : "webm";
-    form.append("audio", blob, "hole-" + (round.current_hole || 1) + "." + ext);
-    form.append("course", round.course || "");
-    form.append("tee", round.tee || "");
-    form.append("hole", String(round.current_hole || 1));
-    form.append("players", (round.players || []).map((p) => p.name).join("、"));
+    const isSetup = purpose === "setup";
+    form.append("audio", blob, (isSetup ? "setup" : "hole-" + (round.current_hole || 1)) + "." + ext);
+    form.append("purpose", isSetup ? "setup" : "hole");
+    form.append("course", isSetup ? el("course-name").value.trim() : (round.course || ""));
+    form.append("tee", isSetup ? "" : (round.tee || ""));
+    form.append("hole", isSetup ? "" : String(round.current_hole || 1));
+    form.append("players", isSetup ? el("player-names").value.trim() : (round.players || []).map((p) => p.name).join("、"));
     return form;
   }
 
-  async function transcribeRecordedAudio(blob) {
-    setVoiceStatus("正在整理語音...");
-    el("mic-btn").disabled = true;
+  async function transcribeRecordedAudio(blob, purpose) {
+    const isSetup = purpose === "setup";
+    if (isSetup) setSetupVoiceStatus("正在識別開局資訊...");
+    else setVoiceStatus("正在整理語音...");
+    el(isSetup ? "setup-mic-btn" : "mic-btn").disabled = true;
     try {
       const res = await fetch("/voice/transcribe", {
         method: "POST",
-        body: voiceContextForm(blob),
+        body: voiceContextForm(blob, purpose),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
-        if (data.fallback === "browser" && recognition) {
-          setVoiceStatus("AI 語音尚未設定，暫時使用瀏覽器收音。");
+        if (data.fallback === "browser") {
+          if (isSetup && setupRecognizer) {
+            setSetupVoiceStatus("AI 語音尚未設定，暫時使用瀏覽器收音。");
+            startSetupBrowserRecognition();
+            return;
+          }
+          if (!isSetup && recognition) {
+            setVoiceStatus("AI 語音尚未設定，暫時使用瀏覽器收音。");
+            startBrowserRecognition();
+            return;
+          }
           if (!fallbackNoticeShown) {
             fallbackNoticeShown = true;
-            showError("AI 語音尚未設定；下一次按麥克風會改用瀏覽器收音");
+            (isSetup ? showSetupError : showError)("AI 語音尚未設定；可先用文字輸入測試");
           }
           return;
         }
-        showError(data.error || "語音辨識暫時失敗，可以重說或直接打字");
-        setVoiceStatus("");
+        (isSetup ? showSetupError : showError)(data.error || "語音辨識暫時失敗，可以重說或直接打字");
+        if (isSetup) setSetupVoiceStatus("");
+        else setVoiceStatus("");
         return;
       }
-      el("voice-transcript").value = data.text || "";
-      setVoiceStatus("AI 已聽寫完成，請確認解析結果");
-      parseCurrentTranscript();
+      if (isSetup) {
+        el("setup-speech").value = data.text || "";
+        applySetupSpeech();
+        setSetupVoiceStatus("已識別，請確認下方基本信息");
+      } else {
+        el("voice-transcript").value = data.text || "";
+        setVoiceStatus("AI 已聽寫完成，請確認解析結果");
+        parseCurrentTranscript();
+      }
     } catch (err) {
-      showError("網路或語音服務暫時不穩，可以重說或直接打字");
-      setVoiceStatus("");
+      (isSetup ? showSetupError : showError)("網路或語音服務暫時不穩，可以重說或直接打字");
+      if (isSetup) setSetupVoiceStatus("");
+      else setVoiceStatus("");
     } finally {
-      el("mic-btn").disabled = false;
-      el("mic-label").textContent = "按一下開始錄音";
-      el("mic-btn").classList.remove("ring-4", "ring-zinc-200");
+      el(isSetup ? "setup-mic-btn" : "mic-btn").disabled = false;
+      el(isSetup ? "setup-mic-label" : "mic-label").textContent = isSetup ? "按一下說開局資訊" : "按一下開始錄音";
+      el(isSetup ? "setup-mic-btn" : "mic-btn").classList.remove("ring-4", "ring-zinc-200");
     }
   }
 
-  async function startRecording() {
+  async function startRecording(purpose) {
+    const isSetup = purpose === "setup";
     const nav = window.navigator || {};
     if (!nav.mediaDevices || !nav.mediaDevices.getUserMedia || !window.MediaRecorder) {
-      startBrowserRecognition();
+      if (isSetup) startSetupBrowserRecognition();
+      else startBrowserRecognition();
       return;
     }
     try {
@@ -380,23 +434,28 @@
       mediaRecorder.onstop = () => {
         stream.getTracks().forEach((track) => track.stop());
         recording = false;
-        el("mic-label").textContent = "正在辨識...";
+        recordingPurpose = "";
+        el(isSetup ? "setup-mic-label" : "mic-label").textContent = "正在辨識...";
         const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || "audio/webm" });
         if (!blob.size) {
-          showError("沒有收到聲音，可以再按一次重說");
-          setVoiceStatus("");
+          (isSetup ? showSetupError : showError)("沒有收到聲音，可以再按一次重說");
+          if (isSetup) setSetupVoiceStatus("");
+          else setVoiceStatus("");
           return;
         }
-        transcribeRecordedAudio(blob);
+        transcribeRecordedAudio(blob, purpose);
       };
       mediaRecorder.start();
       recording = true;
-      el("mic-label").textContent = "錄音中，再按一下結束";
-      el("mic-btn").classList.add("ring-4", "ring-zinc-200");
-      setVoiceStatus("說完本洞成績後，再按一下麥克風");
+      recordingPurpose = purpose;
+      el(isSetup ? "setup-mic-label" : "mic-label").textContent = "錄音中，再按一下結束";
+      el(isSetup ? "setup-mic-btn" : "mic-btn").classList.add("ring-4", "ring-zinc-200");
+      if (isSetup) setSetupVoiceStatus("說完時間、球場和球友後，再按一下");
+      else setVoiceStatus("說完本洞成績後，再按一下麥克風");
     } catch (err) {
-      showError("麥克風權限未開啟，可以改用文字輸入");
-      setVoiceStatus("");
+      (isSetup ? showSetupError : showError)("麥克風權限未開啟，可以改用文字輸入");
+      if (isSetup) setSetupVoiceStatus("");
+      else setVoiceStatus("");
     }
   }
 
@@ -506,6 +565,30 @@
     setVoiceStatus("按一下錄音，說完再按一下；AI 未設定時會降級用瀏覽器收音。");
   }
 
+  function setupOpeningRecognition() {
+    if (!SpeechRecognition) return;
+    setupRecognizer = new SpeechRecognition();
+    setupRecognizer.lang = "zh-HK";
+    setupRecognizer.interimResults = false;
+    setupRecognizer.continuous = false;
+    setupRecognizer.onstart = () => {
+      recognizing = true;
+      el("setup-mic-label").textContent = "聽緊...";
+      el("setup-mic-btn").classList.add("ring-4", "ring-zinc-200");
+    };
+    setupRecognizer.onend = () => {
+      recognizing = false;
+      el("setup-mic-label").textContent = "按一下說開局資訊";
+      el("setup-mic-btn").classList.remove("ring-4", "ring-zinc-200");
+    };
+    setupRecognizer.onerror = () => showSetupError("語音沒有收清楚，可以重說或直接打字");
+    setupRecognizer.onresult = (event) => {
+      const text = Array.from(event.results).map((r) => r[0].transcript).join(" ");
+      el("setup-speech").value = text;
+      applySetupSpeech();
+    };
+  }
+
   function startBrowserRecognition() {
     if (!recognition) {
       showError("這個瀏覽器不能直接收音，請在下方輸入一句測試");
@@ -515,10 +598,19 @@
     else recognition.start();
   }
 
+  function startSetupBrowserRecognition() {
+    if (!setupRecognizer) {
+      showSetupError("這個瀏覽器不能直接收音，請先輸入一句開局資訊");
+      return;
+    }
+    if (recognizing) setupRecognizer.stop();
+    else setupRecognizer.start();
+  }
+
   function bind() {
     el("start-voice-round").addEventListener("click", () => {
       const setupText = el("setup-speech").value.trim();
-      const parsed = MaisonGolfSpeech.parseSetup(setupText);
+      const parsed = applySetupSpeech();
       const course = (el("course-name").value.trim() || parsed.course || "自訂球場");
       const players = cleanPlayers(el("player-names").value || parsed.players.join("、"));
       const courseMatch = detectCourseAndTee(setupText, course);
@@ -528,11 +620,20 @@
         el("setup-error").classList.remove("hidden");
         return;
       }
-      round = newRound(course, players, courseMatch);
+      round = newRound(course, players, courseMatch, {
+        date: el("round-date").value,
+        time: el("round-time").value,
+      });
       saveDraft();
       showRound();
     });
 
+    el("setup-mic-btn").addEventListener("click", () => {
+      if (recording && recordingPurpose === "setup") stopRecording();
+      else startRecording("setup");
+    });
+    el("parse-setup").addEventListener("click", applySetupSpeech);
+    el("setup-speech").addEventListener("input", applySetupSpeech);
     el("parse-text").addEventListener("click", parseCurrentTranscript);
     el("finish-round").addEventListener("click", showFinish);
     el("save-final-round").addEventListener("click", completeRound);
@@ -545,11 +646,12 @@
     el("mic-btn").addEventListener("click", () => {
       if (recording) stopRecording();
       else if (fallbackNoticeShown) startBrowserRecognition();
-      else startRecording();
+      else startRecording("hole");
     });
   }
 
   setupRecognition();
+  setupOpeningRecognition();
   bind();
   if (round && round.status === "in_progress") showRound();
   else showSetup();
