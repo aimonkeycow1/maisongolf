@@ -389,6 +389,13 @@ def voice_transcribe():
             errors.append(f"{model}: {message[:240]}")
 
     print("voice_transcribe failed: " + " | ".join(errors), flush=True)
+    joined_errors = " | ".join(errors).lower()
+    if "exceeded your current quota" in joined_errors or "insufficient_quota" in joined_errors:
+        return jsonify({
+            "ok": False,
+            "error": "OpenAI API 額度不足或帳單未啟用，請檢查 Billing 後再測語音",
+            "debug": errors[-1] if errors else "quota exceeded",
+        }), 429
     return jsonify({
         "ok": False,
         "error": "AI 語音暫時失敗，請重說一次或改用文字",
