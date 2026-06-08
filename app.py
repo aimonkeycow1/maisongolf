@@ -324,6 +324,13 @@ def _voice_transcription_prompt(course="", tee="", hole="", players="", purpose=
     return "\n".join(parts)
 
 
+def _voice_transcribe_models():
+    preferred = os.environ.get("OPENAI_TRANSCRIBE_MODEL", "gpt-4o-mini-transcribe")
+    models = [preferred, "gpt-4o-mini-transcribe", "whisper-1"]
+    seen = set()
+    return [m for m in models if m and not (m in seen or seen.add(m))]
+
+
 @app.route("/voice/transcribe", methods=["POST"])
 def voice_transcribe():
     """短句語音轉文字：有 OPENAI_API_KEY 時使用 OpenAI，否則讓前端降級。"""
@@ -360,21 +367,33 @@ def voice_transcribe():
     if language not in {"zh", "en"}:
         language = "zh"
 
-    try:
-        client = OpenAI()
-        result = client.audio.transcriptions.create(
-            model=os.environ.get("OPENAI_TRANSCRIBE_MODEL", "gpt-4o-mini-transcribe"),
-            file=(filename, BytesIO(audio_bytes), mimetype),
-            language=language,
-            prompt=prompt,
-        )
-        text = (getattr(result, "text", None) or "").strip()
-        if not text:
-            return jsonify({"ok": False, "error": "語音沒有辨識出文字"}), 422
-        return jsonify({"ok": True, "text": text, "engine": "openai"})
-    except Exception as exc:
-        print(f"voice_transcribe failed: {exc}", flush=True)
-        return jsonify({"ok": False, "error": "語音辨識暫時失敗，請重說一次或改用文字"}), 502
+    client = OpenAI()
+    errors = []
+    for model in _voice_transcribe_models():
+        try:
+            audio_file = BytesIO(audio_bytes)
+            audio_file.name = filename
+            result = client.audio.transcriptions.create(
+                model=model,
+                file=audio_file,
+                language=language,
+                prompt=prompt,
+            )
+            text = (getattr(result, "text", None) or "").strip()
+            if not text:
+                errors.append(f"{model}: empty transcript")
+                continue
+            return jsonify({"ok": True, "text": text, "engine": "openai", "model": model})
+        except Exception as exc:
+            message = str(exc).replace(os.environ.get("OPENAI_API_KEY", ""), "[redacted]")
+            errors.append(f"{model}: {message[:240]}")
+
+    print("voice_transcribe failed: " + " | ".join(errors), flush=True)
+    return jsonify({
+        "ok": False,
+        "error": "AI 語音暫時失敗，請重說一次或改用文字",
+        "debug": errors[-1] if errors else "unknown transcription error",
+    }), 502
 
 
 @app.route("/score/read-scorecard", methods=["POST"])
