@@ -22,6 +22,7 @@
   let audioChunks = [];
   let recording = false;
   let recordingPurpose = "";
+  let recordingTimer = null;
   let fallbackNoticeShown = false;
   let aiTranscribeAvailable = false;
 
@@ -181,6 +182,17 @@
     node.textContent = (aiTranscribeAvailable ? "AI 語音" : "瀏覽器語音") + " · " + langLabel;
   }
 
+  function browserSpeechSupported() {
+    return !!SpeechRecognition;
+  }
+
+  function localAiHint() {
+    if (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost") {
+      return "本機未設定 OpenAI key；完整 AI 語音請用線上版測試。";
+    }
+    return "AI 語音未啟用；目前使用瀏覽器語音。";
+  }
+
   async function initTranscribeStatus() {
     try {
       const res = await fetch("/voice/transcribe/status", { cache: "no-store" });
@@ -191,11 +203,14 @@
     }
     renderEngineStatus();
     if (aiTranscribeAvailable) {
-      setSetupVoiceStatus("AI 語音已啟用；說完後會自動拆成基本信息");
-      setVoiceStatus("AI 語音已啟用；說完本洞成績後會自動解析");
+      setSetupVoiceStatus("AI 語音已啟用；按一下後說開局資訊，系統會自動識別");
+      setVoiceStatus("AI 語音已啟用；按一下後說本洞成績，系統會自動解析");
+    } else if (browserSpeechSupported()) {
+      setSetupVoiceStatus(localAiHint() + " 請選對語言後再說。");
+      setVoiceStatus(localAiHint() + " 請選對語言後再說。");
     } else {
-      setSetupVoiceStatus("目前使用瀏覽器語音；請選對語言後再說");
-      setVoiceStatus("目前使用瀏覽器語音；請選對語言後再說");
+      setSetupVoiceStatus(localAiHint() + " 此瀏覽器不支援原生語音，請改用文字輸入或線上版。");
+      setVoiceStatus(localAiHint() + " 此瀏覽器不支援原生語音，請改用文字輸入或線上版。");
     }
   }
 
@@ -376,6 +391,23 @@
     el("setup-voice-support").textContent = msg || "";
   }
 
+  function clearRecordingTimer() {
+    if (recordingTimer) {
+      clearTimeout(recordingTimer);
+      recordingTimer = null;
+    }
+  }
+
+  function speechErrorMessage(event) {
+    const code = event && event.error;
+    if (code === "not-allowed" || code === "service-not-allowed") return "麥克風權限未開啟，請允許瀏覽器使用麥克風";
+    if (code === "no-speech") return "沒有聽到聲音，請靠近手機再說一次";
+    if (code === "audio-capture") return "沒有偵測到麥克風，請檢查裝置權限";
+    if (code === "network") return "語音服務連線不穩，請稍後再試或改用文字";
+    if (code === "language-not-supported") return "目前瀏覽器不支援這個語言，請換一個語言選項";
+    return "語音沒有收清楚，可以重說或直接打字";
+  }
+
   function preferredAudioType() {
     if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) return "";
     const types = [
@@ -478,6 +510,7 @@
         if (event.data && event.data.size) audioChunks.push(event.data);
       };
       mediaRecorder.onstop = () => {
+        clearRecordingTimer();
         stream.getTracks().forEach((track) => track.stop());
         recording = false;
         recordingPurpose = "";
@@ -494,10 +527,12 @@
       mediaRecorder.start();
       recording = true;
       recordingPurpose = purpose;
-      el(isSetup ? "setup-mic-label" : "mic-label").textContent = "錄音中，再按一下結束";
+      const seconds = isSetup ? 8 : 6;
+      el(isSetup ? "setup-mic-label" : "mic-label").textContent = "錄音中，" + seconds + " 秒後自動識別";
       el(isSetup ? "setup-mic-btn" : "mic-btn").classList.add("ring-4", "ring-zinc-200");
-      if (isSetup) setSetupVoiceStatus("說完時間、球場和球友後，再按一下");
-      else setVoiceStatus("說完本洞成績後，再按一下麥克風");
+      if (isSetup) setSetupVoiceStatus("請說：時間、球場、Tee、球友；說完可再按一下提前識別。");
+      else setVoiceStatus("請說本洞每位球友的成績；說完可再按一下提前識別。");
+      recordingTimer = setTimeout(stopRecording, seconds * 1000);
     } catch (err) {
       (isSetup ? showSetupError : showError)("麥克風權限未開啟，可以改用文字輸入");
       if (isSetup) setSetupVoiceStatus("");
@@ -506,6 +541,7 @@
   }
 
   function stopRecording() {
+    clearRecordingTimer();
     if (mediaRecorder && recording) mediaRecorder.stop();
   }
 
@@ -603,7 +639,7 @@
       el("mic-label").textContent = "按一下開始錄音";
       el("mic-btn").classList.remove("ring-4", "ring-zinc-200");
     };
-    recognition.onerror = () => showError("語音沒有收清楚，可以重說或直接打字");
+    recognition.onerror = (event) => showError(speechErrorMessage(event));
     recognition.onresult = (event) => {
       const text = Array.from(event.results).map((r) => r[0].transcript).join(" ");
       el("voice-transcript").value = text;
@@ -629,7 +665,7 @@
       el("setup-mic-label").textContent = "按一下說開局資訊";
       el("setup-mic-btn").classList.remove("ring-4", "ring-zinc-200");
     };
-    setupRecognizer.onerror = () => showSetupError("語音沒有收清楚，可以重說或直接打字");
+    setupRecognizer.onerror = (event) => showSetupError(speechErrorMessage(event));
     setupRecognizer.onresult = (event) => {
       const text = Array.from(event.results).map((r) => r[0].transcript).join(" ");
       el("setup-speech").value = text;
