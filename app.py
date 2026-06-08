@@ -289,6 +289,15 @@ def voice_score_entry():
     return render_template("voice.html", page="voice", course_catalog=_voice_course_catalog())
 
 
+@app.route("/voice/transcribe/status")
+def voice_transcribe_status():
+    return jsonify({
+        "ok": True,
+        "openai_enabled": bool(os.environ.get("OPENAI_API_KEY")),
+        "model": os.environ.get("OPENAI_TRANSCRIBE_MODEL", "gpt-4o-mini-transcribe"),
+    })
+
+
 def _voice_transcription_prompt(course="", tee="", hole="", players="", purpose="hole"):
     if purpose == "setup":
         return "\n".join([
@@ -347,13 +356,16 @@ def voice_transcribe():
         players=request.form.get("players", ""),
         purpose=request.form.get("purpose", "hole"),
     )
+    language = (request.form.get("language") or "zh").strip().lower()
+    if language not in {"zh", "en"}:
+        language = "zh"
 
     try:
         client = OpenAI()
         result = client.audio.transcriptions.create(
             model=os.environ.get("OPENAI_TRANSCRIBE_MODEL", "gpt-4o-mini-transcribe"),
             file=(filename, BytesIO(audio_bytes), mimetype),
-            language="zh",
+            language=language,
             prompt=prompt,
         )
         text = (getattr(result, "text", None) or "").strip()

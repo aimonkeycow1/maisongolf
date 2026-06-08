@@ -23,6 +23,7 @@
   let recording = false;
   let recordingPurpose = "";
   let fallbackNoticeShown = false;
+  let aiTranscribeAvailable = false;
 
   function todayParts() {
     const d = new Date();
@@ -157,6 +158,45 @@
     const parts = todayParts();
     if (!el("round-date").value) el("round-date").value = parts.date;
     if (!el("round-time").value) el("round-time").value = parts.time;
+  }
+
+  function selectedSpeechLang() {
+    const picker = el("speech-lang");
+    return picker && picker.value ? picker.value : "zh-HK";
+  }
+
+  function openAiLanguage() {
+    return selectedSpeechLang().toLowerCase().startsWith("en") ? "en" : "zh";
+  }
+
+  function renderEngineStatus() {
+    const node = el("voice-engine-status");
+    if (!node) return;
+    const langLabel = {
+      "zh-HK": "廣東話 / 香港中文",
+      "zh-CN": "普通話 / 簡體中文",
+      "zh-TW": "台灣中文",
+      "en-US": "English",
+    }[selectedSpeechLang()] || selectedSpeechLang();
+    node.textContent = (aiTranscribeAvailable ? "AI 語音" : "瀏覽器語音") + " · " + langLabel;
+  }
+
+  async function initTranscribeStatus() {
+    try {
+      const res = await fetch("/voice/transcribe/status", { cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
+      aiTranscribeAvailable = !!(res.ok && data.openai_enabled);
+    } catch (err) {
+      aiTranscribeAvailable = false;
+    }
+    renderEngineStatus();
+    if (aiTranscribeAvailable) {
+      setSetupVoiceStatus("AI 語音已啟用；說完後會自動拆成基本信息");
+      setVoiceStatus("AI 語音已啟用；說完本洞成績後會自動解析");
+    } else {
+      setSetupVoiceStatus("目前使用瀏覽器語音；請選對語言後再說");
+      setVoiceStatus("目前使用瀏覽器語音；請選對語言後再說");
+    }
   }
 
   function showRound() {
@@ -358,6 +398,7 @@
     form.append("tee", isSetup ? "" : (round.tee || ""));
     form.append("hole", isSetup ? "" : String(round.current_hole || 1));
     form.append("players", isSetup ? el("player-names").value.trim() : (round.players || []).map((p) => p.name).join("、"));
+    form.append("language", openAiLanguage());
     return form;
   }
 
@@ -417,6 +458,11 @@
 
   async function startRecording(purpose) {
     const isSetup = purpose === "setup";
+    if (!aiTranscribeAvailable) {
+      if (isSetup) startSetupBrowserRecognition();
+      else startBrowserRecognition();
+      return;
+    }
     const nav = window.navigator || {};
     if (!nav.mediaDevices || !nav.mediaDevices.getUserMedia || !window.MediaRecorder) {
       if (isSetup) startSetupBrowserRecognition();
@@ -543,9 +589,10 @@
       return;
     }
     recognition = new SpeechRecognition();
-    recognition.lang = "zh-HK";
+    recognition.lang = selectedSpeechLang();
     recognition.interimResults = false;
     recognition.continuous = false;
+    recognition.maxAlternatives = 3;
     recognition.onstart = () => {
       recognizing = true;
       el("mic-label").textContent = "聽緊...";
@@ -568,9 +615,10 @@
   function setupOpeningRecognition() {
     if (!SpeechRecognition) return;
     setupRecognizer = new SpeechRecognition();
-    setupRecognizer.lang = "zh-HK";
+    setupRecognizer.lang = selectedSpeechLang();
     setupRecognizer.interimResults = false;
     setupRecognizer.continuous = false;
+    setupRecognizer.maxAlternatives = 3;
     setupRecognizer.onstart = () => {
       recognizing = true;
       el("setup-mic-label").textContent = "聽緊...";
@@ -594,6 +642,7 @@
       showError("這個瀏覽器不能直接收音，請在下方輸入一句測試");
       return;
     }
+    recognition.lang = selectedSpeechLang();
     if (recognizing) recognition.stop();
     else recognition.start();
   }
@@ -603,6 +652,7 @@
       showSetupError("這個瀏覽器不能直接收音，請先輸入一句開局資訊");
       return;
     }
+    setupRecognizer.lang = selectedSpeechLang();
     if (recognizing) setupRecognizer.stop();
     else setupRecognizer.start();
   }
@@ -634,6 +684,7 @@
     });
     el("parse-setup").addEventListener("click", applySetupSpeech);
     el("setup-speech").addEventListener("input", applySetupSpeech);
+    el("speech-lang").addEventListener("change", renderEngineStatus);
     el("parse-text").addEventListener("click", parseCurrentTranscript);
     el("finish-round").addEventListener("click", showFinish);
     el("save-final-round").addEventListener("click", completeRound);
@@ -653,6 +704,7 @@
   setupRecognition();
   setupOpeningRecognition();
   bind();
+  initTranscribeStatus();
   if (round && round.status === "in_progress") showRound();
   else showSetup();
 })();
