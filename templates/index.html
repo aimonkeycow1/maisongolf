@@ -3,14 +3,21 @@
 {% block content %}
 
 {# 續打草稿提示（由 JS 顯示） #}
-<a id="resume-draft" href="{{ url_for('score_entry') }}"
-   class="mb-6 hidden items-center justify-between gap-3 rounded-xl border border-zinc-200 px-4 py-3.5 no-underline transition hover:border-zinc-400">
-  <div class="min-w-0">
-    <p class="text-sm font-medium text-zinc-900">繼續未完成的記分</p>
-    <p id="resume-sub" class="mt-0.5 truncate text-xs text-zinc-400"></p>
+<section id="resume-draft"
+         class="mb-6 hidden rounded-xl border border-zinc-200 px-4 py-3.5">
+  <div class="flex items-start justify-between gap-3">
+    <div class="min-w-0">
+      <p class="text-sm font-medium text-zinc-900">繼續未完成的記分</p>
+      <p id="resume-sub" class="mt-0.5 truncate text-xs text-zinc-400"></p>
+    </div>
+    <a href="{{ url_for('score_entry') }}"
+       class="shrink-0 text-sm font-medium text-zinc-900 no-underline">繼續 →</a>
   </div>
-  <span class="shrink-0 text-sm font-medium text-zinc-500">繼續 →</span>
-</a>
+  <button type="button" id="end-draft"
+          class="mt-3 w-full rounded-lg border border-zinc-200 py-2.5 text-sm font-medium text-zinc-500 transition hover:border-zinc-400 hover:text-zinc-900">
+    結束該局
+  </button>
+</section>
 
 <a id="resume-voice" href="{{ url_for('voice_score_entry') }}"
    class="mb-6 hidden items-center justify-between gap-3 rounded-xl border border-zinc-900 px-4 py-3.5 no-underline transition hover:bg-zinc-50">
@@ -59,7 +66,12 @@
     document.getElementById("resume-sub").textContent = course + " · 第 " + hole + " 洞";
     var a = document.getElementById("resume-draft");
     a.classList.remove("hidden");
-    a.classList.add("flex");
+    var endDraft = document.getElementById("end-draft");
+    endDraft.addEventListener("click", function () {
+      MG.clearDraft();
+      a.classList.add("hidden");
+      if (!MG.allRounds().length) document.getElementById("empty-state").classList.remove("hidden");
+    });
   }
 
   var voice = MG.getVoiceDraft ? MG.getVoiceDraft() : null;
