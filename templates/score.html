@@ -96,7 +96,15 @@
 
     <div class="text-center">
       <p id="hole-counter" class="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">第 1 洞</p>
-      <p id="hole-par" class="mt-1 text-3xl font-semibold tabular-nums text-zinc-900">Par 4</p>
+      <div class="mt-1 flex items-center justify-center gap-4">
+        <button type="button" id="hole-par-minus"
+                class="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-300 text-2xl font-light text-zinc-700 transition active:scale-90 disabled:opacity-30"
+                aria-label="降低本洞 Par">−</button>
+        <p id="hole-par" class="min-w-[7rem] text-center text-3xl font-semibold tabular-nums text-zinc-900">Par 4</p>
+        <button type="button" id="hole-par-plus"
+                class="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-2xl font-light text-white transition active:scale-90 disabled:opacity-30"
+                aria-label="提高本洞 Par">＋</button>
+      </div>
     </div>
 
     <div id="hole-cards" class="mt-6 space-y-3"></div>
@@ -318,6 +326,8 @@ const READ_SCORECARD_URL = "{{ url_for('score_read_scorecard') }}";
     const par = pars[holeIndex];
     el("hole-counter").textContent = `第 ${holeIndex + 1} 洞`;
     el("hole-par").textContent = `Par ${par}`;
+    el("hole-par-minus").disabled = par <= 3;
+    el("hole-par-plus").disabled = par >= 6;
     el("progress-bar").style.width = `${((holeIndex + 1) / HOLES) * 100}%`;
 
     const box = el("hole-cards");
@@ -375,6 +385,18 @@ const READ_SCORECARD_URL = "{{ url_for('score_read_scorecard') }}";
     badge.textContent = scoreLabel(diff);
     badge.className = `score-badge text-xs ${badgeClass(diff)}`;
     updateLiveStandings();
+    saveDraft();
+  }
+
+  function changeHolePar(step) {
+    const oldPar = pars[holeIndex];
+    const nextPar = Math.max(3, Math.min(6, oldPar + step));
+    if (nextPar === oldPar) return;
+    pars[holeIndex] = nextPar;
+    scores.forEach((row) => {
+      if (row[holeIndex] === oldPar) row[holeIndex] = nextPar;
+    });
+    renderHole();
     saveDraft();
   }
 
@@ -532,6 +554,8 @@ const READ_SCORECARD_URL = "{{ url_for('score_read_scorecard') }}";
   });
   el("btn-start").addEventListener("click", startScoring);
   el("btn-prev").addEventListener("click", () => gotoHole(holeIndex - 1));
+  el("hole-par-minus").addEventListener("click", () => changeHolePar(-1));
+  el("hole-par-plus").addEventListener("click", () => changeHolePar(1));
   el("btn-next").addEventListener("click", () => {
     if (holeIndex < HOLES - 1) gotoHole(holeIndex + 1);
     else showReview();
