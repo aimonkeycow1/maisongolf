@@ -170,6 +170,13 @@
     return selectedSpeechLang().toLowerCase().startsWith("en") ? "en" : "zh";
   }
 
+  function setupPromptText() {
+    if (selectedSpeechLang().toLowerCase().startsWith("en")) {
+      return "Say: today 2 pm play Kau Sai Chau East, white tee, with John and Peter";
+    }
+    return "請說：今天下午兩點打滘西洲東場，白梯，球友有小舒、小王、小陳";
+  }
+
   function renderEngineStatus() {
     const node = el("voice-engine-status");
     if (!node) return;
@@ -179,7 +186,9 @@
       "zh-TW": "台灣中文",
       "en-US": "English",
     }[selectedSpeechLang()] || selectedSpeechLang();
-    node.textContent = (aiTranscribeAvailable ? "AI 語音" : "瀏覽器語音") + " · " + langLabel;
+    const engine = (aiTranscribeAvailable ? "AI 語音" : "瀏覽器語音") + " · " + langLabel;
+    node.textContent = aiTranscribeAvailable ? engine : engine + " · " + localAiHint();
+    setSetupVoiceStatus(setupPromptText());
   }
 
   function browserSpeechSupported() {
@@ -203,13 +212,10 @@
     }
     renderEngineStatus();
     if (aiTranscribeAvailable) {
-      setSetupVoiceStatus("AI 語音已啟用；按一下後說開局資訊，系統會自動識別");
       setVoiceStatus("AI 語音已啟用；按一下後說本洞成績，系統會自動解析");
     } else if (browserSpeechSupported()) {
-      setSetupVoiceStatus(localAiHint() + " 請選對語言後再說。");
       setVoiceStatus(localAiHint() + " 請選對語言後再說。");
     } else {
-      setSetupVoiceStatus(localAiHint() + " 此瀏覽器不支援原生語音，請改用文字輸入或線上版。");
       setVoiceStatus(localAiHint() + " 此瀏覽器不支援原生語音，請改用文字輸入或線上版。");
     }
   }
