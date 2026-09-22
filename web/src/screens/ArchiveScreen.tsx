@@ -45,6 +45,19 @@ export function ArchiveScreen() {
     [state.rounds],
   )
 
+  const recentVsGoal = useMemo(() => {
+    const totals = completed
+      .slice(0, 6)
+      .map((r) => {
+        const primary = r.players[0]
+        return primary ? totalStrokes(r, primary.id) : null
+      })
+      .filter((n): n is number => n != null)
+    if (totals.length === 0) return null
+    const mean = totals.reduce((a, b) => a + b, 0) / totals.length
+    return { count: totals.length, mean }
+  }, [completed])
+
   function exportArchive() {
     const payload = buildArchivePayload()
     downloadText(
@@ -97,7 +110,10 @@ export function ArchiveScreen() {
       </button>
       <h1 className="mt-3 text-3xl font-bold">成績庫</h1>
       <p className="mt-1 text-muted">
-        已結束的球局、對目標比較，以及完整封存匯出／匯入。
+        已結束的球局、對目標比較，以及完整封存匯出／匯入。資料存於本機
+        localStorage（鍵{' '}
+        <code className="text-xs">golf-scorekeeper-v1</code>
+        ）；清快取或換機會遺失，請先匯出封存再搬移。
       </p>
 
       <section className="card-shadow mt-5 rounded-2xl border border-line bg-card p-4">
@@ -117,6 +133,32 @@ export function ArchiveScreen() {
         <p className="mt-2 text-sm text-muted">
           列表會以第一位球員總桿對照此目標。
         </p>
+        {recentVsGoal ? (
+          <div className="mt-4 border-t border-line pt-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted">
+                近 {recentVsGoal.count} 局相對目標 {state.scoreGoal}
+              </span>
+              <span className="tabular font-medium">
+                均值 {recentVsGoal.mean.toFixed(1)}
+              </span>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-elevated">
+              <div
+                className="h-full rounded-full bg-accent"
+                style={{
+                  width: `${Math.max(
+                    8,
+                    Math.min(
+                      100,
+                      (state.scoreGoal / Math.max(recentVsGoal.mean, 1)) * 100,
+                    ),
+                  )}%`,
+                }}
+              />
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
@@ -189,18 +231,20 @@ export function ArchiveScreen() {
                         className={
                           vs == null
                             ? 'text-sm text-muted'
-                            : vs <= 0
-                              ? 'text-sm text-under'
-                              : 'text-sm text-over'
+                            : vs === 0
+                              ? 'text-sm font-medium text-under'
+                              : vs < 0
+                                ? 'text-sm font-medium text-under'
+                                : 'text-sm font-medium text-over'
                         }
                       >
                         {vs == null
                           ? '—'
                           : vs === 0
-                            ? `＝目標 ${state.scoreGoal}`
+                            ? '達標'
                             : vs < 0
-                              ? `低於目標 ${-vs}`
-                              : `高於目標 +${vs}`}
+                              ? `−${-vs}`
+                              : `+${vs}`}
                       </p>
                     </div>
                   </div>
