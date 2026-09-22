@@ -11,7 +11,7 @@ export type WeakPointAnalysis = {
   girPct: number | null
   fairwayPct: number | null
   bogeyPlusHoles: number
-  puttBars: Array<{ hole: number; putts: number | null }>
+  puttBars: Array<{ hole: number; putts: number | null; strokes: number | null }>
   tips: string[]
 }
 
@@ -37,6 +37,7 @@ export function analyzeWeakPoints(
     return {
       hole: i + 1,
       putts: cell.strokes == null ? null : cell.putts,
+      strokes: cell.strokes,
     }
   })
 

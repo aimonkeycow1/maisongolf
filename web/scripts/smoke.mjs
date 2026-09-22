@@ -23,9 +23,17 @@ async function shot(name) {
 try {
   await page.goto(BASE, { waitUntil: 'networkidle' })
   await page.evaluate(() => localStorage.clear())
+  // Clear IndexedDB so demo seed is deterministic
+  await page.evaluate(async () => {
+    await new Promise((resolve) => {
+      const req = indexedDB.deleteDatabase('golf-scorekeeper')
+      req.onsuccess = () => resolve(null)
+      req.onerror = () => resolve(null)
+      req.onblocked = () => resolve(null)
+    })
+  })
   await page.reload({ waitUntil: 'networkidle' })
-
-  await page.getByRole('heading', { name: '球場計分' }).waitFor()
+  await page.getByRole('heading', { name: '球場計分' }).waitFor({ timeout: 10000 })
   await shot('01-home')
 
   await page.getByRole('button', { name: '成績庫' }).click()
@@ -33,12 +41,14 @@ try {
   await page.getByText('滘西洲東場').first().waitFor({ timeout: 5000 })
   await page.getByText('示範').first().waitFor()
   await page.getByText('89').first().waitFor()
+  await page.getByText('目標總桿（預設 95）').waitFor()
   await shot('02-archive-demo')
 
-  await page.getByRole('button', { name: '查看計分卡' }).first().click()
+  await page.getByText('滘西洲東場').first().click()
   await page.getByRole('heading', { name: '計分卡' }).waitFor()
   await page.getByText('弱項分析').waitFor()
-  await page.getByText('總推桿', { exact: true }).waitFor()
+  await page.getByText('GIR 上果嶺率').waitFor()
+  await page.getByText('各洞推桿數').waitFor()
   await page.getByText('弱項提示').waitFor()
   await shot('03-scorecard-weak')
 

@@ -21,9 +21,13 @@ import type {
   VoiceLang,
   VoiceResult,
 } from '../types'
+import { idbGetState, idbSetState } from './idb'
 
+/** Legacy localStorage key — still used as write-through mirror + migration source. */
 export const STORAGE_KEY = 'golf-scorekeeper-v1'
 export const DEFAULT_SCORE_GOAL = 95
+/** Durable primary store: IndexedDB database `golf-scorekeeper`. */
+export const IDB_DB_NAME = 'golf-scorekeeper'
 
 const RELATIVE_ZH: Record<number, string> = {
   [-2]: '老鷹',
@@ -70,60 +74,130 @@ function resolveVoiceLang(raw: Record<string, unknown>): VoiceLang {
   return 'zh-HK'
 }
 
-export function saveState(state: AppState): void {
+function hydrateFromRaw(parsed: Record<string, unknown>): AppState | null {
+  if (!parsed || !Array.isArray(parsed.rounds)) return null
+
+  const { courses, changed } = ensureCourses(
+    Array.isArray(parsed.courses) ? parsed.courses : [],
+    parsed.rounds as Round[],
+  )
+
+  const next: AppState = {
+    screen: isScreen(parsed.screen) ? parsed.screen : 'home',
+    activeRoundId:
+      typeof parsed.activeRoundId === 'string' ? parsed.activeRoundId : null,
+    focusedPlayerId:
+      typeof parsed.focusedPlayerId === 'string'
+        ? parsed.focusedPlayerId
+        : null,
+    speechUx: typeof parsed.speechUx === 'number' ? parsed.speechUx : 1,
+    voiceLang: resolveVoiceLang(parsed),
+    scoreGoal:
+      typeof parsed.scoreGoal === 'number' && parsed.scoreGoal > 0
+        ? Math.round(parsed.scoreGoal)
+        : DEFAULT_SCORE_GOAL,
+    rounds: parsed.rounds as Round[],
+    courses,
+  }
+  return changed ? { ...next, courses } : next
+}
+
+function readLocalStorageRaw(): Record<string, unknown> | null {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Record<string, unknown>
+    if (!parsed || !Array.isArray(parsed.rounds)) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+/** Write-through: IndexedDB (primary) + localStorage mirror (fast resume / fallback). */
+export function saveState(next: AppState): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
   } catch {
     /* ignore quota */
   }
+  void idbSetState(next)
 }
 
-export function loadState(): AppState {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) {
-      const fresh = createDefaultState()
-      saveState(fresh)
-      return fresh
+export function loadStateFromLocalStorage(): AppState {
+  const raw = readLocalStorageRaw()
+  if (!raw) {
+    const fresh = createDefaultState()
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh))
+    } catch {
+      /* ignore */
     }
-    const parsed = JSON.parse(raw) as Record<string, unknown>
-    if (!parsed || !Array.isArray(parsed.rounds)) return createDefaultState()
-
-    const { courses, changed } = ensureCourses(
-      Array.isArray(parsed.courses) ? parsed.courses : [],
-      parsed.rounds as Round[],
-    )
-
-    const state: AppState = {
-      screen: isScreen(parsed.screen) ? parsed.screen : 'home',
-      activeRoundId:
-        typeof parsed.activeRoundId === 'string' ? parsed.activeRoundId : null,
-      focusedPlayerId:
-        typeof parsed.focusedPlayerId === 'string'
-          ? parsed.focusedPlayerId
-          : null,
-      speechUx: typeof parsed.speechUx === 'number' ? parsed.speechUx : 1,
-      voiceLang: resolveVoiceLang(parsed),
-      scoreGoal:
-        typeof parsed.scoreGoal === 'number' && parsed.scoreGoal > 0
-          ? Math.round(parsed.scoreGoal)
-          : DEFAULT_SCORE_GOAL,
-      rounds: parsed.rounds as Round[],
-      courses,
-    }
-    if (changed) saveState(state)
-    return state
-  } catch {
-    return createDefaultState()
+    return fresh
   }
+  return hydrateFromRaw(raw) ?? createDefaultState()
 }
 
-let state: AppState = loadState()
+let state: AppState = loadStateFromLocalStorage()
+let booted = false
+let bootPromise: Promise<void> | null = null
 const listeners = new Set<() => void>()
 
 function emit(): void {
   saveState(state)
   listeners.forEach((fn) => fn())
+}
+
+/**
+ * Prefer IndexedDB as durable source of truth; migrate localStorage once if needed.
+ * Safe to call multiple times — subsequent calls await the same promise.
+ */
+export function bootStore(): Promise<void> {
+  if (booted) return Promise.resolve()
+  if (bootPromise) return bootPromise
+
+  bootPromise = (async () => {
+    const fromIdb = await idbGetState()
+    if (fromIdb && typeof fromIdb === 'object') {
+      const hydrated = hydrateFromRaw(fromIdb as Record<string, unknown>)
+      if (hydrated) {
+        state = hydrated
+        // Keep localStorage mirror in sync with IDB authority.
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+        } catch {
+          /* ignore */
+        }
+        listeners.forEach((fn) => fn())
+        booted = true
+        return
+      }
+    }
+
+    // Migrate legacy localStorage → IndexedDB.
+    const fromLs = readLocalStorageRaw()
+    if (fromLs) {
+      const hydrated = hydrateFromRaw(fromLs)
+      if (hydrated) {
+        state = hydrated
+        await idbSetState(state)
+        listeners.forEach((fn) => fn())
+        booted = true
+        return
+      }
+    }
+
+    await idbSetState(state)
+    booted = true
+  })().catch(() => {
+    booted = true
+  })
+
+  return bootPromise
+}
+
+export function isStoreBooted(): boolean {
+  return booted
 }
 
 function patch(partial: Partial<AppState>): void {

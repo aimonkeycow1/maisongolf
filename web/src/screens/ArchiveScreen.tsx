@@ -3,6 +3,9 @@ import { Button } from '../components/Button'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { useAppState } from '../storage/hooks'
 import {
+  DEFAULT_SCORE_GOAL,
+  IDB_DB_NAME,
+  STORAGE_KEY,
   buildArchivePayload,
   deleteRound,
   ensureDemoArchive,
@@ -15,9 +18,11 @@ import { downloadText } from '../stats/coach'
 import {
   displayCourseName,
   formatDate,
+  formatMonthDay,
   formatOptional,
   totalStrokes,
 } from '../stats/round'
+import { cn } from '../lib/cn'
 
 export function ArchiveScreen() {
   const state = useAppState()
@@ -57,6 +62,8 @@ export function ArchiveScreen() {
     const mean = totals.reduce((a, b) => a + b, 0) / totals.length
     return { count: totals.length, mean }
   }, [completed])
+
+  const hasDemo = completed.some((r) => r.isDemo)
 
   function exportArchive() {
     const payload = buildArchivePayload()
@@ -110,14 +117,23 @@ export function ArchiveScreen() {
       </button>
       <h1 className="mt-3 text-3xl font-bold">成績庫</h1>
       <p className="mt-1 text-muted">
-        已結束的球局、對目標比較，以及完整封存匯出／匯入。資料存於本機
-        localStorage（鍵{' '}
-        <code className="text-xs">golf-scorekeeper-v1</code>
-        ）；清快取或換機會遺失，請先匯出封存再搬移。
+        跨局歷史一覽：對照「目標 {state.scoreGoal}」看進步，而非只留下一張散落的計分卡。
+      </p>
+      <p className="mt-2 text-xs leading-relaxed text-muted">
+        主存放：IndexedDB（{IDB_DB_NAME}）；並鏡像 localStorage（{STORAGE_KEY}
+        ）。清站台資料仍會丟——換機請先匯出封存。雲端同步為後續選項，本版不做。
       </p>
 
-      <section className="card-shadow mt-5 rounded-2xl border border-line bg-card p-4">
-        <p className="text-sm font-medium text-muted">目標總桿（預設 95）</p>
+      {hasDemo ? (
+        <div className="mt-4 rounded-2xl border border-warn/40 bg-warn-bg px-3 py-2 text-sm text-warn">
+          示範數據 · 非真實成績（空庫時自動種子，可刪除）
+        </div>
+      ) : null}
+
+      <section className="card-shadow mt-4 rounded-2xl border border-line bg-card p-4">
+        <p className="text-sm font-medium text-muted">
+          目標總桿（預設 {DEFAULT_SCORE_GOAL}）
+        </p>
         <div className="mt-2 flex gap-2">
           <input
             type="number"
@@ -131,7 +147,7 @@ export function ArchiveScreen() {
           </Button>
         </div>
         <p className="mt-2 text-sm text-muted">
-          列表會以第一位球員總桿對照此目標。
+          列表以第一位球員總桿對照此目標（對齊「先穩在 95 內」）。
         </p>
         {recentVsGoal ? (
           <div className="mt-4 border-t border-line pt-3">
@@ -185,58 +201,61 @@ export function ArchiveScreen() {
         </p>
       ) : null}
 
-      <section className="mt-6">
-        <h2 className="mb-3 text-sm font-semibold tracking-wide text-muted">
+      <section className="card-shadow mt-6 overflow-hidden rounded-2xl border border-line bg-card">
+        <h2 className="border-b border-line px-4 py-3 text-sm font-semibold tracking-wide text-muted">
           已結束（{completed.length}）
         </h2>
         {completed.length === 0 ? (
-          <p className="text-sm text-muted">尚無已結束球局。</p>
+          <p className="px-4 py-6 text-sm text-muted">尚無已結束球局。</p>
         ) : (
-          <div className="space-y-3">
+          <div>
             {completed.map((round) => {
               const primary = round.players[0]
               const total = primary
                 ? totalStrokes(round, primary.id)
                 : null
-              const vs =
-                total == null ? null : total - state.scoreGoal
-              const when = formatDate(
+              const vs = total == null ? null : total - state.scoreGoal
+              const { mon, day } = formatMonthDay(
                 round.finishedAt ?? round.updatedAt,
               )
               return (
                 <article
                   key={round.id}
-                  className="card-shadow rounded-2xl border border-line bg-card p-4"
+                  className="flex items-center gap-3 border-b border-line px-3 py-3 last:border-b-0"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3 className="text-lg font-semibold">
+                  <button
+                    type="button"
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    onClick={() => openRound(round.id, 'scorecard')}
+                  >
+                    <div className="flex w-12 shrink-0 flex-col items-center rounded-xl bg-elevated py-1.5">
+                      <span className="text-[10px] text-muted">{mon}</span>
+                      <span className="tabular text-lg font-semibold leading-none">
+                        {day}
+                      </span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold">
                         {displayCourseName(round.courseName)}
-                        {round.isDemo ? (
-                          <span className="ml-2 rounded-full bg-warn-bg px-2 py-0.5 text-xs font-normal text-warn">
-                            示範
-                          </span>
-                        ) : null}
-                      </h3>
-                      <p className="mt-1 text-sm text-muted">
-                        {when} · {round.holeCount}洞
+                      </p>
+                      <p className="mt-0.5 truncate text-sm text-muted">
+                        {round.holeCount} 洞
+                        {round.isDemo ? ' · 示範' : ''}
                         {primary ? ` · ${primary.name}` : ''}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="tabular text-2xl font-semibold">
+                    <div className="shrink-0 text-right">
+                      <p className="tabular text-2xl font-semibold leading-none">
                         {formatOptional(total)}
                       </p>
                       <p
-                        className={
-                          vs == null
-                            ? 'text-sm text-muted'
-                            : vs === 0
-                              ? 'text-sm font-medium text-under'
-                              : vs < 0
-                                ? 'text-sm font-medium text-under'
-                                : 'text-sm font-medium text-over'
-                        }
+                        className={cn(
+                          'mt-1 text-sm font-medium',
+                          vs == null && 'text-muted',
+                          vs === 0 && 'text-under',
+                          vs != null && vs < 0 && 'text-under',
+                          vs != null && vs > 0 && 'text-over',
+                        )}
                       >
                         {vs == null
                           ? '—'
@@ -247,25 +266,15 @@ export function ArchiveScreen() {
                               : `+${vs}`}
                       </p>
                     </div>
-                  </div>
-                  <p className="mt-2 truncate text-sm text-fg/80">
-                    {round.players.map((p) => p.name).join(' · ')}
-                  </p>
-                  <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
-                    <Button
-                      variant="lime"
-                      onClick={() => openRound(round.id, 'scorecard')}
-                    >
-                      查看計分卡
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className="px-3 text-muted"
-                      onClick={() => setPendingDelete(round.id)}
-                    >
-                      刪除
-                    </Button>
-                  </div>
+                  </button>
+                  <Button
+                    variant="ghost"
+                    className="shrink-0 px-2 text-muted"
+                    onClick={() => setPendingDelete(round.id)}
+                    aria-label="刪除"
+                  >
+                    刪除
+                  </Button>
                 </article>
               )
             })}

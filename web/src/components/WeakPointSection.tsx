@@ -1,17 +1,11 @@
 import { analyzeWeakPoints } from '../stats/weakPoints'
 import type { Round } from '../types'
 
-function Tile({
-  label,
-  value,
-}: {
-  label: string
-  value: string
-}) {
+function Tile({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-2xl bg-elevated px-3 py-3 text-center">
-      <p className="text-xs text-muted">{label}</p>
-      <p className="mt-1 tabular text-xl font-semibold">{value}</p>
+      <p className="tabular text-xl font-semibold">{value}</p>
+      <p className="mt-1 text-xs text-muted">{label}</p>
     </div>
   )
 }
@@ -34,7 +28,9 @@ export function WeakPointSection({
   return (
     <section className="card-shadow mt-3 rounded-2xl border border-line bg-card p-3">
       <h2 className="mb-1 font-semibold">弱項分析 · {playerName}</h2>
-      <p className="mb-3 text-sm text-muted">依推桿、GIR、球道與柏忌洞推導</p>
+      <p className="mb-3 text-sm text-muted">
+        單局洞級回顧：推桿、GIR、柏忌洞一目了然
+      </p>
       <div className="grid grid-cols-2 gap-2">
         <Tile
           label="總推桿"
@@ -43,46 +39,50 @@ export function WeakPointSection({
           }
         />
         <Tile
-          label="GIR%"
+          label="GIR 上果嶺率"
           value={analysis.girPct == null ? '—' : `${analysis.girPct}%`}
         />
         <Tile
-          label="球道%"
+          label="球道命中"
           value={
             analysis.fairwayPct == null ? '—' : `${analysis.fairwayPct}%`
           }
         />
-        <Tile label="柏忌+洞" value={String(analysis.bogeyPlusHoles)} />
+        <Tile label="柏忌及以上洞" value={String(analysis.bogeyPlusHoles)} />
       </div>
 
-      <p className="mt-4 mb-2 text-sm font-medium text-muted">各洞推桿</p>
-      <div className="flex items-end gap-1 overflow-x-auto pb-1">
+      <p className="mt-4 mb-2 text-sm font-medium text-muted">各洞推桿數</p>
+      <div className="space-y-1.5">
         {analysis.puttBars.map((bar) => {
-          const h =
+          const widthPct =
             bar.putts == null
-              ? 4
-              : Math.max(8, Math.round((bar.putts / maxPutt) * 48))
+              ? 0
+              : Math.max(8, Math.round((bar.putts / maxPutt) * 100))
           return (
             <div
               key={bar.hole}
-              className="flex w-5 shrink-0 flex-col items-center gap-1"
+              className="grid grid-cols-[1.5rem_1fr_1.75rem] items-center gap-2"
             >
-              <div
-                className={
-                  bar.putts == null
-                    ? 'w-full rounded-t bg-line/50'
-                    : bar.putts >= 3
-                      ? 'w-full rounded-t bg-over'
-                      : 'w-full rounded-t bg-accent'
-                }
-                style={{ height: h }}
-                title={
-                  bar.putts == null
-                    ? `第${bar.hole}洞未記`
-                    : `第${bar.hole}洞 ${bar.putts}推`
-                }
-              />
-              <span className="text-[10px] text-muted">{bar.hole}</span>
+              <span className="tabular text-xs text-muted">{bar.hole}</span>
+              <div className="h-5 overflow-hidden rounded-md bg-elevated">
+                {bar.putts == null ? (
+                  <div className="h-full w-2 bg-line/60" />
+                ) : (
+                  <div
+                    className={
+                      bar.putts >= 3
+                        ? 'flex h-full items-center justify-end rounded-md bg-over px-1.5 text-[10px] font-semibold text-white'
+                        : 'flex h-full items-center justify-end rounded-md bg-accent px-1.5 text-[10px] font-semibold text-accent-ink'
+                    }
+                    style={{ width: `${widthPct}%` }}
+                  >
+                    {bar.putts}
+                  </div>
+                )}
+              </div>
+              <span className="tabular text-right text-sm font-medium">
+                {bar.strokes ?? '—'}
+              </span>
             </div>
           )
         })}

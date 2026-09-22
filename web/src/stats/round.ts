@@ -218,6 +218,15 @@ export function formatDate(ts: number): string {
   return `${y}-${m}-${day}`
 }
 
+/** Month / day blocks for 成績庫 list (vision demo style). */
+export function formatMonthDay(ts: number): { mon: string; day: string } {
+  const d = new Date(ts)
+  return {
+    mon: `${d.getMonth() + 1} 月`,
+    day: String(d.getDate()).padStart(2, '0'),
+  }
+}
+
 export function strokesFromParOffset(par: number, offset: number): number {
   return clampStrokes(Math.max(1, par + offset))
 }
