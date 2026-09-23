@@ -1,0 +1,66 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Noto Sans TC', 'PingFang TC', 'Hiragino Sans CNS',
+    'Microsoft JhengHei', 'Noto Sans SC', system-ui, sans-serif;
+  --color-bg: #f3efe4;
+  --color-fg: #1c2a1f;
+  --color-muted: #4a584c;
+  --color-accent: #2f6b46;
+  --color-accent-ink: #f7f4ec;
+  --color-card: #fffcf6;
+  --color-elevated: #e8efe6;
+  --color-line: #c5cdc0;
+  --color-over: #b44a32;
+  --color-under: #1b6b45;
+  --color-warn: #8a4e22;
+  --color-warn-bg: #f6e8d4;
+  --color-danger: #f3ddd6;
+  --color-danger-ink: #8f2f22;
+  --color-danger-line: #e0b4a8;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+html {
+  background: var(--color-bg);
+}
+
+body {
+  color: var(--color-fg);
+  background: radial-gradient(
+      900px 420px at 50% -8%,
+      #e4ecdf 0%,
+      transparent 58%
+    ),
+    var(--color-bg);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+  margin: 0;
+}
+
+#root {
+  max-width: 28rem;
+  margin: 0 auto;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.card-shadow {
+  box-shadow:
+    0 1px 2px #1c2a1f0f,
+    0 8px 20px #1c2a1f0a;
+}
