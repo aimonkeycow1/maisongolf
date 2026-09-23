@@ -1,7 +1,10 @@
 import { createDemoRound } from '../courses/demo'
 import { ensureCourses, rememberCourse } from '../courses/memory'
 import { makeId } from '../lib/ids'
-import { parseVoiceCommand, resolvePlayer } from '../speech/parser'
+import {
+  formatScoreSummary,
+  interpretVoiceTranscript,
+} from '../speech/interpret'
 import {
   clampPenalties,
   clampPutts,
@@ -19,6 +22,7 @@ import type {
   Round,
   Screen,
   VoiceLang,
+  VoicePreview,
   VoiceResult,
 } from '../types'
 import { idbGetState, idbSetState } from './idb'
@@ -28,14 +32,6 @@ export const STORAGE_KEY = 'golf-scorekeeper-v1'
 export const DEFAULT_SCORE_GOAL = 95
 /** Durable primary store: IndexedDB database `golf-scorekeeper`. */
 export const IDB_DB_NAME = 'golf-scorekeeper'
-
-const RELATIVE_ZH: Record<number, string> = {
-  [-2]: '老鷹',
-  [-1]: '抓鳥',
-  [0]: 'Par',
-  [1]: '柏忌',
-  [2]: '雙柏忌',
-}
 
 const DEFAULT_STATE_BASE: Omit<AppState, 'courses'> = {
   screen: 'home',
@@ -518,111 +514,72 @@ export function deleteRound(id: string): void {
   if (!stillActive) navigate('home')
 }
 
-export function applyVoiceTranscript(raw: string): VoiceResult {
+export function previewVoiceTranscript(raw: string): VoicePreview {
   const heard = raw.trim()
   const round = getActiveRound()
   if (!round) {
-    return { ok: false, heard, message: '沒有進行中的球局' }
+    return { ok: false, heard, message: '沒有進行中的球局。沒有記入分數。' }
   }
-  const cmd = parseVoiceCommand(heard)
-  const holeNo = round.currentHoleIndex + 1
+  const holeIndex = round.currentHoleIndex
+  return interpretVoiceTranscript(heard, {
+    holeCount: round.holeCount,
+    holeIndex,
+    par: round.pars[holeIndex] ?? 4,
+    players: round.players,
+    focusedPlayerId: state.focusedPlayerId,
+    strokesFor: (playerId) => getStrokes(round, holeIndex, playerId),
+  })
+}
 
-  if (cmd.type === 'unknown') {
-    return {
-      ok: false,
-      heard,
-      message:
-        '沒聽懂。可以說「4」「四桿」「抓鳥」「小明打par了」「加一」「下一洞」',
-    }
-  }
-  if (cmd.type === 'nextHole') {
-    if (round.currentHoleIndex >= round.holeCount - 1) {
-      return { ok: false, heard, message: '已經是最後一洞' }
-    }
-    nextHole()
-    return { ok: true, heard, message: `已到第${holeNo + 1}洞` }
-  }
-  if (cmd.type === 'prevHole') {
-    if (round.currentHoleIndex <= 0) {
-      return { ok: false, heard, message: '已經是第1洞' }
-    }
-    prevHole()
-    return { ok: true, heard, message: `已到第${holeNo - 1}洞` }
-  }
-  if (cmd.type === 'gotoHole') {
-    if (cmd.hole < 1 || cmd.hole > round.holeCount) {
-      return { ok: false, heard, message: `本場只有${round.holeCount}洞` }
-    }
-    setCurrentHole(cmd.hole - 1)
-    return { ok: true, heard, message: `已到第${cmd.hole}洞` }
+export function commitVoicePreview(
+  preview: Extract<VoicePreview, { ok: true }>,
+  strokesOverride?: number,
+): VoiceResult {
+  const heard = preview.heard
+  const round = getActiveRound()
+  if (!round) {
+    return { ok: false, heard, message: '沒有進行中的球局。沒有記入分數。' }
   }
 
-  const player = resolvePlayer(
-    'playerQuery' in cmd ? cmd.playerQuery : undefined,
-    round.players,
-    state.focusedPlayerId,
-  )
-  if (!player) {
-    return {
-      ok: false,
-      heard,
-      message:
-        'playerQuery' in cmd && cmd.playerQuery
-          ? `找不到球員「${cmd.playerQuery}」`
-          : '請先說出球員姓名，或點選一名球員',
+  if (preview.kind === 'nav') {
+    if (round.currentHoleIndex !== preview.fromHoleIndex) {
+      return { ok: false, heard, message: '洞號已經變了，沒有跳洞。' }
     }
-  }
-
-  if (cmd.type === 'setScore') {
-    if (cmd.strokes < 1 || cmd.strokes > 15) {
+    if (preview.hole < 1 || preview.hole > round.holeCount) {
       return {
         ok: false,
         heard,
-        message: '桿數需在 1–15 之間',
-        applied: '未記入',
+        message: `本場只有${round.holeCount}洞。沒有跳洞。`,
       }
     }
-    setStrokes(player.id, cmd.strokes)
-    const applied = `${player.name} 第${holeNo}洞 → ${cmd.strokes}桿`
+    setCurrentHole(preview.hole - 1)
     return {
       ok: true,
       heard,
-      message: `已將${player.name}第${holeNo}洞記為${cmd.strokes}桿`,
-      applied,
+      message: `已到第${preview.hole}洞`,
+      applied: preview.summary,
     }
   }
 
-  if (cmd.type === 'setRelative') {
-    const par = round.pars[round.currentHoleIndex] ?? 4
-    const strokes = strokesFromParOffset(par, cmd.offset)
-    setStrokes(player.id, strokes)
-    const label = RELATIVE_ZH[cmd.offset] ?? (cmd.offset === 0 ? 'Par' : cmd.offset > 0 ? `+${cmd.offset}` : String(cmd.offset))
-    const applied = `${player.name} 第${holeNo}洞 → ${strokes}桿（${label}）`
-    return {
-      ok: true,
-      heard,
-      message: `已將${player.name}第${holeNo}洞記為${label}（標準桿${par}＝${strokes}桿）`,
-      applied,
-    }
+  if (!round.players.some((p) => p.id === preview.playerId)) {
+    return { ok: false, heard, message: '找不到該球員。沒有記入分數。' }
   }
-
-  adjustStrokes(player.id, cmd.delta)
-  const after = getActiveRound()
-  const strokes = after
-    ? getStrokes(after, after.currentHoleIndex, player.id)
-    : null
-  const applied =
-    strokes == null
-      ? `${player.name} 第${holeNo}洞已清除`
-      : `${player.name} 第${holeNo}洞 → ${strokes}桿`
+  const strokes = strokesOverride ?? preview.strokes
+  if (!Number.isInteger(strokes) || strokes < 1 || strokes > 15) {
+    return { ok: false, heard, message: '桿數需在 1–15 之間。沒有記入分數。' }
+  }
+  setStrokes(preview.playerId, strokes, preview.holeIndex)
+  const summary = formatScoreSummary(
+    preview.playerName,
+    preview.holeNo,
+    preview.par,
+    strokes,
+  )
   return {
     ok: true,
     heard,
-    message:
-      strokes == null
-        ? `已清除${player.name}第${holeNo}洞`
-        : `已將${player.name}第${holeNo}洞調整為${strokes}桿`,
-    applied,
+    message: `已記入：${summary}`,
+    applied: summary,
   }
 }
 

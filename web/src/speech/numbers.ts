@@ -33,21 +33,32 @@ const EN_DIGITS: Record<string, number> = {
   fifteen: 15,
 }
 
-const FILLER = /[呀啊啦喎喔哦呢嘿咯囉噶嘅嗯咁吧嘛咧喲唷哇耶]/g
+const FILLER = /[呀啊啦喎喔哦呢嘿咯囉噶嘅嗯咁吧嘛咧喲唷哇耶呃呃]/g
 
-export const NUM_TOKEN =
-  '([0-9]{1,2}|十[一二三四五六七八九]?|[一二三四五六七八九]十[一二三四五六七八九]?|[一二两三兩四五六七八九十壹])'
+export const NUM_SRC =
+  '[0-9]{1,2}|十[一二三四五六七八九]?|[一二三四五六七八九]十[一二三四五六七八九]?|[一二两三兩四五六七八九十壹]'
+
+export const NUM_TOKEN = `(${NUM_SRC})`
+
+const LEAD_IN =
+  /^(?:請|幫我|幫忙|帮我|帮忙|記低|記住|記錄|记录|麻煩)\s*/u
 
 export function normalizeSpeech(input: string): string {
-  return input
+  let text = input
     .replace(/[，。,.!！?？、]/g, ' ')
+    .replace(/＋/g, '+')
+    .replace(/[－—–]/g, '-')
     .replace(/[０-９]/g, (ch) =>
       String.fromCharCode(ch.charCodeAt(0) - 65296 + 48),
     )
     .replace(FILLER, '')
-    .replace(/^(係|是|为|為)\s*/u, '')
-    .replace(/\s+/g, ' ')
-    .trim()
+    .replace(/^(?:係|是|为|為)\s*/u, '')
+  for (let i = 0; i < 3; i += 1) {
+    const next = text.replace(LEAD_IN, '')
+    if (next === text) break
+    text = next
+  }
+  return text.replace(/\s+/g, ' ').trim()
 }
 
 export function parseNumberToken(raw: string): number | null {
@@ -94,5 +105,5 @@ export function takeLeadingNumber(
 }
 
 export function stripStrokeSuffix(text: string): string {
-  return text.replace(/^(杆|桿|分|strokes?|stroke)\s*/i, '').trim()
+  return text.replace(/^(杆|桿|分|下|strokes?)\s*/i, '').trim()
 }

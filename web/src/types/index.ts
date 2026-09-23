@@ -93,6 +93,33 @@ export type VoiceResult = {
   applied?: string
 }
 
+export type VoiceScorePreview = {
+  ok: true
+  kind: 'score'
+  heard: string
+  playerId: string
+  playerName: string
+  holeIndex: number
+  holeNo: number
+  par: number
+  strokes: number
+  summary: string
+}
+
+export type VoiceNavPreview = {
+  ok: true
+  kind: 'nav'
+  heard: string
+  fromHoleIndex: number
+  hole: number
+  summary: string
+}
+
+export type VoicePreview =
+  | VoiceScorePreview
+  | VoiceNavPreview
+  | { ok: false; heard: string; message: string }
+
 export type ArchivePayload = {
   version: 1
   kind: 'golf-scorekeeper-archive'
