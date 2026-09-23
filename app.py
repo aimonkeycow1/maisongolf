@@ -285,8 +285,8 @@ def _voice_course_catalog():
 
 @app.route("/voice")
 def voice_score_entry():
-    # 語音優先記分：仍採 localStorage-first，手動記分保留作為備援
-    return render_template("voice.html", page="voice", course_catalog=_voice_course_catalog())
+    # 語音記分已取消，舊網址改走手動記分。
+    return redirect(url_for("score_entry"))
 
 
 @app.route("/voice/transcribe/status")

@@ -12,6 +12,19 @@ const context = await browser.newContext({
 })
 const page = await context.newPage()
 
+async function assertNoVoice(page) {
+  const voiceCopy = page.getByText(/語音|麥克風|開始聽/)
+  if (await voiceCopy.count()) {
+    throw new Error(
+      'voice UI still visible: ' + (await voiceCopy.first().textContent()),
+    )
+  }
+  const voiceButton = page.getByRole('button', { name: /語音|麥克風|開始聽|聽緊/ })
+  if (await voiceButton.count()) {
+    throw new Error('voice button still visible')
+  }
+}
+
 async function shot(name) {
   await page.screenshot({
     path: `${outDir}/${name}.png`,
@@ -34,6 +47,7 @@ try {
   })
   await page.reload({ waitUntil: 'networkidle' })
   await page.getByRole('heading', { name: '球場計分' }).waitFor({ timeout: 10000 })
+  await assertNoVoice(page)
   await shot('01-home')
 
   await page.getByRole('button', { name: '成績庫' }).click()
@@ -65,6 +79,7 @@ try {
   await page.getByRole('button', { name: '開始計分' }).click()
 
   await page.getByText('HOLE').waitFor()
+  await assertNoVoice(page)
   // Par chip on score row
   await page.getByRole('button', { name: 'Par' }).first().click()
   // Coach: bump putts once
