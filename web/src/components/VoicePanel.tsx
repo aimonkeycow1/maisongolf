@@ -449,12 +449,14 @@ export function VoicePanel({
   const cancelled = !!result?.message.startsWith('已取消')
   const scoreSummary =
     draft?.kind === 'score'
-      ? formatScoreSummary(
-          draft.playerName,
-          draft.holeNo,
-          draft.par,
-          editStrokes,
-        )
+      ? draft.sumOf && editStrokes === draft.strokes
+        ? draft.summary
+        : formatScoreSummary(
+            draft.playerName,
+            draft.holeNo,
+            draft.par,
+            editStrokes,
+          )
       : ''
 
   return (
@@ -474,8 +476,7 @@ export function VoicePanel({
         <span className="text-muted">（點球員可改）</span>
       </p>
       <p className="mt-1 text-xs text-muted">
-        可說：「柏忌」「帕」「小鳥」「老鷹」「四桿」「加一桿」「bogey」「par」「plus
-        one」
+        可說：「兩上三推」「2上3推」「四桿」。柏忌、帕、小鳥只是捷徑。
       </p>
       <div className="mt-2 flex flex-wrap gap-1">
         {LANGS.map((item) => (
@@ -526,7 +527,7 @@ export function VoicePanel({
             />
           </div>
           <p className="mt-3 min-h-8 text-center text-lg font-medium break-words">
-            {interim || '請說桿數或柏忌、帕、小鳥…'}
+            {interim || '請說「兩上三推」或桿數…'}
           </p>
           <Button
             variant="lime"

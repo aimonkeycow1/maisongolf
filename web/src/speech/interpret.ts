@@ -40,6 +40,16 @@ export function formatScoreSummary(
   return `${playerName} 第${holeNo}洞 ${strokes}桿（${scoreWords(par, strokes)}）`
 }
 
+export function formatSumSummary(
+  playerName: string,
+  holeNo: number,
+  par: number,
+  strokes: number,
+  parts: readonly [number, number],
+): string {
+  return `${playerName} 第${holeNo}洞 ${strokes}桿（${parts[0]}+${parts[1]}，${scoreWords(par, strokes)}）`
+}
+
 function fail(heard: string, message: string): VoicePreview {
   return { ok: false, heard, message }
 }
@@ -132,6 +142,15 @@ export function interpretVoiceTranscript(
     if (cmd.strokes < 1 || cmd.strokes > 15) {
       return fail(heard, `桿數需在 1–15 之間。${MANUAL}`)
     }
+    const summary = cmd.sumOf
+      ? formatSumSummary(
+          player.name,
+          holeNo,
+          ctx.par,
+          cmd.strokes,
+          cmd.sumOf,
+        )
+      : formatScoreSummary(player.name, holeNo, ctx.par, cmd.strokes)
     return {
       ok: true,
       kind: 'score',
@@ -142,7 +161,8 @@ export function interpretVoiceTranscript(
       holeNo,
       par: ctx.par,
       strokes: cmd.strokes,
-      summary: formatScoreSummary(player.name, holeNo, ctx.par, cmd.strokes),
+      summary,
+      ...(cmd.sumOf ? { sumOf: cmd.sumOf } : {}),
     }
   }
 

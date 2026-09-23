@@ -72,6 +72,13 @@ await context.addInitScript(() => {
           fire(true, [{ transcript: '四桿', confidence: 0.92 }])
           rec.onend?.()
         })
+        return
+      }
+      if (mode === 'sum') {
+        later(80, () => {
+          fire(true, [{ transcript: '兩上三推', confidence: 0.93 }])
+          rec.onend?.()
+        })
       }
     }
 
@@ -194,6 +201,21 @@ try {
   await page.getByRole('button', { name: '確認' }).click()
   await page.getByText(`已記入：`).waitFor()
   check((await readStrokes()) === bogey, `confirmed score ${await readStrokes()} !== ${bogey}`)
+
+  await setMode('sum')
+  const beforeSum = await readStrokes()
+  await page.getByRole('button', { name: '點一下開始聽' }).click()
+  await dialog.waitFor()
+  const sumChip = await dialog.innerText()
+  check(sumChip.includes('即將記入：'), sumChip)
+  check(sumChip.includes('5桿'), sumChip)
+  check(sumChip.includes('2+3'), sumChip)
+  check(sumChip.includes('聽到：「兩上三推」'), sumChip)
+  check((await readStrokes()) === beforeSum, '兩上三推 wrote before confirm')
+  await shot('voice-sum-confirm')
+  await page.getByRole('button', { name: '確認' }).click()
+  await page.getByText('已記入：').waitFor()
+  check((await readStrokes()) === 5, `兩上三推 confirmed ${await readStrokes()} !== 5`)
 
   await setMode('garbage')
   const beforeGarbage = await readStrokes()

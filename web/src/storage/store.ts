@@ -569,12 +569,15 @@ export function commitVoicePreview(
     return { ok: false, heard, message: '桿數需在 1–15 之間。沒有記入分數。' }
   }
   setStrokes(preview.playerId, strokes, preview.holeIndex)
-  const summary = formatScoreSummary(
-    preview.playerName,
-    preview.holeNo,
-    preview.par,
-    strokes,
-  )
+  const summary =
+    strokes === preview.strokes
+      ? preview.summary
+      : formatScoreSummary(
+          preview.playerName,
+          preview.holeNo,
+          preview.par,
+          strokes,
+        )
   return {
     ok: true,
     heard,

@@ -232,7 +232,7 @@ function parseSetScore(text: string): VoiceCommand | null {
   if (spaced) {
     const strokes = parseNumberToken(spaced[2]!)
     const playerQuery = cleanPlayerQuery(spaced[1]!)
-    if (strokes != null && playerQuery) {
+    if (strokes != null && playerQuery && !/[上推]/.test(playerQuery)) {
       return { type: 'setScore', strokes, playerQuery }
     }
   }
@@ -241,7 +241,12 @@ function parseSetScore(text: string): VoiceCommand | null {
   if (glued) {
     const strokes = parseNumberToken(glued[2]!)
     const playerQuery = cleanPlayerQuery(glued[1]!)
-    if (strokes != null && playerQuery && !/^(第|下|上)$/.test(playerQuery)) {
+    if (
+      strokes != null &&
+      playerQuery &&
+      !/^(第|下|上)$/.test(playerQuery) &&
+      !/[上推]/.test(playerQuery)
+    ) {
       return { type: 'setScore', strokes, playerQuery }
     }
   }
@@ -283,12 +288,33 @@ export function parseVoiceCommand(raw: string): VoiceCommand {
   }
 
   return (
+    parseStrokeSum(text) ||
     parseOverUnder(text) ||
     parseRelative(text) ||
     parseHoleInOne(text) ||
     parseAdjust(text) ||
     parseSetScore(text) || { type: 'unknown' }
   )
+}
+
+/** 「兩上三推」「2上3推」「兩上＋三推」→ total strokes, not a par/birdie keyword. */
+function parseStrokeSum(text: string): VoiceCommand | null {
+  const matched = text.match(
+    new RegExp(
+      `^(.*?)(${NUM_SRC})\\s*上\\s*(?:[+＋加]\\s*)?(${NUM_SRC})\\s*(?:個|个)?\\s*推(?:杆|桿|球|了)?$`,
+    ),
+  )
+  if (!matched) return null
+  const before = matched[1] ?? ''
+  if (/[上推]/.test(before)) return null
+  const up = parseNumberToken(matched[2]!)
+  const putts = parseNumberToken(matched[3]!)
+  if (up == null || putts == null) return null
+  return withPlayer(before, {
+    type: 'setScore',
+    strokes: up + putts,
+    sumOf: [up, putts],
+  })
 }
 
 export function resolvePlayer(

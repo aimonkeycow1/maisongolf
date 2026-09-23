@@ -82,7 +82,13 @@ export type VoiceCommand =
   | { type: 'nextHole' }
   | { type: 'prevHole' }
   | { type: 'gotoHole'; hole: number }
-  | { type: 'setScore'; strokes: number; playerQuery?: string }
+  | {
+      type: 'setScore'
+      strokes: number
+      playerQuery?: string
+      /** Natural stroke sum, e.g. 兩上三推 → [2, 3]. */
+      sumOf?: readonly [number, number]
+    }
   | { type: 'setRelative'; offset: number; playerQuery?: string }
   | { type: 'adjust'; delta: number; playerQuery?: string }
 
@@ -104,6 +110,8 @@ export type VoiceScorePreview = {
   par: number
   strokes: number
   summary: string
+  /** Present when strokes came from adding spoken parts, e.g. 2+3. */
+  sumOf?: readonly [number, number]
 }
 
 export type VoiceNavPreview = {
