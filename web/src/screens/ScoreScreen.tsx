@@ -3,7 +3,6 @@ import { Button } from '../components/Button'
 import { CoachFields } from '../components/CoachFields'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { StrokePad } from '../components/StrokePad'
-import { VoicePanel } from '../components/VoicePanel'
 import { cn } from '../lib/cn'
 import { RELATIVE_OUTCOMES, relativeChipCaption } from '../lib/outcomes'
 import {
@@ -41,9 +40,6 @@ export function ScoreScreen({
   const holeNo = holeIndex + 1
   const par = round.pars[holeIndex]!
   const padPlayer = round.players.find((p) => p.id === padPlayerId)
-  const focused =
-    round.players.find((p) => p.id === state.focusedPlayerId) ??
-    round.players[0]
 
   return (
     <div className="flex min-h-dvh flex-col px-3 pb-8 pt-[max(0.75rem,env(safe-area-inset-top))]">
@@ -77,7 +73,7 @@ export function ScoreScreen({
           <span className="text-muted"> · {round.holeCount} 洞</span>
         </p>
         <p className="mt-3 text-sm leading-snug text-muted">
-          抓鳥＝標準桿−1；也可說『小明打par了』
+          抓鳥＝標準桿−1。點 − / + 加減，或點中間數字輸入。
         </p>
       </section>
 
@@ -119,11 +115,6 @@ export function ScoreScreen({
                   onClick={() => setFocusedPlayer(player.id)}
                 >
                   {player.name}
-                  {isFocused ? (
-                    <span className="ml-2 text-xs font-normal text-accent">
-                      語音記呢位
-                    </span>
-                  ) : null}
                 </button>
                 <span className="text-sm text-muted">
                   總桿 {formatOptional(totalStrokes(round, player.id))} ·{' '}
@@ -199,13 +190,6 @@ export function ScoreScreen({
       <p className="mt-3 text-center text-sm text-muted">
         已記 {holesRecorded(round)} / {round.holeCount} 洞 · 分數已自動儲存
       </p>
-
-      <div className="mt-3">
-        <VoicePanel
-          lang={state.voiceLang}
-          currentPlayerName={focused?.name ?? '球員'}
-        />
-      </div>
 
       <Button
         variant="danger"

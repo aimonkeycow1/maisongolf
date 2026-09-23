@@ -22,8 +22,6 @@
   var ranked = MG.rankedPlayers(round);
   var pt = round.par_total || 0;
   var e = MG.esc, tp = MG.toParText, cell = MG.scoreCellClass;
-  var isVoice = round.input_mode === "voice";
-
   function holeGrid(holeResults, from, to) {
     var html = '<div class="grid grid-cols-9 gap-1">';
     holeResults.forEach(function (h) {
@@ -44,9 +42,9 @@
   if (round.time) meta += " · " + e(round.time);
   if (round.note) meta += " · " + e(round.note);
   html += '<header class="border-b border-zinc-200 pb-5">' +
-    '<p class="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">' + (isVoice ? 'Voice Scorecard' : 'Scorecard') + '</p>' +
+    '<p class="text-xs font-medium uppercase tracking-[0.2em] text-zinc-400">Scorecard</p>' +
     '<h1 class="mt-1 text-xl font-semibold text-zinc-900">' + e(round.course || "自訂球場") + '</h1>' +
-    '<p class="mt-1 text-sm text-zinc-500">' + meta + (isVoice ? ' · 語音記分' : '') + '</p>' +
+    '<p class="mt-1 text-sm text-zinc-500">' + meta + '</p>' +
   '</header>';
 
   // 摘要
@@ -97,17 +95,6 @@
       '</div>' +
     '</article>';
   });
-
-  if (isVoice && Array.isArray(round.voice_holes) && round.voice_holes.length) {
-    html += '<section class="mt-8"><h2 class="mb-3 text-sm font-medium text-zinc-700">原始口述</h2><div class="space-y-2">';
-    round.voice_holes.forEach(function (h) {
-      html += '<div class="rounded-xl border border-zinc-200 px-4 py-3">' +
-        '<p class="text-xs font-medium text-zinc-400">第 ' + h.hole + ' 洞</p>' +
-        '<p class="mt-1 text-sm leading-relaxed text-zinc-700">' + e(h.raw_transcript || "") + '</p>' +
-      '</div>';
-    });
-    html += '</div></section>';
-  }
 
   var content = document.getElementById("round-content");
   content.innerHTML = html;
